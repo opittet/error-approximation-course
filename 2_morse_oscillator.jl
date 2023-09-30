@@ -93,6 +93,32 @@ E^H_n = \omega \left(n + \frac12\right)\qquad\text{for $n = 0, 1, 2, \ldots$}
 **(a)** Show that $V^H(x)$ is the leading-order (in $x-x_0$) term of $V^M(x)$, i.e. that the Harmonic osillator is indeed a simplified version of the Morse oscillator.
 """
 
+# ╔═╡ fcd25aeb-5106-440b-a857-f08a10c478b4
+#our answer 
+md"""
+
+**(a)** 
+
+We have 
+
+```math
+V^H(x) = \frac12 ω^2 (x - x_0)^2 
+```
+and 
+```math
+V^M(x) = D \left(1 - \exp\left( - \frac{ω}{\sqrt{2D}} \, (x-x_0) \right) \right)^2
+```
+
+let $a = -\frac{ω}{\sqrt{2D}}$ we can take the taylor expension of $e^{-ax}$ around $x_0$:
+
+```math 
+\lim_{x \to x_0} V^M = (1-1+a(x-x_0)+O(x^2))^2  \approx a^2(x-x_0)^2 = \frac{\omega ^2}{2D}(x-x_0)^2 \approx V^H
+```
+
+
+
+"""
+
 # ╔═╡ 0eb0b23b-9b20-41d5-ab57-3e9d98134403
 md"""
 **(b)** Show that the ground state (lowest-eigenvalue eigenfunction) is given by
@@ -104,6 +130,33 @@ and normalise this function with respect to the standard $L^2(\mathbb{R})$ norm
 \| f \| = \sqrt{\int_\mathbb{R} |f(x)|^2 dx}.
 ```
 For the normalised function we will use the symbol $\varphi_0^H$ in the following.
+"""
+
+# ╔═╡ c9f88820-502b-4e34-8fdc-151850d4cb84
+md"""
+**(b)** 
+
+One can test the condition $H \lambda = E \lambda$ 
+
+```math
+H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  (1)
+```
+
+with 
+
+```math
+ \Delta \tilde{\varphi}^H_0(x)=\frac{d^2}{dx^2}(\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)) =e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega)
+
+```
+taken together one gets:
+
+```math
+(1-e^{-\frac{1}{2}\omega (x-x_0)^2})(\frac{1}{2}\omega ^2(x-x_0)^2)e^{-\frac{1}{2}\omega (x-x_0)^2}(\frac{\omega}{2})
+
+
+```
+
+
 """
 
 # ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
@@ -1325,15 +1378,17 @@ version = "1.4.1+0"
 # ╟─dc4aea04-5716-11ee-1952-27c9bb3f0e5e
 # ╟─4b08176a-7122-4c48-bc07-7b1de84d81cb
 # ╠═7dad9d40-d336-4489-ad64-4605d7b96173
-# ╟─24f29d78-220b-4829-ae90-e6533f6029d7
+# ╠═24f29d78-220b-4829-ae90-e6533f6029d7
 # ╠═b98f299c-ab5b-44b8-a47c-3b55c0595a1e
 # ╟─23ee7361-db58-498c-9879-1b48b282b628
 # ╠═80b1b579-a871-48af-842a-e74834f944ce
 # ╠═093f0ea9-f570-4307-9235-24cfb576a57c
 # ╠═506def7a-19b9-4fe8-b836-524f8a13013f
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
-# ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
-# ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
+# ╠═42b170a1-08fe-4b53-b56e-2b20d5924dcc
+# ╠═fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╠═0eb0b23b-9b20-41d5-ab57-3e9d98134403
+# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
