@@ -133,13 +133,15 @@ For the normalised function we will use the symbol $\varphi_0^H$ in the followin
 """
 
 # ╔═╡ c9f88820-502b-4e34-8fdc-151850d4cb84
+#our answer
+
 md"""
 **(b)** 
 
 One can test the condition $H \lambda = E \lambda$ 
 
 ```math
-H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  (1)
+H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2 
 ```
 
 with 
@@ -151,13 +153,14 @@ with
 taken together one gets:
 
 ```math
-(1-e^{-\frac{1}{2}\omega (x-x_0)^2})(\frac{1}{2}\omega ^2(x-x_0)^2)e^{-\frac{1}{2}\omega (x-x_0)^2}(\frac{\omega}{2})
+(1-e^{-\frac{1}{2}\omega (x-x_0)^2})(\frac{1}{2}\omega ^2(x-x_0)^2)e^{-\frac{1}{2}\omega (x-x_0)^2}(\frac{\omega}{2}) = V^M V^H e^{-\frac{1}{2}\omega (x-x_0)^2} 
 
 
 ```
 
 
 """
+#issues with my math...
 
 # ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
 md"""
@@ -169,12 +172,12 @@ We perform an $N$-point finite-difference approximation within $\Omega$, i.e. we
 """
 
 # ╔═╡ 796a5e6b-85a1-4292-9b08-40b869521a4a
-function fd_laplacian(N, a; T=Float64)
-	h = 2a / T(N-1)
-	diagonal = -2ones(T, N) ./ h^2
-	side_diagonal = ones(T, N-1) ./ h^2
-	SymTridiagonal(diagonal, side_diagonal)
-end
+    function fd_laplacian(N, a;T=Float64)
+        h = 2a / (T(N-1)) 
+		diagonal = -2ones(T, N) ./ h^2
+        side_diagonal = ones(T, N-1) ./ h^2
+        SymTridiagonal(diagonal, side_diagonal)
+    end
 
 # ╔═╡ fb64bea8-011b-4861-ab6a-5933eed969fa
 md"""
@@ -190,6 +193,31 @@ You can use the `range` function to generate a vector of grid points.
 
 # ╔═╡ c86bdbfc-bb52-4d4a-856e-1e987e844540
 # Your code goes here
+begin
+
+
+    md"""
+    **(a)**
+    """
+
+    N = 1000
+    a = 5
+	# Vm(x) = D * (1 - exp( -ω / sqrt(2D) * (x - x0) ) )^2
+	# V^H(x) = \frac12 ω^2 (x - x_0)^2.
+	
+	Vh(x)= 0.5* ω ^22 * (x-x0))^2 
+	x= -5.0:0.1:5.0
+	Vh_values= Vh.(x)
+
+	laplacian_matrix=fd_laplacian(N,a)
+	finite_differences = laplacian_matrix * Vh_values
+
+	gr()
+
+	plot(x,finite_differences, xlims=(-5, 5), ylims=(-1, 20), label="finite differences $v^H$")
+	
+end
+#I really don't get why it wouldn't work here
 
 # ╔═╡ afbfe440-dd4b-4992-bb9c-a63e06820250
 md"""
@@ -203,8 +231,11 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 """
 )
 
-# ╔═╡ 9cf02b61-fa73-4dbb-a2e2-c69892dc7de4
-# Your code goes here
+# ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
+
+
+# ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
+
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -1397,7 +1428,8 @@ version = "1.4.1+0"
 # ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
 # ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
 # ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
-# ╠═9cf02b61-fa73-4dbb-a2e2-c69892dc7de4
+# ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
+# ╠═de627366-0673-4577-93a2-7b18e11c230e
 # ╟─bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 # ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
 # ╠═9255fc8f-2d62-4889-b0ff-12fc911eb4ed
