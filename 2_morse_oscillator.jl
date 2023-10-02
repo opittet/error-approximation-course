@@ -330,8 +330,38 @@ It might be useful to write two helper functions:
 """
 )
 
+# ╔═╡ 84785aee-3a7c-4c68-8d27-e41b252afead
+ground_state_energy = ω * 0.5
+ground_state_eigenfunction = ...
+
 # ╔═╡ 9255fc8f-2d62-4889-b0ff-12fc911eb4ed
 # Your code goes here
+function discretized_l2_norm(f, a)
+    dx = 2a / (length(f) - 1)
+    l2_norm = sqrt(sum(abs.(f) .^ 2) * dx)
+
+    return l2_norm
+end
+
+# ╔═╡ 5f575420-9ad8-4864-8b1c-470ab5b88bd2
+function discretized_l2_error(f1, f2, a)
+    l2_error = discretized_l2_norm(f1 - f2, a)
+    return l2_error
+end
+
+# ╔═╡ 5c49edd5-8b5c-4394-a100-3bbb44634374
+# eigenfunction = ...
+# eigenvalue = ...
+
+# normalizing the eigenfunction
+norm = discretized_l2_norm(eigenfunction, a)
+eigenfunction /= norm
+
+eigenfunction_error = discretized_l2_error(eigenfunction, ground_state_eigenfunction)
+eigenvalue_error = abs(eigenvalue - ground_state_energy)
+
+println("Eigenvalue error: $eigenvalue_error")
+println("Eigenfunction: $eigenfunction_error")
 
 # ╔═╡ fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
 md"""
@@ -1489,10 +1519,10 @@ version = "1.4.1+0"
 # ╠═093f0ea9-f570-4307-9235-24cfb576a57c
 # ╠═506def7a-19b9-4fe8-b836-524f8a13013f
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
-# ╠═42b170a1-08fe-4b53-b56e-2b20d5924dcc
-# ╠═fcd25aeb-5106-440b-a857-f08a10c478b4
-# ╠═0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
+# ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
+# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╠═7f924adc-070d-4ce3-9331-59875e554d11
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
@@ -1512,7 +1542,10 @@ version = "1.4.1+0"
 # ╠═de627366-0673-4577-93a2-7b18e11c230e
 # ╟─bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 # ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
+# ╠═84785aee-3a7c-4c68-8d27-e41b252afead
 # ╠═9255fc8f-2d62-4889-b0ff-12fc911eb4ed
+# ╠═5f575420-9ad8-4864-8b1c-470ab5b88bd2
+# ╠═5c49edd5-8b5c-4394-a100-3bbb44634374
 # ╟─fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
 # ╠═c3afd2f4-6aa5-472e-a956-93ff037119bc
 # ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
