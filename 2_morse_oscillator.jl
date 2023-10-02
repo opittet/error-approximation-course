@@ -141,7 +141,7 @@ md"""
 One can test the condition $H \lambda = E \lambda$ 
 
 ```math
-H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2 
+H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  \tilde{\varphi}^H_0(x)
 ```
 
 with 
@@ -153,14 +153,35 @@ with
 taken together one gets:
 
 ```math
-(1-e^{-\frac{1}{2}\omega (x-x_0)^2})(\frac{1}{2}\omega ^2(x-x_0)^2)e^{-\frac{1}{2}\omega (x-x_0)^2}(\frac{\omega}{2}) = V^M V^H e^{-\frac{1}{2}\omega (x-x_0)^2} 
+-\frac12 e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega) + \frac12 ω^2 (x - x_0)^2 e^{-\frac{1}{2}\omega (x-x_0)^2} =
 
 
 ```
 
+then we can normalise the function :
+
+```math
+\| \tilde{\varphi}^H_0(x) \| = \sqrt{\int_\mathbb{R} |\tilde{\varphi}^H_0(x)|^2 dx}= \sqrt{\int_\mathbb{R} |e^{-\frac{1}{2}\omega (x-x_0)^2}|^2 dx} 
+```
+```math
+\sqrt{\int_\mathbb{R} |e^{-\omega (x-x_0)^2}| dx} 
+```
+we get 
+
+```math
+\frac{\sqrt{\pi}erf(\sqrt{\omega}x-\sqrt{omega}x_0)}{2\sqrt{\omega}}+C 
+```
+and then with x from $-\infty$ to $\infty$:
+
+```math
+\frac{\sqrt{\pi}{\omega}
+``` 
 
 """
 #issues with my math...
+
+# ╔═╡ 7f924adc-070d-4ce3-9331-59875e554d11
+
 
 # ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
 md"""
@@ -192,32 +213,36 @@ You can use the `range` function to generate a vector of grid points.
 )
 
 # ╔═╡ c86bdbfc-bb52-4d4a-856e-1e987e844540
-# Your code goes here
+md"""
+	**(a)**
+	"""
+
+# ╔═╡ 4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 begin
 
-
-    md"""
-    **(a)**
-    """
-
-    N = 1000
-    a = 5
-	# Vm(x) = D * (1 - exp( -ω / sqrt(2D) * (x - x0) ) )^2
-	# V^H(x) = \frac12 ω^2 (x - x_0)^2.
 	
-	Vh(x)= 0.5* ω ^22 * (x-x0))^2 
-	x= -5.0:0.1:5.0
-	Vh_values= Vh.(x)
+	N  = 1000
+	a  = 5
+end;
 
-	laplacian_matrix=fd_laplacian(N,a)
-	finite_differences = laplacian_matrix * Vh_values
+# ╔═╡ b88313bb-c4f6-4148-a1ab-befa82383052
+Vh(x)= 0.5* ω ^2 * (x-x0)^2 
 
-	gr()
+# ╔═╡ 7d157236-d346-4aac-9064-793b17c1b174
+plot(Vh, xlims=(-3, 4), ylims=(-1, 20), label="harmonic potential")
 
-	plot(x,finite_differences, xlims=(-5, 5), ylims=(-1, 20), label="finite differences $v^H$")
-	
+
+# ╔═╡ 95807447-050d-4bbe-b748-5127851fe690
+begin 
+	A_norm= (ω./π)^(0.25)
+	phi_norm(x)=A_norm*exp(0.5ω(x-x0)^2)
 end
-#I really don't get why it wouldn't work here
+	#\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)
+	
+
+# ╔═╡ 4225c73e-5b14-489e-961f-f5ad3a81aa19
+plot(phi_norm, xlims=(-3, 4), ylims=(-1, 20), label="normalised wave function")
+
 
 # ╔═╡ afbfe440-dd4b-4992-bb9c-a63e06820250
 md"""
@@ -1420,12 +1445,18 @@ version = "1.4.1+0"
 # ╠═fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╠═0eb0b23b-9b20-41d5-ab57-3e9d98134403
 # ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╠═7f924adc-070d-4ce3-9331-59875e554d11
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
 # ╟─fb64bea8-011b-4861-ab6a-5933eed969fa
 # ╟─7a91f3f8-a565-4172-81f5-d34aa13b5449
 # ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
+# ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
+# ╠═b88313bb-c4f6-4148-a1ab-befa82383052
+# ╠═7d157236-d346-4aac-9064-793b17c1b174
+# ╠═95807447-050d-4bbe-b748-5127851fe690
+# ╠═4225c73e-5b14-489e-961f-f5ad3a81aa19
 # ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
 # ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
 # ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
