@@ -221,27 +221,51 @@ md"""
 begin
 
 	
-	N  = 1000
+	N  = 5
 	a  = 5
-end;
+    h = 2a / (Float64(N-1))
+	x_list=range(start=-a,stop=a,step=h)
+	for x in x_list
+		print(x,",")
+	end
 
-# ╔═╡ b88313bb-c4f6-4148-a1ab-befa82383052
-Vh(x)= 0.5* ω ^2 * (x-x0)^2 
+end
 
 # ╔═╡ 7d157236-d346-4aac-9064-793b17c1b174
-plot(Vh, xlims=(-3, 4), ylims=(-1, 20), label="harmonic potential")
+plot(Vh, xlims=(-a, a), ylims=(-1, 75), label="harmonic potential")
+
+
+# ╔═╡ 44f4ed81-720e-4545-afc4-4a4767606d38
 
 
 # ╔═╡ 95807447-050d-4bbe-b748-5127851fe690
 begin 
-	A_norm= (ω./π)^(0.25)
-	phi_norm(x)=A_norm*exp(0.5ω(x-x0)^2)
+	A_norm= (ω/π)^(0.25)
+	phi_norm(x)=A_norm*exp(0.5ω*(x-x0)^2)
+	
+	plot(phi_norm, xlims=(-4, a), ylims=(-1, 100), label="normalised wave function")
 end
+
 	#\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)
 	
 
+# ╔═╡ b88313bb-c4f6-4148-a1ab-befa82383052
+begin
+	V_vect=[]
+	H_matrix=[]
+	for x in x_list
+		Vh(x)= [0.5* ω ^2 * (x-x0)^2]
+		push!(V_vect,Vh(x))
+		H_laplacian=0.5*fd_laplacian(N,a)*phi_norm(x)
+		push!(H_matrix,H_laplacian)
+	end
+	#print(V_vect)
+	print(H_matrix)
+end
+
+
 # ╔═╡ 4225c73e-5b14-489e-961f-f5ad3a81aa19
-plot(phi_norm, xlims=(-3, 4), ylims=(-1, 20), label="normalised wave function")
+
 
 
 # ╔═╡ afbfe440-dd4b-4992-bb9c-a63e06820250
@@ -257,10 +281,34 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 )
 
 # ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
+begin
+	md"""
+	**(b)**
 
+	we have the Hamiltonian giving:
+	```math
+	H \varphi ^H_0(x)=- \frac12 \Delta {\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  {\varphi}^H_0(x) = E {\varphi}^H_0(x)=
+	```
+	with at the ground state
+	```math
+	E^H_0 = \omega \left(\frac12\right)
+	```
+	"""
+
+
+end
 
 # ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
+begin
+	V_fd = [(1/2) * ω^2 * (x-x0/N)^2 for x in 1:N]
+	
+	phi_norm_fd=phi_norm.x for x in 
+	
+	
+	Ham_phi= -0.5*fd_laplacian(N,a)*phi_norm+V_fd
+end
 
+	
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -1455,6 +1503,7 @@ version = "1.4.1+0"
 # ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 # ╠═b88313bb-c4f6-4148-a1ab-befa82383052
 # ╠═7d157236-d346-4aac-9064-793b17c1b174
+# ╠═44f4ed81-720e-4545-afc4-4a4767606d38
 # ╠═95807447-050d-4bbe-b748-5127851fe690
 # ╠═4225c73e-5b14-489e-961f-f5ad3a81aa19
 # ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
