@@ -192,9 +192,6 @@ and then with x from $-\infty$ to $\infty$:
 """
 #issues with my math...
 
-# ╔═╡ 7f924adc-070d-4ce3-9331-59875e554d11
-
-
 # ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
 md"""
 ## Exercise 2 (1 + 1 + 1 + 1 P)
@@ -233,73 +230,50 @@ md"""
 begin
 
 	
-	N  = 5
+	N  = 1000
 	a  = 5
-    h = 2a / (Float64(N-1))
-	x_list=range(start=-a,stop=a,step=h)
-	for x in x_list
-		print(x,",")
-	end
-
-end
+end;
 
 # ╔═╡ b88313bb-c4f6-4148-a1ab-befa82383052
-begin
-	#V_vect=[]
-	#H_matrix=[]
-	#for x in x_list
-	#	Vh(x)= [0.5* ω ^2 * (x-x0)^2]
-	#	push!(V_vect,Vh(x))
-	#	H_laplacian=0.5*fd_laplacian(N,a)*phi_norm(x)
-	#	push!(H_matrix,H_laplacian)
-	#end
-	#print(V_vect)
-	#print(H_matrix)
-	# Define parameters
-
-# Define a function for the potential energy
-Vh(x)= [0.5* ω ^2 * (x-x0)^2]
-
-# Initialize the Hamiltonian matrix
-H_matrix = zeros(N, N)
-
-# Calculate the Laplacian operator
-
-
-# Loop over x values and fill the Hamiltonian matrix
-for i in 1:N
-    x_i = -a + (i - 1) * h  # Calculate the current x value
-    H_matrix[i, i] = -0.5 * fd_laplacian(N, a) + 0.5 * Vh(x_i)
-end
-
-# Print the Hamiltonian matrix
-println(H_matrix)
-end
-
-
-# ╔═╡ 6608fd24-1132-4cda-be9b-323d919ef04a
-
+Vh(x)= 0.5* ω ^2 * (x-x0)^2 
 
 # ╔═╡ 7d157236-d346-4aac-9064-793b17c1b174
-plot(Vh, xlims=(-a, a), ylims=(-1, 75), label="harmonic potential")
-
-
-# ╔═╡ 44f4ed81-720e-4545-afc4-4a4767606d38
+plot(Vh, xlims=(-3, 4), ylims=(-1, 20), label="harmonic potential")
 
 
 # ╔═╡ 95807447-050d-4bbe-b748-5127851fe690
 begin 
-	A_norm= (ω/π)^(0.25)
-	phi_norm(x)=A_norm*exp(0.5ω*(x-x0)^2)
-	
-	plot(phi_norm, xlims=(-4, a), ylims=(-1, 100), label="normalised wave function")
+	A_norm= (ω./π)^(0.25)
+	phi_norm(x)=A_norm*exp(0.5ω(x-x0)^2)
 end
-
 	#\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)
 	
 
 # ╔═╡ 4225c73e-5b14-489e-961f-f5ad3a81aa19
+# ╠═╡ disabled = true
+#=╠═╡
+plot(phi_norm, xlims=(-3, 4), ylims=(-1, 20), label="normalised wave function")
 
+  ╠═╡ =#
+
+# ╔═╡ 36cc4758-db01-4f55-9ea6-c0cfd5d56c63
+begin
+	norm= (ω / π)^(0.25)
+	phi_0(x)= norm * exp(-0.5 * ω * (x - x0)^2)
+	
+	grid_points = range(-a, stop=a, length=N)
+	potential_values = [Vh(x) for x in grid_points]
+	eigenfunction_values = [phi_0(x) for x in grid_points]
+end;
+
+# ╔═╡ 7372fe9c-8e45-4dc5-ac94-618aa355843c
+begin
+	plot(grid_points, potential_values, label="Potential", legend=:topright)
+	plot!(grid_points, eigenfunction_values, label="Eigenfunction")
+	xlabel!("x")
+	xlims!(-5, 5)
+	ylims!(-1, 10)
+end
 
 
 # ╔═╡ afbfe440-dd4b-4992-bb9c-a63e06820250
@@ -315,34 +289,10 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 )
 
 # ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
-begin
-	md"""
-	**(b)**
 
-	we have the Hamiltonian giving:
-	```math
-	H \varphi ^H_0(x)=- \frac12 \Delta {\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  {\varphi}^H_0(x) = E {\varphi}^H_0(x)=
-	```
-	with at the ground state
-	```math
-	E^H_0 = \omega \left(\frac12\right)
-	```
-	"""
-
-
-end
 
 # ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
-begin
-	V_fd = [(1/2) * ω^2 * (x-x0/N)^2 for x in 1:N]
-	
-	phi_norm_fd=phi_norm.x for x in  1:N
-	
-	
-	Ham_phi= -0.5*fd_laplacian(N,a)*phi_norm+V_fd
-end
 
-	
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -1558,7 +1508,6 @@ version = "1.4.1+0"
 # ╠═dd034ee2-54d4-407a-b05b-5bf54151532f
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
 # ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
-# ╠═7f924adc-070d-4ce3-9331-59875e554d11
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
@@ -1567,11 +1516,11 @@ version = "1.4.1+0"
 # ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
 # ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 # ╠═b88313bb-c4f6-4148-a1ab-befa82383052
-# ╠═6608fd24-1132-4cda-be9b-323d919ef04a
-# ╠═7d157236-d346-4aac-9064-793b17c1b174
-# ╠═44f4ed81-720e-4545-afc4-4a4767606d38
+# ╟─7d157236-d346-4aac-9064-793b17c1b174
 # ╠═95807447-050d-4bbe-b748-5127851fe690
 # ╠═4225c73e-5b14-489e-961f-f5ad3a81aa19
+# ╠═36cc4758-db01-4f55-9ea6-c0cfd5d56c63
+# ╟─7372fe9c-8e45-4dc5-ac94-618aa355843c
 # ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
 # ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
 # ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
