@@ -109,21 +109,32 @@ and
 V^M(x) = D \left(1 - \exp\left( - \frac{ω}{\sqrt{2D}} \, (x-x_0) \right) \right)^2
 ```
 
-let $a = -\frac{ω}{\sqrt{2D}}$ we can take the taylor expension of $e^{-ax}$ around $x_0$:
+One can take the taylor expension of $e^{-\frac{ω}{\sqrt{2D}}x}$ around $x_0$:
 
 ```math 
-\lim_{x \to x_0} V^M = (1-1+a(x-x_0)+O(x^2))^2  \approx a^2(x-x_0)^2 = \frac{\omega ^2}{2D}(x-x_0)^2 \approx V^H
+\begin{aligned}
+\lim_{x \to x_0} V^M =& (1-1+-\frac{ω}{\sqrt{2D}}(x-x_0)+O(x^2))^2  \\=&
+\frac{ω^2}{2D}(x-x_0)^2 + O((x - x_0)^4 \\  
+V^M =& V^H + O((x - x_0)^4)
+
+\end{aligned}
 ```
 
 
 
 """
 
+# ╔═╡ fa2320b5-2de6-4857-bc19-319ae16218e2
+
+
+# ╔═╡ 6961b9b4-963e-41db-ac9d-a189841d393f
+
+
 # ╔═╡ dd034ee2-54d4-407a-b05b-5bf54151532f
 md"""
 // without limit and correct signs:
 ```math 
-V^M = (1-1-a(x-x_0)-O((x-x_0)^2))^2  = \frac{\omega ^2}{2D}(x-x_0)^2 + O((x - x_0)^4) 
+MMSV^M = (1-1-a(x-x_0)-O((x-x_0)^2))^2  = \frac{\omega ^2}{2D}(x-x_0)^2 + O((x - x_0)^4) 
 ```
 Therefore,
 ```math 
@@ -238,7 +249,7 @@ end;
 Vh(x)= 0.5* ω ^2 * (x-x0)^2 
 
 # ╔═╡ 7d157236-d346-4aac-9064-793b17c1b174
-plot(Vh, xlims=(-3, 4), ylims=(-1, 20), label="harmonic potential")
+plot(Vh, xlims=(-a, a), ylims=(-1, 20), label="harmonic potential")
 
 
 # ╔═╡ 95807447-050d-4bbe-b748-5127851fe690
@@ -258,8 +269,8 @@ plot(phi_norm, xlims=(-3, 4), ylims=(-1, 20), label="normalised wave function")
 
 # ╔═╡ 36cc4758-db01-4f55-9ea6-c0cfd5d56c63
 begin
-	norm= (ω / π)^(0.25)
-	phi_0(x)= norm * exp(-0.5 * ω * (x - x0)^2)
+	norm_cte= (ω / π)^(0.25)
+	phi_0(x)= norm_cte * exp(-0.5 * ω * (x - x0)^2)
 	
 	grid_points = range(-a, stop=a, length=N)
 	potential_values = [Vh(x) for x in grid_points]
@@ -391,8 +402,34 @@ md"""
 **(a)** For the numerical setup of *Exercise 2(b)* tune the tolerance `tol` such that we obtain an $L^2$-error in the eigenvector and an error in the eigenvalue below $10^{-4}$. Run your computation in both double and single precision. Is single precision sufficiently accurate to not impact the quality of the result?
 """
 
+# ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
+md"""
+**(a)**
+First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
+"""
+
 # ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # Your code and answers go here
+begin 	
+	A_float64=fd_potential
+	A_float32 = convert(SymTridiagonal{Float32, Vector{Float32}}, fd_potential)
+	tol=1e-4
+	
+	μ_64=inverse_power_method(A_float64,tol=tol)
+	μ_32=inverse_power_method(A_float32,tol=tol)
+	
+	eigenval_dif=abs(μ_64[1]-μ_32[1])
+	eigenvect_relativ_dif=abs(norm(μ_64[2])-norm(μ_32[2]))
+	
+	println("μ with double precision: ",μ_64[1])
+    println("pseudo arithmetic error: ", eigenval_dif)
+	println("Relative difference of eigenvector norms: ",eigenvect_relativ_dif)
+end
+
+# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
+md"""
+The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
+"""
 
 # ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
 md"""
@@ -401,6 +438,55 @@ md"""
 
 # ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
 # Your code and answers go here
+md"""
+**(b)**
+
+Let’s start by doing a recap of all the error types: 
+```math
+\begin{aligned}
+e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
+e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
+e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
+e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
+\end{aligned}
+```
+
+and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
+
+Let’s now try to quantify them:
+"""
+
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
+
+begin
+	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
+	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
+
+	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
+end
+
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+begin
+	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
+end
+
+# ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
+begin
+	function fd_laplacian_BigFloat(N, a;T=BigFloat)
+    h = 2a / (T(N-1)) 
+	diagonal = -2ones(T, N) ./ h^2
+    side_diagonal = ones(T, N-1) ./ h^2
+    SymTridiagonal(diagonal, side_diagonal)
+    end
+	N_fine=1e4
+	fd_potential_fineMesh = - 0.5 * fd_laplacian_BigFloat(N_fine, a) + 0.5 * ω^2 *Diagonal(fine_grid_points.^2)
+	fine_grid_points = range(-a, stop=a, length=N_fine)
+	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
+	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
+end
 
 # ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 md"""
@@ -1511,7 +1597,9 @@ version = "1.4.1+0"
 # ╠═506def7a-19b9-4fe8-b836-524f8a13013f
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
-# ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╠═fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╠═fa2320b5-2de6-4857-bc19-319ae16218e2
+# ╠═6961b9b4-963e-41db-ac9d-a189841d393f
 # ╠═dd034ee2-54d4-407a-b05b-5bf54151532f
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
 # ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
@@ -1523,7 +1611,7 @@ version = "1.4.1+0"
 # ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
 # ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 # ╠═b88313bb-c4f6-4148-a1ab-befa82383052
-# ╟─7d157236-d346-4aac-9064-793b17c1b174
+# ╠═7d157236-d346-4aac-9064-793b17c1b174
 # ╠═95807447-050d-4bbe-b748-5127851fe690
 # ╠═4225c73e-5b14-489e-961f-f5ad3a81aa19
 # ╠═36cc4758-db01-4f55-9ea6-c0cfd5d56c63
@@ -1545,9 +1633,14 @@ version = "1.4.1+0"
 # ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
 # ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
 # ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
+# ╠═75e0104b-a955-439c-86e1-28825df7d1e7
 # ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
+# ╠═6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
 # ╠═0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╠═b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+# ╠═d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+# ╠═d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
 # ╟─adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 # ╠═76739c9d-d84e-41a8-9979-712e1f47e279
 # ╟─00000000-0000-0000-0000-000000000001
