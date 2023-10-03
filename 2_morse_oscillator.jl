@@ -289,10 +289,19 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 )
 
 # ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
-
+fd_potential = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2);
 
 # ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
+eigenvalues_apprxn, eigenvectors_apprxn = eigen(fd_potential);
 
+# ╔═╡ 180dda85-dc90-472b-8311-f852c97d07e2
+begin
+	groundstate_idx = argmin(eigenvalues_apprxn)
+	groundstate_eigenvalue_approximation = eigenvalues_apprxn[groundstate_idx]
+end
+
+# ╔═╡ fdbe232d-dcb7-40d0-81f0-13ea8ff5e99a
+eigenfunction_approximation = eigenvectors_apprxn[:, groundstate_idx];
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -315,8 +324,7 @@ It might be useful to write two helper functions:
 )
 
 # ╔═╡ 84785aee-3a7c-4c68-8d27-e41b252afead
-ground_state_energy = ω * 0.5
-ground_state_eigenfunction = ...
+groundstate_eigenvalue = ω * 0.5
 
 # ╔═╡ 9255fc8f-2d62-4889-b0ff-12fc911eb4ed
 # Your code goes here
@@ -338,14 +346,16 @@ end
 # eigenvalue = ...
 
 # normalizing the eigenfunction
-norm = discretized_l2_norm(eigenfunction, a)
-eigenfunction /= norm
-
-eigenfunction_error = discretized_l2_error(eigenfunction, ground_state_eigenfunction)
-eigenvalue_error = abs(eigenvalue - ground_state_energy)
-
-println("Eigenvalue error: $eigenvalue_error")
-println("Eigenfunction: $eigenfunction_error")
+begin
+	l2norm = discretized_l2_norm(eigenfunction_approximation, a)
+	eigenfunction_approximation_normalized = eigenfunction_approximation/l2norm
+	
+	eigenfunction_error = discretized_l2_error(eigenfunction_approximation_normalized, eigenfunction_values, a)
+	eigenvalue_error = abs(groundstate_eigenvalue_approximation - groundstate_eigenvalue)
+	
+	println("Eigenvalue error: $eigenvalue_error")
+	println("Eigenfunction: $eigenfunction_error")
+end
 
 # ╔═╡ fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
 md"""
@@ -1525,6 +1535,8 @@ version = "1.4.1+0"
 # ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
 # ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
 # ╠═de627366-0673-4577-93a2-7b18e11c230e
+# ╠═180dda85-dc90-472b-8311-f852c97d07e2
+# ╠═fdbe232d-dcb7-40d0-81f0-13ea8ff5e99a
 # ╟─bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 # ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
 # ╠═84785aee-3a7c-4c68-8d27-e41b252afead
