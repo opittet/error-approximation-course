@@ -292,16 +292,16 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 fd_potential = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2);
 
 # ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
-eigenvalues_apprxn, eigenvectors_apprxn = eigen(fd_potential);
+e_values, e_vectors = eigen(fd_potential);
 
 # ╔═╡ 180dda85-dc90-472b-8311-f852c97d07e2
 begin
-	groundstate_idx = argmin(eigenvalues_apprxn)
-	groundstate_eigenvalue_approximation = eigenvalues_apprxn[groundstate_idx]
+	groundstate_idx = argmin(e_values)
+	energy_approximation = e_values[groundstate_idx]
 end
 
 # ╔═╡ fdbe232d-dcb7-40d0-81f0-13ea8ff5e99a
-eigenfunction_approximation = eigenvectors_apprxn[:, groundstate_idx];
+efunction_approximation = e_vectors[:, groundstate_idx];
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -324,7 +324,7 @@ It might be useful to write two helper functions:
 )
 
 # ╔═╡ 84785aee-3a7c-4c68-8d27-e41b252afead
-groundstate_eigenvalue = ω * 0.5
+groundstate_evalue = ω * 0.5
 
 # ╔═╡ 9255fc8f-2d62-4889-b0ff-12fc911eb4ed
 # Your code goes here
@@ -342,19 +342,16 @@ function discretized_l2_error(f1, f2, a)
 end
 
 # ╔═╡ 5c49edd5-8b5c-4394-a100-3bbb44634374
-# eigenfunction = ...
-# eigenvalue = ...
-
 # normalizing the eigenfunction
 begin
-	l2norm = discretized_l2_norm(eigenfunction_approximation, a)
-	eigenfunction_approximation_normalized = eigenfunction_approximation/l2norm
+	efunc_norm = discretized_l2_norm(efunction_approximation, a)
+	efunc_approx_normalized = efunction_approximation/efunc_norm
 	
-	eigenfunction_error = discretized_l2_error(eigenfunction_approximation_normalized, eigenfunction_values, a)
-	eigenvalue_error = abs(groundstate_eigenvalue_approximation - groundstate_eigenvalue)
+	efunction_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
+	evalue_error = abs(energy_approximation - groundstate_evalue)
 	
-	println("Eigenvalue error: $eigenvalue_error")
-	println("Eigenfunction: $eigenfunction_error")
+	println("Eigenvalue error: $evalue_error")
+	println("Eigenfunction: $efunction_error")
 end
 
 # ╔═╡ fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
