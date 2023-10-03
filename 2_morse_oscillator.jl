@@ -119,6 +119,18 @@ let $a = -\frac{ω}{\sqrt{2D}}$ we can take the taylor expension of $e^{-ax}$ ar
 
 """
 
+# ╔═╡ dd034ee2-54d4-407a-b05b-5bf54151532f
+md"""
+// without limit and correct signs:
+```math 
+V^M = (1-1-a(x-x_0)-O((x-x_0)^2))^2  = \frac{\omega ^2}{2D}(x-x_0)^2 + O((x - x_0)^4) 
+```
+Therefore,
+```math 
+V^M = V^H + O((x - x_0)^4)
+```
+"""
+
 # ╔═╡ 0eb0b23b-9b20-41d5-ab57-3e9d98134403
 md"""
 **(b)** Show that the ground state (lowest-eigenvalue eigenfunction) is given by
@@ -1473,6 +1485,7 @@ version = "1.4.1+0"
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
 # ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╠═dd034ee2-54d4-407a-b05b-5bf54151532f
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
 # ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╠═7f924adc-070d-4ce3-9331-59875e554d11
