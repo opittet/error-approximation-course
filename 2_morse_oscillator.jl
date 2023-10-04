@@ -97,7 +97,7 @@ E^H_n = \omega \left(n + \frac12\right)\qquad\text{for $n = 0, 1, 2, \ldots$}
 #our answer 
 md"""
 
-**(a)** 
+**(a) Solution:** 
 
 We have 
 
@@ -109,37 +109,19 @@ and
 V^M(x) = D \left(1 - \exp\left( - \frac{ω}{\sqrt{2D}} \, (x-x_0) \right) \right)^2
 ```
 
-One can take the taylor expension of $e^{-\frac{ω}{\sqrt{2D}}x}$ around $x_0$:
+One can take the Taylor expansion of $e^{-\frac{ω}{\sqrt{2D}}(x - x_0)}$ around $x_0$:
 
 ```math 
 \begin{aligned}
-\lim_{x \to x_0} V^M =& (1-1+-\frac{ω}{\sqrt{2D}}(x-x_0)+O(x^2))^2  \\=&
-\frac{ω^2}{2D}(x-x_0)^2 + O((x - x_0)^4 \\  
-V^M =& V^H + O((x - x_0)^4)
-
+ V^M \approx & \left(1-1+\frac{ω}{\sqrt{2D}}(x-x_0)+O((x - x_0)^2)\right)^2  \\=&
+\frac{ω^2}{2D}(x-x_0)^2 + O\left((x - x_0)^4\right). \\ 
 \end{aligned}
 ```
-
-
-
-"""
-
-# ╔═╡ fa2320b5-2de6-4857-bc19-319ae16218e2
-
-
-# ╔═╡ 6961b9b4-963e-41db-ac9d-a189841d393f
-
-
-# ╔═╡ dd034ee2-54d4-407a-b05b-5bf54151532f
-md"""
-// without limit and correct signs:
-```math 
-MMSV^M = (1-1-a(x-x_0)-O((x-x_0)^2))^2  = \frac{\omega ^2}{2D}(x-x_0)^2 + O((x - x_0)^4) 
+Therefore, 
+```math
+V^M(x) \approx V^H(x) + O\left((x - x_0)^4\right).
 ```
-Therefore,
-```math 
-V^M = V^H + O((x - x_0)^4)
-```
+
 """
 
 # ╔═╡ 0eb0b23b-9b20-41d5-ab57-3e9d98134403
@@ -159,9 +141,9 @@ For the normalised function we will use the symbol $\varphi_0^H$ in the followin
 #our answer
 
 md"""
-**(b)** 
+**(b) Solution:** 
 
-One can test the condition $H \lambda = E \lambda$ 
+One need to test that the function $\tilde{\varphi}^H_0(x)$ satisfies the following condition: $H^H \tilde{\varphi}^H_0(x) = E^H_0 \tilde{\varphi}^H_0(x)$. 
 
 ```math
 H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  \tilde{\varphi}^H_0(x)
@@ -1589,7 +1571,7 @@ version = "1.4.1+0"
 # ╟─dc4aea04-5716-11ee-1952-27c9bb3f0e5e
 # ╟─4b08176a-7122-4c48-bc07-7b1de84d81cb
 # ╠═7dad9d40-d336-4489-ad64-4605d7b96173
-# ╠═24f29d78-220b-4829-ae90-e6533f6029d7
+# ╟─24f29d78-220b-4829-ae90-e6533f6029d7
 # ╠═b98f299c-ab5b-44b8-a47c-3b55c0595a1e
 # ╟─23ee7361-db58-498c-9879-1b48b282b628
 # ╠═80b1b579-a871-48af-842a-e74834f944ce
@@ -1597,12 +1579,9 @@ version = "1.4.1+0"
 # ╠═506def7a-19b9-4fe8-b836-524f8a13013f
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
-# ╠═fcd25aeb-5106-440b-a857-f08a10c478b4
-# ╠═fa2320b5-2de6-4857-bc19-319ae16218e2
-# ╠═6961b9b4-963e-41db-ac9d-a189841d393f
-# ╠═dd034ee2-54d4-407a-b05b-5bf54151532f
+# ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
