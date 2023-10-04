@@ -406,27 +406,38 @@ md"""
 
 # ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
 md"""
-**(a) Solution: **
+**(a) Solution:**
 
 First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 """
 
-# ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
-# Your code and answers go here
-begin 	
-	A_float64=fd_potential
-	A_float32 = convert(SymTridiagonal{Float32, Vector{Float32}}, fd_potential)
-	tol=1e-4
+# ╔═╡ d4879d38-eba8-4200-ac63-af4896aa551d
+begin
+	fd_Hh_64 = fd_Hh
+	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+end;
+
+# ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
+begin
 	
-	μ_64=inverse_power_method(A_float64,tol=tol)
-	μ_32=inverse_power_method(A_float32,tol=tol)
+	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
+	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
 	
-	eigenval_dif=abs(μ_64[1]-μ_32[1])
-	eigenvect_relativ_dif=abs(norm(μ_64[2])-norm(μ_32[2]))
+	# Computing the errors
+	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
+	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
+
+	println("\nSingle  Precision:")
+	println("  Eigenvalue Error: $evalue_error_64")
+	println("  Eigenfunction Error: $efunc_error_64")
 	
-	println("μ with double precision: ",μ_64[1])
-    println("pseudo arithmetic error: ", eigenval_dif)
-	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
+	
+	efunc_error_32 = discretized_l2_error(efunc_approx_32, eigenfunction_values, a)
+	evalue_error_32 = abs(μ_32 - gs_energy_analytical_H)
+
+	println("\nDouble Precision:")
+	println("  Eigenvalue Error: $evalue_error_32")
+	println("  Eigenfunction Error: $evalue_error_32")
 end
 
 # ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
@@ -498,6 +509,35 @@ md"""
 
 # ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
 # Your code and answers go here
+
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+end;
+
+# ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
+# ╠═╡ disabled = true
+#=╠═╡
+# Your code and answers go here
+begin 	
+	A_float64=fd_Hh
+	A_float32 = convert(SymTridiagonal{Float32, Vector{Float32}}, fd_Hh)
+	tol=1e-4
+	
+	μ_64=inverse_power_method(A_float64,tol=tol)
+	μ_32=inverse_power_method(A_float32,tol=tol)
+	
+	eigenval_dif=abs(μ_64[1]-μ_32[1])
+	eigenvect_relativ_dif=abs(norm(μ_64[2])-norm(μ_32[2]))
+	
+	println("μ with double precision: ",μ_64[1])
+    println("pseudo arithmetic error: ", eigenval_dif)
+	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
+end
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1632,7 +1672,10 @@ version = "1.4.1+0"
 # ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
 # ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
 # ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
-# ╠═75e0104b-a955-439c-86e1-28825df7d1e7
+# ╟─75e0104b-a955-439c-86e1-28825df7d1e7
+# ╠═d4879d38-eba8-4200-ac63-af4896aa551d
+# ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+# ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 # ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # ╠═6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
