@@ -174,12 +174,12 @@ then we can normalise the function :
 we get 
 
 ```math
-\frac{\sqrt{\pi}erf(\sqrt{\omega}x-\sqrt{omega}x_0)}{2\sqrt{\omega}}+C 
+\frac{\sqrt{\pi}erf(\sqrt{\omega}x-\sqrt{\omega}x_0)}{2\sqrt{\omega}}+C 
 ```
 and then with x from $-\infty$ to $\infty$:
 
 ```math
-\frac{\sqrt{\pi}{\omega}
+\frac{\sqrt{\pi}}{\omega}
 ``` 
 
 """
@@ -417,6 +417,14 @@ begin
 	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
 end;
 
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+end;
+
 # ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 begin
 	
@@ -440,84 +448,6 @@ begin
 	println("  Eigenfunction Error: $evalue_error_32")
 end
 
-# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
-md"""
-The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
-"""
-
-# ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
-md"""
-**(b)** Assume our goal is to approximate the ground state eigenvalue of the Morse oscillator using the single-precision procedure in (a), i.e. the computation of the ground state eigenvalue of the harmonic oscillator using the inverse power method in single precision. Compute the total error against the analytical ground state eigenvalue $E_0^M$. Split this total error into error contributions (model error, discretisation error, algorithm error, arithmetic error) as discussed in the lecture and indicate their respective sizes in each case. Use `BigFloat` as a proxy for estimating the result for "exact" floating-point arithmetic.
-"""
-
-# ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
-# Your code and answers go here
-md"""
-**(b)**
-
-Let’s start by doing a recap of all the error types: 
-```math
-\begin{aligned}
-e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
-e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
-e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
-e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
-\end{aligned}
-```
-
-and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
-
-Let’s now try to quantify them:
-"""
-
-# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
-#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
-
-begin
-	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
-	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
-
-	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
-end
-
-# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
-begin
-	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
-	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
-
-end
-
-# ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
-begin
-	function fd_laplacian_BigFloat(N, a;T=BigFloat)
-    h = 2a / (T(N-1)) 
-	diagonal = -2ones(T, N) ./ h^2
-    side_diagonal = ones(T, N-1) ./ h^2
-    SymTridiagonal(diagonal, side_diagonal)
-    end
-	N_fine=1e4
-	fd_potential_fineMesh = - 0.5 * fd_laplacian_BigFloat(N_fine, a) + 0.5 * ω^2 *Diagonal(fine_grid_points.^2)
-	fine_grid_points = range(-a, stop=a, length=N_fine)
-	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
-	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
-end
-
-# ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
-md"""
-**(c)** Use the numerical parameters of your setup to balance all error contributions with the model error, i.e. tune `N`, `tol` and decide between `Float32` and `Float64`, such that each of the error contributions you computed in (b) are roughly on the order of the model error.
-"""
-
-# ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
-# Your code and answers go here
-
-# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
-begin
-	tol=1e-4
-		
-	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
-	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
-end;
-
 # ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # ╠═╡ disabled = true
 #=╠═╡
@@ -538,6 +468,138 @@ begin
 	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
 end
   ╠═╡ =#
+
+# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
+md"""
+The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
+"""
+
+# ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
+md"""
+**(b)** Assume our goal is to approximate the ground state eigenvalue of the Morse oscillator using the single-precision procedure in (a), i.e. the computation of the ground state eigenvalue of the harmonic oscillator using the inverse power method in single precision. Compute the total error against the analytical ground state eigenvalue $E_0^M$. Split this total error into error contributions (model error, discretisation error, algorithm error, arithmetic error) as discussed in the lecture and indicate their respective sizes in each case. Use `BigFloat` as a proxy for estimating the result for "exact" floating-point arithmetic.
+"""
+
+# ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# Your code and answers go here
+md"""
+**(b) Solution**
+
+Let’s start by doing a recap of all the error types: 
+```math
+\begin{aligned}
+e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
+e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
+e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
+e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
+\end{aligned}
+```
+
+and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
+
+Let’s now try to quantify them:
+"""
+
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+begin	
+	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
+
+	e_arith64=abs(μ_big-μ_64)
+	e_arith32=abs(μ_big-μ_32)
+
+	println(e_arith64)
+	println(e_arith32)
+	
+end
+
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+begin
+	function numerical_eigenvalue(N, a; T=Float64, kwargs...)
+	H = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	inverse_power_method(H; kwargs...).μ
+	end
+	#μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
+end
+
+# ╔═╡ 23b6318e-009a-4d10-b886-78ab5bfeac51
+md"""
+model error: we evaluate the lowest eigenvalue and compare it to 0, as it is imposed by the 0 dirlichet boundaries, $E_1$:
+```math
+E^H_1 = \omega \left(1 + \frac12\right)=\frac{3}{2}\omega
+```
+and thus 
+
+```math
+e_\text{model}=|\lambda_\ast -\lambda_1|=|\lambda_1|=\frac{3}{2}\omega
+```
+"""
+
+# ╔═╡ 5326f45f-2a38-43b4-a1f3-183fd467f4df
+
+
+e_model=3ω/2
+
+
+# ╔═╡ 48eaa3d2-93c6-402d-beb6-1107d88449d2
+
+
+# ╔═╡ 11af728b-959c-4ef4-b3e4-1c1a4cd9b837
+begin
+	λ1=e_model
+	μ1=eigvals(fd_laplacian(N,a))[1]
+	println(μ1)
+	e_disc=abs(λ1-μ1)
+end
+
+# ╔═╡ 1adea645-294d-4529-ba60-4a9c3a4df40a
+
+
+# ╔═╡ 23c7d3af-373a-42b2-9f3c-deb03244657a
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	Ns=500:2000:50
+	p = plot(; yaxis=:log)
+	μ1_list  = [fd_eigenvalue(N, a, 1) for N in Ns]
+	plot!(p, Ns, abs.(μ1_list .- λ1), label="discretisation error")
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
+md"""
+**(c)** Use the numerical parameters of your setup to balance all error contributions with the model error, i.e. tune `N`, `tol` and decide between `Float32` and `Float64`, such that each of the error contributions you computed in (b) are roughly on the order of the model error.
+"""
+
+# ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
+md"""
+**(c) Answer**
+
+the model error is of order $10^0$
+
+"""
+
+# ╔═╡ 3cac56b4-fb51-4304-b262-ffa7a7e0fb4e
+function e_arith_Nlist(Nstart,Nend,Nstep,a;T=Float32)
+	N_list=[Nstart:Nend:Nstep]
+	μ1_list=[]
+	e_arith_list=[]
+	for N in N_list
+		fd_Hh = - 0.5 * fd_laplacian(N, a; T=T) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+		μ1, u=inverse_power_method(fd_Hh,tol=tol)
+		e_arith=abs(μ_big-μ1)
+		push!(e_arith_list,e_arith)
+	end
+	p = plot(; yaxis=:log)
+	plot!(p, N_list, e_arith_list, label="arithmetic error")
+
+return e_arith_list
+end
+
+# ╔═╡ 9ce0b6c1-887a-4311-96b0-f2bbb37a50b0
+e_arith_Nlist(10,100,10,5)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1639,10 +1701,10 @@ version = "1.4.1+0"
 # ╠═093f0ea9-f570-4307-9235-24cfb576a57c
 # ╠═506def7a-19b9-4fe8-b836-524f8a13013f
 # ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
-# ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
+# ╠═42b170a1-08fe-4b53-b56e-2b20d5924dcc
 # ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
@@ -1677,13 +1739,20 @@ version = "1.4.1+0"
 # ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 # ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 # ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
-# ╠═6042a979-c7bb-458f-8ac8-b98a3782832b
+# ╟─6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
 # ╠═0c65f882-9e4c-4842-a973-520a7d6c4d2a
 # ╠═b59a8370-2c68-407b-bea7-0d09c7bd7ad6
 # ╠═d20b589c-3ccf-4b03-b766-6d5adbf6c62a
-# ╠═d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
+# ╠═23b6318e-009a-4d10-b886-78ab5bfeac51
+# ╠═5326f45f-2a38-43b4-a1f3-183fd467f4df
+# ╠═48eaa3d2-93c6-402d-beb6-1107d88449d2
+# ╠═11af728b-959c-4ef4-b3e4-1c1a4cd9b837
+# ╠═1adea645-294d-4529-ba60-4a9c3a4df40a
+# ╠═23c7d3af-373a-42b2-9f3c-deb03244657a
 # ╟─adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 # ╠═76739c9d-d84e-41a8-9979-712e1f47e279
+# ╠═3cac56b4-fb51-4304-b262-ffa7a7e0fb4e
+# ╠═9ce0b6c1-887a-4311-96b0-f2bbb37a50b0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
