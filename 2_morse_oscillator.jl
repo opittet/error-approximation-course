@@ -260,8 +260,8 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 
 # ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
 begin
-	fd_potential = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-	e_values, e_vectors = eigen(fd_potential)
+	fd_Hh = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	evalues_H, evectors_H = eigen(fd_Hh)
 end;
 
 # ╔═╡ 180dda85-dc90-472b-8311-f852c97d07e2
@@ -269,9 +269,9 @@ begin
 	# Eigenvalues are sorted in increasing order
 	low_idx = 1 
 	# Get the lowest eigenvalue
-	energy_approx = e_values[low_idx]
+	energy_approx_H = evalues_H[low_idx]
 	# Get the corresponding eigenfunction
-	efunction_approx = e_vectors[:, low_idx]
+	efunction_approx_H = evectors_H[:, low_idx]
 end;
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
@@ -307,19 +307,19 @@ function discretized_l2_error(f1, f2, a)
     return l2_error
 end
 
-# ╔═╡ c2b85077-c1b0-42c1-9cc8-bdb3f53dac3b
-gs_evalue = ω * 0.5 # the ground state eigenvalue
-
 # ╔═╡ 5c49edd5-8b5c-4394-a100-3bbb44634374
 
 begin
+	# The ground state eigenvalue
+	gs_energy_analytical_H = ω * 0.5 
+	
 	# Normalizing the eigenfunction
-	efunc_norm = discretized_l2_norm(efunction_approx, a)
-	efunc_approx_normalized = efunction_approx/efunc_norm
+	efunc_norm = discretized_l2_norm(efunction_approx_H, a)
+	efunc_approx_normalized = efunction_approx_H/efunc_norm
 
 	# Computing the errors
 	efunc_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
-	evalue_error = abs(energy_approx - gs_evalue)
+	evalue_error = abs(energy_approx_H - gs_energy_analytical_H)
 	
 	println("Eigenvalue error: $evalue_error")
 	println("Eigenfunction: $efunc_error")
@@ -336,7 +336,44 @@ md"""
 """
 
 # ╔═╡ c3afd2f4-6aa5-472e-a956-93ff037119bc
-# Your code and answers go here
+md"""
+	**(d) Solution:**
+	"""
+
+# ╔═╡ f1d107de-d176-4c98-91e2-608a34edee84
+begin
+	fd_Hm = - 0.5 * fd_laplacian(N, a) + Diagonal(Vm.(grid_points) )
+	evalues_M, evectors_M = eigen(fd_Hm)
+end;
+
+# ╔═╡ d4458730-95f1-45a5-a444-52bd56388729
+begin
+	energy_approx_M = evalues_M[low_idx]
+	efunction_approx_M = evectors_M[:, low_idx]
+
+	# The deviation in the numerically obtained ground state eigenvalue
+	energy_deviation_numerical = abs(energy_approx_M - energy_approx_H)
+	
+end;
+
+# ╔═╡ 97d3a6b5-991b-483f-8c0e-f6afd038b7c0
+begin
+	gs_energy_analytical_M = 0.5 * ω - 0.25 * ω^2 / (4 * D)
+	energy_deviation_expected = abs(gs_energy_analytical_M - gs_energy_analytical_H)
+	println("Expected deviation in ground state eigenvalue: $energy_deviation_expected")
+	println("Numerical deviation in ground state eigenvalue: $energy_deviation_numerical")
+end
+
+# ╔═╡ 363e6f97-1fe6-4bcf-9c68-e513bb31f4fe
+begin
+	plot(grid_points, efunction_approx_M, label="Morse ground state eigenfunction", xlabel="x", ylabel="ψ(x)")
+	plot!(grid_points, efunction_approx_H, label="Harmonic ground state eigenfunction", legend=:bottomright)
+end
+
+# ╔═╡ fcbe8e9d-f0f6-494c-8b4c-3952ce345357
+md"""
+By analyzing the plots we can notice that the peak of the Morse oscillator ground state eigenfunction is **shifted** in comparison with the Harmonic oscillator ground state eigenfunction. The heights of the two curves also look slightly different.
+"""
 
 # ╔═╡ 475bd69f-4cb9-440a-8f16-757cdce8af83
 md"""
@@ -1583,11 +1620,15 @@ version = "1.4.1+0"
 # ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
 # ╠═9255fc8f-2d62-4889-b0ff-12fc911eb4ed
 # ╠═5f575420-9ad8-4864-8b1c-470ab5b88bd2
-# ╠═c2b85077-c1b0-42c1-9cc8-bdb3f53dac3b
 # ╠═5c49edd5-8b5c-4394-a100-3bbb44634374
 # ╟─419501f0-36e5-4e59-9b94-0968bfedcea0
 # ╟─fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
-# ╠═c3afd2f4-6aa5-472e-a956-93ff037119bc
+# ╟─c3afd2f4-6aa5-472e-a956-93ff037119bc
+# ╠═f1d107de-d176-4c98-91e2-608a34edee84
+# ╠═d4458730-95f1-45a5-a444-52bd56388729
+# ╠═97d3a6b5-991b-483f-8c0e-f6afd038b7c0
+# ╠═363e6f97-1fe6-4bcf-9c68-e513bb31f4fe
+# ╟─fcbe8e9d-f0f6-494c-8b4c-3952ce345357
 # ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
 # ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
 # ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
