@@ -407,15 +407,11 @@ md"""
 # ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
 md"""
 **(a) Solution:**
-
-First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 """
+# First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 
-# ╔═╡ d4879d38-eba8-4200-ac63-af4896aa551d
-begin
-	fd_Hh_64 = fd_Hh
-	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-end;
+# ╔═╡ fff1dd4e-a22b-45c4-9cb3-96771ed47902
+md"""We can conclude that single precision is sufficiently accurate for the problem not to impact the quality of the computed solution."""
 
 # ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 begin
@@ -427,14 +423,8 @@ end;
 
 # ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 begin
+	println("\nComparing the algorithm error for both types\n")
 	
-	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
-	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
-	
-	# Computing the errors
-	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
-	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
-
 	println("\nSingle  Precision:")
 	println("  Eigenvalue Error: $evalue_error_64")
 	println("  Eigenfunction Error: $efunc_error_64")
@@ -448,6 +438,100 @@ begin
 	println("  Eigenfunction Error: $evalue_error_32")
 end
 
+<<<<<<< HEAD
+=======
+# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
+# ╠═╡ disabled = true
+#=╠═╡
+# md"""
+# The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
+# """
+  ╠═╡ =#
+
+# ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
+md"""
+**(b)** Assume our goal is to approximate the ground state eigenvalue of the Morse oscillator using the single-precision procedure in (a), i.e. the computation of the ground state eigenvalue of the harmonic oscillator using the inverse power method in single precision. Compute the total error against the analytical ground state eigenvalue $E_0^M$. Split this total error into error contributions (model error, discretisation error, algorithm error, arithmetic error) as discussed in the lecture and indicate their respective sizes in each case. Use `BigFloat` as a proxy for estimating the result for "exact" floating-point arithmetic.
+"""
+
+# ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# Your code and answers go here
+md"""
+**(b) Solution:**
+
+Let’s start by doing a recap of all the error types: 
+```math
+\begin{aligned}
+e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
+e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
+e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
+e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
+\end{aligned}
+```
+
+and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
+
+Let’s now try to quantify them:
+"""
+
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
+
+begin
+	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
+	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
+
+	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
+end
+
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+begin
+	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
+end
+
+# ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
+begin
+	function fd_laplacian_BigFloat(N, a;T=BigFloat)
+    h = 2a / (T(N-1)) 
+	diagonal = -2ones(T, N) ./ h^2
+    side_diagonal = ones(T, N-1) ./ h^2
+    SymTridiagonal(diagonal, side_diagonal)
+    end
+	N_fine=1e4
+	fd_potential_fineMesh = - 0.5 * fd_laplacian_BigFloat(N_fine, a) + 0.5 * ω^2 *Diagonal(fine_grid_points.^2)
+	fine_grid_points = range(-a, stop=a, length=N_fine)
+	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
+	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
+end
+
+# ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
+md"""
+**(c)** Use the numerical parameters of your setup to balance all error contributions with the model error, i.e. tune `N`, `tol` and decide between `Float32` and `Float64`, such that each of the error contributions you computed in (b) are roughly on the order of the model error.
+"""
+
+# ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
+# Your code and answers go here
+
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	fd_Hh_64 = fd_Hh
+	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+
+	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
+	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
+
+	# Computing the errors
+	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
+	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
+end;
+
+>>>>>>> 241f96741f52adf0b28775a46091a2fbf96dc407
 # ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # ╠═╡ disabled = true
 #=╠═╡
@@ -1735,9 +1819,9 @@ version = "1.4.1+0"
 # ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
 # ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
 # ╟─75e0104b-a955-439c-86e1-28825df7d1e7
-# ╠═d4879d38-eba8-4200-ac63-af4896aa551d
 # ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 # ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
+# ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
 # ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # ╟─6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
