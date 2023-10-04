@@ -407,26 +407,16 @@ md"""
 # ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
 md"""
 **(a) Solution:**
-
-First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 """
+# First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 
-# ╔═╡ d4879d38-eba8-4200-ac63-af4896aa551d
-begin
-	fd_Hh_64 = fd_Hh
-	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-end;
+# ╔═╡ fff1dd4e-a22b-45c4-9cb3-96771ed47902
+md"""We can conclude that single precision is sufficiently accurate for the problem not to impact the quality of the computed solution."""
 
 # ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 begin
+	println("\nComparing the algorithm error for both types\n")
 	
-	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
-	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
-	
-	# Computing the errors
-	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
-	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
-
 	println("\nSingle  Precision:")
 	println("  Eigenvalue Error: $evalue_error_64")
 	println("  Eigenfunction Error: $efunc_error_64")
@@ -441,9 +431,12 @@ begin
 end
 
 # ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
-md"""
-The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
-"""
+# ╠═╡ disabled = true
+#=╠═╡
+# md"""
+# The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
+# """
+  ╠═╡ =#
 
 # ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
 md"""
@@ -453,7 +446,7 @@ md"""
 # ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
 # Your code and answers go here
 md"""
-**(b)**
+**(b) Solution:**
 
 Let’s start by doing a recap of all the error types: 
 ```math
@@ -512,10 +505,20 @@ md"""
 
 # ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 begin
+	fd_Hh_64 = fd_Hh
+	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
 	tol=1e-4
 		
 	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
 	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+
+	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
+	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
+
+	# Computing the errors
+	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
+	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
 end;
 
 # ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
@@ -1673,9 +1676,9 @@ version = "1.4.1+0"
 # ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
 # ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
 # ╟─75e0104b-a955-439c-86e1-28825df7d1e7
-# ╠═d4879d38-eba8-4200-ac63-af4896aa551d
 # ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 # ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
+# ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
 # ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
 # ╠═6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
