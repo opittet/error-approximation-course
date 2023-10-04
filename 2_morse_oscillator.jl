@@ -216,38 +216,15 @@ You can use the `range` function to generate a vector of grid points.
 
 # ╔═╡ c86bdbfc-bb52-4d4a-856e-1e987e844540
 md"""
-	**(a)**
+	**(a) Solution:**
 	"""
 
 # ╔═╡ 4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 begin
-
-	
 	N  = 1000
 	a  = 5
+	Vh(x)= 0.5 * ω ^2 * (x-x0)^2 
 end;
-
-# ╔═╡ b88313bb-c4f6-4148-a1ab-befa82383052
-Vh(x)= 0.5* ω ^2 * (x-x0)^2 
-
-# ╔═╡ 7d157236-d346-4aac-9064-793b17c1b174
-plot(Vh, xlims=(-a, a), ylims=(-1, 20), label="harmonic potential")
-
-
-# ╔═╡ 95807447-050d-4bbe-b748-5127851fe690
-begin 
-	A_norm= (ω./π)^(0.25)
-	phi_norm(x)=A_norm*exp(0.5ω(x-x0)^2)
-end
-	#\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)
-	
-
-# ╔═╡ 4225c73e-5b14-489e-961f-f5ad3a81aa19
-# ╠═╡ disabled = true
-#=╠═╡
-plot(phi_norm, xlims=(-3, 4), ylims=(-1, 20), label="normalised wave function")
-
-  ╠═╡ =#
 
 # ╔═╡ 36cc4758-db01-4f55-9ea6-c0cfd5d56c63
 begin
@@ -262,10 +239,10 @@ end;
 # ╔═╡ 7372fe9c-8e45-4dc5-ac94-618aa355843c
 begin
 	plot(grid_points, potential_values, label="Potential", legend=:topright)
-	plot!(grid_points, eigenfunction_values, label="Eigenfunction")
+	plot!(grid_points, eigenfunction_values, label="Normalized eigenfunction")
 	xlabel!("x")
 	xlims!(-5, 5)
-	ylims!(-1, 10)
+	ylims!(-1, 5)
 end
 
 
@@ -282,19 +259,20 @@ To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
 )
 
 # ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
-fd_potential = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2);
-
-# ╔═╡ de627366-0673-4577-93a2-7b18e11c230e
-e_values, e_vectors = eigen(fd_potential);
+begin
+	fd_potential = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	e_values, e_vectors = eigen(fd_potential)
+end;
 
 # ╔═╡ 180dda85-dc90-472b-8311-f852c97d07e2
 begin
-	groundstate_idx = argmin(e_values)
-	energy_approximation = e_values[groundstate_idx]
-end
-
-# ╔═╡ fdbe232d-dcb7-40d0-81f0-13ea8ff5e99a
-efunction_approximation = e_vectors[:, groundstate_idx];
+	# Eigenvalues are sorted in increasing order
+	low_idx = 1 
+	# Get the lowest eigenvalue
+	energy_approx = e_values[low_idx]
+	# Get the corresponding eigenfunction
+	efunction_approx = e_vectors[:, low_idx]
+end;
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -316,15 +294,10 @@ It might be useful to write two helper functions:
 """
 )
 
-# ╔═╡ 84785aee-3a7c-4c68-8d27-e41b252afead
-groundstate_evalue = ω * 0.5
-
 # ╔═╡ 9255fc8f-2d62-4889-b0ff-12fc911eb4ed
-# Your code goes here
 function discretized_l2_norm(f, a)
     dx = 2a / (length(f) - 1)
     l2_norm = sqrt(sum(abs.(f) .^ 2) * dx)
-
     return l2_norm
 end
 
@@ -334,18 +307,28 @@ function discretized_l2_error(f1, f2, a)
     return l2_error
 end
 
+# ╔═╡ c2b85077-c1b0-42c1-9cc8-bdb3f53dac3b
+gs_evalue = ω * 0.5 # the ground state eigenvalue
+
 # ╔═╡ 5c49edd5-8b5c-4394-a100-3bbb44634374
-# normalizing the eigenfunction
+
 begin
-	efunc_norm = discretized_l2_norm(efunction_approximation, a)
-	efunc_approx_normalized = efunction_approximation/efunc_norm
-	
-	efunction_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
-	evalue_error = abs(energy_approximation - groundstate_evalue)
+	# Normalizing the eigenfunction
+	efunc_norm = discretized_l2_norm(efunction_approx, a)
+	efunc_approx_normalized = efunction_approx/efunc_norm
+
+	# Computing the errors
+	efunc_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
+	evalue_error = abs(energy_approx - gs_evalue)
 	
 	println("Eigenvalue error: $evalue_error")
-	println("Eigenfunction: $efunction_error")
+	println("Eigenfunction: $efunc_error")
 end
+
+# ╔═╡ 419501f0-36e5-4e59-9b94-0968bfedcea0
+md"""
+We can see that indeed the eigenvalue is converged to $10^{-4}$ and the $L^2(\mathbb{R})$-error of the eigenvector is also around $10^{-4}$.
+"""
 
 # ╔═╡ fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
 md"""
@@ -386,7 +369,8 @@ md"""
 
 # ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
 md"""
-**(a)**
+**(a) Solution: **
+
 First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 """
 
@@ -405,7 +389,7 @@ begin
 	
 	println("μ with double precision: ",μ_64[1])
     println("pseudo arithmetic error: ", eigenval_dif)
-	println("Relative difference of eigenvector norms: ",eigenvect_relativ_dif)
+	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
 end
 
 # ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
@@ -1581,7 +1565,7 @@ version = "1.4.1+0"
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
 # ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
@@ -1589,24 +1573,19 @@ version = "1.4.1+0"
 # ╟─7a91f3f8-a565-4172-81f5-d34aa13b5449
 # ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
 # ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
-# ╠═b88313bb-c4f6-4148-a1ab-befa82383052
-# ╠═7d157236-d346-4aac-9064-793b17c1b174
-# ╠═95807447-050d-4bbe-b748-5127851fe690
-# ╠═4225c73e-5b14-489e-961f-f5ad3a81aa19
 # ╠═36cc4758-db01-4f55-9ea6-c0cfd5d56c63
 # ╟─7372fe9c-8e45-4dc5-ac94-618aa355843c
 # ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
 # ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
 # ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
-# ╠═de627366-0673-4577-93a2-7b18e11c230e
 # ╠═180dda85-dc90-472b-8311-f852c97d07e2
-# ╠═fdbe232d-dcb7-40d0-81f0-13ea8ff5e99a
 # ╟─bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 # ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
-# ╠═84785aee-3a7c-4c68-8d27-e41b252afead
 # ╠═9255fc8f-2d62-4889-b0ff-12fc911eb4ed
 # ╠═5f575420-9ad8-4864-8b1c-470ab5b88bd2
+# ╠═c2b85077-c1b0-42c1-9cc8-bdb3f53dac3b
 # ╠═5c49edd5-8b5c-4394-a100-3bbb44634374
+# ╟─419501f0-36e5-4e59-9b94-0968bfedcea0
 # ╟─fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
 # ╠═c3afd2f4-6aa5-472e-a956-93ff037119bc
 # ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
