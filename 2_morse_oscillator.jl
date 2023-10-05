@@ -153,37 +153,38 @@ with
 
 ```math
  \Delta \tilde{\varphi}^H_0(x)=\frac{d^2}{dx^2}(\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)) =e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega)
-
-```
-taken together one gets:
-
-```math
--\frac12 e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega) + \frac12 ω^2 (x - x_0)^2 e^{-\frac{1}{2}\omega (x-x_0)^2} =
-
-
 ```
 
-then we can normalise the function :
+taken together with $E\lambda$ one gets:
 
 ```math
-\| \tilde{\varphi}^H_0(x) \| = \sqrt{\int_\mathbb{R} |\tilde{\varphi}^H_0(x)|^2 dx}= \sqrt{\int_\mathbb{R} |e^{-\frac{1}{2}\omega (x-x_0)^2}|^2 dx} 
+-\frac12 e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega) + \frac12 ω^2 (x - x_0)^2 e^{-\frac{1}{2}\omega (x-x_0)^2} = \frac12 \omega e^{-\frac{1}{2}\omega (x-x_0)^2}
 ```
+
+after simplifications:
+
 ```math
-\sqrt{\int_\mathbb{R} |e^{-\omega (x-x_0)^2}| dx} 
+-\omega^2(x - x_0)^2-\omega + \omega^2 (x - x_0)^2 ) = \omega 
 ```
-we get 
+
+Which is verified.
+
+Then, the function can be normalized:
 
 ```math
-\frac{\sqrt{\pi}erf(\sqrt{\omega}x-\sqrt{omega}x_0)}{2\sqrt{\omega}}+C 
+\| \tilde{\varphi}^H_0(x) \| = \sqrt{\int_\mathbb{R} |\tilde{\varphi}^H_0(x)|^2 dx}= \sqrt{\int_\mathbb{R} |e^{-\frac{1}{2}\omega (x-x_0)^2}|^2 dx},
 ```
-and then with x from $-\infty$ to $\infty$:
+where
+```math
+\int_\mathbb{R} e^{-\omega (x-x_0)^2} dx = \frac{\sqrt{\pi}}{\omega}.
+```
+
+From which the normalizing constant can be deduced, giving:
 
 ```math
-\frac{\sqrt{\pi}{\omega}
-``` 
-
+{\varphi}^H_0(x)=\sqrt{\frac{\omega}{\sqrt{\pi}}}\tilde{\varphi}^H_0(x)
+```
 """
-#issues with my math...
 
 # ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
 md"""
@@ -491,7 +492,7 @@ begin
 	
 	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
 	# Computing the discretization and algorithm errors together
-	e_discrit_plus_algorithm = abs(μ_big - μ_exact_H)
+	e_discrit_plus_algorithm = abs(μ_big - μ_exact_M)
 end
 
 # ╔═╡ 6314891f-55bc-4316-a46c-2785d321d5c6
@@ -1617,7 +1618,7 @@ version = "1.4.1+0"
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
 # ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
