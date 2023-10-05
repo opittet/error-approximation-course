@@ -155,7 +155,7 @@ with
  \Delta \tilde{\varphi}^H_0(x)=\frac{d^2}{dx^2}(\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)) =e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega)
 ```
 
-taken together with $E\lambda$ one gets:
+Therefore,
 
 ```math
 -\frac12 e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega) + \frac12 ω^2 (x - x_0)^2 e^{-\frac{1}{2}\omega (x-x_0)^2} = \frac12 \omega e^{-\frac{1}{2}\omega (x-x_0)^2}
@@ -163,13 +163,14 @@ taken together with $E\lambda$ one gets:
 
 after simplifications:
 
-```math
--\omega^2(x - x_0)^2-\omega + \omega^2 (x - x_0)^2 ) = \omega 
-```
 
-Which is verified.
+$-\omega^2(x - x_0)^2 + \omega + \omega^2 (x - x_0)^2 ) = \omega \\$
+$\omega = \omega$
 
-Then, the function can be normalized:
+
+Which is true.
+
+Then, we compute the norm of the function:
 
 ```math
 \| \tilde{\varphi}^H_0(x) \| = \sqrt{\int_\mathbb{R} |\tilde{\varphi}^H_0(x)|^2 dx}= \sqrt{\int_\mathbb{R} |e^{-\frac{1}{2}\omega (x-x_0)^2}|^2 dx},
@@ -273,7 +274,7 @@ begin
 	energy_approx_H = evalues_H[low_idx]
 	# Get the corresponding eigenfunction
 	efunction_approx_H = evectors_H[:, low_idx]
-end;
+end
 
 # ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
 md"""
@@ -527,6 +528,11 @@ abs(μ_exact_M - μ_exact_H) # model error
 
 # ╔═╡ de6d7c2d-4f2c-41f5-a786-a7865cf333ff
 abs(μ - μ_exact_M) # total error
+
+# ╔═╡ 56c5c5e4-ddb4-4743-b8a1-a274864c2eff
+md"""
+After tuning the number of points in the grid and the tolerance we can see that each of the error contributions is roughly on the order of the model error.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1678,5 +1684,6 @@ version = "1.4.1+0"
 # ╠═9b4c01b5-35dc-48af-affc-ba64e589f635
 # ╠═8a9884c7-3313-4271-b7e2-010f60167afe
 # ╠═de6d7c2d-4f2c-41f5-a786-a7865cf333ff
+# ╟─56c5c5e4-ddb4-4743-b8a1-a274864c2eff
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
