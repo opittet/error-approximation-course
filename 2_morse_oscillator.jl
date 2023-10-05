@@ -311,7 +311,7 @@ end
 
 begin
 	# The ground state eigenvalue
-	gs_energy_analytical_H = ω * 0.5 
+	μ_exact_H = ω * 0.5 
 	
 	# Normalizing the eigenfunction
 	efunc_norm = discretized_l2_norm(efunction_approx_H, a)
@@ -319,10 +319,10 @@ begin
 
 	# Computing the errors
 	efunc_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
-	evalue_error = abs(energy_approx_H - gs_energy_analytical_H)
+	evalue_error = abs(energy_approx_H - μ_exact_H)
 	
 	println("Eigenvalue error: $evalue_error")
-	println("Eigenfunction: $efunc_error")
+	println("Eigenfunction error: $efunc_error")
 end
 
 # ╔═╡ 419501f0-36e5-4e59-9b94-0968bfedcea0
@@ -351,23 +351,25 @@ begin
 	energy_approx_M = evalues_M[low_idx]
 	efunction_approx_M = evectors_M[:, low_idx]
 
-	# The deviation in the numerically obtained ground state eigenvalue
+	# Deviation in the numerically obtained ground state eigenvalue
 	energy_deviation_numerical = abs(energy_approx_M - energy_approx_H)
 	
 end;
 
 # ╔═╡ 97d3a6b5-991b-483f-8c0e-f6afd038b7c0
 begin
-	gs_energy_analytical_M = 0.5 * ω - 0.25 * ω^2 / (4 * D)
-	energy_deviation_expected = abs(gs_energy_analytical_M - gs_energy_analytical_H)
+	μ_exact_M = 0.5 * ω - 0.25 * ω^2 / (4 * D)
+	energy_deviation_expected = abs(μ_exact_M - μ_exact_H)
 	println("Expected deviation in ground state eigenvalue: $energy_deviation_expected")
 	println("Numerical deviation in ground state eigenvalue: $energy_deviation_numerical")
+	difference = abs(energy_deviation_expected - energy_deviation_numerical)
+	println("Difference: $difference")
 end
 
 # ╔═╡ 363e6f97-1fe6-4bcf-9c68-e513bb31f4fe
 begin
-	plot(grid_points, efunction_approx_M, label="Morse ground state eigenfunction", xlabel="x", ylabel="ψ(x)")
-	plot!(grid_points, efunction_approx_H, label="Harmonic ground state eigenfunction", legend=:bottomright)
+	plot(grid_points, efunction_approx_M, label="eigenfunction of Hm", xlabel="x", ylabel="ψ(x)")
+	plot!(grid_points, efunction_approx_H, label="eigenfunction of Hh", legend=:bottomright)
 end
 
 # ╔═╡ fcbe8e9d-f0f6-494c-8b4c-3952ce345357
@@ -410,8 +412,26 @@ md"""
 """
 # First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 
-# ╔═╡ fff1dd4e-a22b-45c4-9cb3-96771ed47902
-md"""We can conclude that single precision is sufficiently accurate for the problem not to impact the quality of the computed solution."""
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	fd_Hh_64 = fd_Hh
+	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+
+	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
+	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
+
+	# Computing the errors
+	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
+	evalue_error_64 = abs(μ_64 - μ_exact_H)
+
+	efunc_error_32 = discretized_l2_error(efunc_approx_32, eigenfunction_values, a)
+	evalue_error_32 = abs(μ_32 - μ_exact_H)
+end;
 
 # ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 begin
@@ -421,22 +441,14 @@ begin
 	println("  Eigenvalue Error: $evalue_error_64")
 	println("  Eigenfunction Error: $efunc_error_64")
 	
-	
-	efunc_error_32 = discretized_l2_error(efunc_approx_32, eigenfunction_values, a)
-	evalue_error_32 = abs(μ_32 - gs_energy_analytical_H)
 
 	println("\nDouble Precision:")
 	println("  Eigenvalue Error: $evalue_error_32")
 	println("  Eigenfunction Error: $evalue_error_32")
 end
 
-# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
-# ╠═╡ disabled = true
-#=╠═╡
-# md"""
-# The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
-# """
-  ╠═╡ =#
+# ╔═╡ fff1dd4e-a22b-45c4-9cb3-96771ed47902
+md"""We can conclude that single precision is sufficiently accurate for the problem not to impact the quality of the computed solution."""
 
 # ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
 md"""
@@ -463,24 +475,13 @@ and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all o
 Let’s now try to quantify them:
 """
 
-# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
-#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
-
-begin
-	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
-	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
-
-	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
-end
-
-# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
-begin
-	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
-	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
-
-end
+# ╔═╡ 04a7bf8f-8954-4f82-bf29-9841db623e02
+# The total error against the analytical ground state eigenvalue
+e_total = abs(μ_32 - μ_exact_H)
 
 # ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
+# ╠═╡ disabled = true
+#=╠═╡
 begin
 	function fd_laplacian_BigFloat(N, a;T=BigFloat)
     h = 2a / (T(N-1)) 
@@ -494,6 +495,7 @@ begin
 	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
 	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
 end
+  ╠═╡ =#
 
 # ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 md"""
@@ -503,44 +505,39 @@ md"""
 # ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
 # Your code and answers go here
 
-# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
-begin
-	fd_Hh_64 = fd_Hh
-	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-	
-	tol=1e-4
-		
-	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
-	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+# ╔═╡ 6314891f-55bc-4316-a46c-2785d321d5c6
+e_arithmetic = abs(μ_big - μ_64)
 
-	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
-	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
-
-	# Computing the errors
-	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
-	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
-end;
-
-# ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
 # ╠═╡ disabled = true
 #=╠═╡
-# Your code and answers go here
-begin 	
-	A_float64=fd_Hh
-	A_float32 = convert(SymTridiagonal{Float32, Vector{Float32}}, fd_Hh)
-	tol=1e-4
-	
-	μ_64=inverse_power_method(A_float64,tol=tol)
-	μ_32=inverse_power_method(A_float32,tol=tol)
-	
-	eigenval_dif=abs(μ_64[1]-μ_32[1])
-	eigenvect_relativ_dif=abs(norm(μ_64[2])-norm(μ_32[2]))
-	
-	println("μ with double precision: ",μ_64[1])
-    println("pseudo arithmetic error: ", eigenval_dif)
-	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
+begin
+	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
 end
   ╠═╡ =#
+
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+# ╠═╡ disabled = true
+#=╠═╡
+#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
+
+begin
+	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
+	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
+
+	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
+end
+  ╠═╡ =#
+
+# ╔═╡ aca51da5-e031-435c-9699-f49513b96669
+begin
+	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
+	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
+	e_algorithm = abs(μ_big - μ_exact_H)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1651,7 +1648,7 @@ version = "1.4.1+0"
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
 # ╟─fb64bea8-011b-4861-ab6a-5933eed969fa
 # ╟─7a91f3f8-a565-4172-81f5-d34aa13b5449
-# ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
+# ╟─c86bdbfc-bb52-4d4a-856e-1e987e844540
 # ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
 # ╠═36cc4758-db01-4f55-9ea6-c0cfd5d56c63
 # ╟─7372fe9c-8e45-4dc5-ac94-618aa355843c
@@ -1679,10 +1676,11 @@ version = "1.4.1+0"
 # ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
 # ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 # ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
-# ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
-# ╠═6042a979-c7bb-458f-8ac8-b98a3782832b
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
-# ╠═0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╟─0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╠═aca51da5-e031-435c-9699-f49513b96669
+# ╠═6314891f-55bc-4316-a46c-2785d321d5c6
+# ╠═04a7bf8f-8954-4f82-bf29-9841db623e02
 # ╠═b59a8370-2c68-407b-bea7-0d09c7bd7ad6
 # ╠═d20b589c-3ccf-4b03-b766-6d5adbf6c62a
 # ╠═d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
