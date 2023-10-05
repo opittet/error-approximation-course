@@ -475,29 +475,20 @@ In our case, without knowing the analytical formula of eigenvalue $\mu_1$ for th
 $|\mu_1^{\text{(big)}} - \lambda_1| \leq e_\text{algorithm} + e_\text{discretization}$
 """
 
-# ╔═╡ 94181a2a-b2c4-4a1d-b99e-515b2a98fec0
-# ╠═╡ disabled = true
-#=╠═╡
-# ```math
-# e_\text{arithmetic}=|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{} \\
-# e_\text{algorithm}= |\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance} \\
-# e_\text{discretization}=|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points} \\
-# e_\text{model}=|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model} \\
-# ```
-  ╠═╡ =#
-
-# ╔═╡ aca51da5-e031-435c-9699-f49513b96669
+# ╔═╡ ea643468-94cd-40b5-82d8-85e5b6bcdb26
 begin
 	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-	
+		
 	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
-	# Computing the discretization and algorithm errors together
-	e_discrit_plus_algorithm = abs(μ_big - μ_exact_M)
-end
+end;
 
 # ╔═╡ 6314891f-55bc-4316-a46c-2785d321d5c6
 # Arithmetic error
 e_arithmetic = abs(μ_big - μ_32)
+
+# ╔═╡ aca51da5-e031-435c-9699-f49513b96669
+# Computing the discretization and algorithm errors together
+e_discrit_plus_algorithm = abs(μ_big - μ_exact_H)
 
 # ╔═╡ 104d9018-96f5-4d9e-9588-6adba3461770
 # Model error
@@ -505,7 +496,7 @@ e_model = abs(μ_exact_M - μ_exact_H)
 
 # ╔═╡ 04a7bf8f-8954-4f82-bf29-9841db623e02
 # The total error against the analytical ground state eigenvalue
-e_total = abs(μ_32 - μ_exact_H)
+e_total = abs(μ_32 - μ_exact_M)
 
 # ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 md"""
@@ -513,7 +504,29 @@ md"""
 """
 
 # ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
-# Your code and answers go here
+begin
+	tolerance = 0.26
+	N_points = 100
+	points = range(-a, stop=a, length=N_points)
+
+	Hh = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	μ, _=inverse_power_method(Hh,tol=tolerance)
+
+	Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	μbig, _=inverse_power_method(Hh_big,tol=tolerance)
+end;
+
+# ╔═╡ 923f9aa1-0bdd-4f71-9ff1-23a58d5d2579
+abs(μbig - μ) # arithmetic error
+
+# ╔═╡ 9b4c01b5-35dc-48af-affc-ba64e589f635
+abs(μbig - μ_exact_H) # discretization and algorithm errors together
+
+# ╔═╡ 8a9884c7-3313-4271-b7e2-010f60167afe
+abs(μ_exact_M - μ_exact_H) # model error
+
+# ╔═╡ de6d7c2d-4f2c-41f5-a786-a7865cf333ff
+abs(μ - μ_exact_M) # total error
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1618,7 +1631,7 @@ version = "1.4.1+0"
 # ╟─42b170a1-08fe-4b53-b56e-2b20d5924dcc
 # ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
 # ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
-# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╟─c9f88820-502b-4e34-8fdc-151850d4cb84
 # ╟─5d05e086-4134-47d5-9817-2a130af5633f
 # ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
 # ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
@@ -1654,12 +1667,16 @@ version = "1.4.1+0"
 # ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
 # ╟─0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╠═ea643468-94cd-40b5-82d8-85e5b6bcdb26
 # ╠═6314891f-55bc-4316-a46c-2785d321d5c6
-# ╟─94181a2a-b2c4-4a1d-b99e-515b2a98fec0
 # ╠═aca51da5-e031-435c-9699-f49513b96669
 # ╠═104d9018-96f5-4d9e-9588-6adba3461770
 # ╠═04a7bf8f-8954-4f82-bf29-9841db623e02
 # ╟─adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 # ╠═76739c9d-d84e-41a8-9979-712e1f47e279
+# ╠═923f9aa1-0bdd-4f71-9ff1-23a58d5d2579
+# ╠═9b4c01b5-35dc-48af-affc-ba64e589f635
+# ╠═8a9884c7-3313-4271-b7e2-010f60167afe
+# ╠═de6d7c2d-4f2c-41f5-a786-a7865cf333ff
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
