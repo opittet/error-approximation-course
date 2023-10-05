@@ -47,18 +47,53 @@ is real for all $x\in \mathbb{C}^n$, then $A$ must be Hermitian.
 md"""
 (a) **Solution:**
 
-Let's consider a vector $(y + z) \in \mathbb{C}^n$.
+Let's consider arbitrary vectors $y, z \in \mathbb{C}^n$. By the property of the vector space, $(y + z)$ is also an element of the same vector space $\mathbb{C}^n$.
 
-Since $\langle x, S x \rangle = 0$ for all $x \in \mathbb{C}^n$ it is also true that :
+Given that $\langle x, S x \rangle = 0$ for all $x \in \mathbb{C}^n$ it is also true that:
 
-$\langle (y + z), S (y + z) \rangle = 0$ for $(y + z) \in \mathbb{C}^n$.
+$\langle z, S z \rangle = 0,\\$
+$\langle y, S y \rangle = 0,$
+$\langle (y + z), S (y + z) \rangle = 0$
+
+since $(y + z) \in \mathbb{C}^n$.
 
 Exploiting the linearity property of the inner product we have:
 ```math
 \begin{split}
 0 	&= \langle (y + z), S (y + z) \rangle = \langle y, S (y + z) \rangle + \langle z, S (y + z) \rangle \\ 
 	&= \langle y, S y \rangle + \langle z, Sz \rangle + \langle y, Sz \rangle + \langle z, S y  \rangle \\
-	&= \langle z, Sz \rangle + \langle z, S y  \rangle \qquad \forall y, z \in \mathbb{C}^n
+	&= \langle y, Sz \rangle + \langle z, S y  \rangle \qquad \forall y, z \in \mathbb{C}^n
+\end{split}
+```
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \square$
+
+"""
+
+# ╔═╡ bb8a01e3-88f1-47af-a955-b5a819b7483f
+md"""
+(b) **Solution:**
+
+The fact that $\langle x, A x \rangle$ is real means that it must be equal to its complex conjugate:
+```math
+
+\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle A x, x \rangle = \langle x, A^H x \rangle  
+```
+
+Applying the linearity property of the inner product:
+
+```math
+\langle x, A x \rangle + \langle x, A^H x \rangle = \left\langle x, \left(A + A^H\right) x \right\rangle = 0.
+```
+
+From (a) we have:
+
+```math
+\begin{split}
+\forall y, z \in \mathbb{C}^n \qquad 0 &= \left\langle y, \left(A + A^H\right) z \right\rangle + \left\langle z, \left(A + A^H\right) y \right\rangle \\ 
+		&= \langle y, A z \rangle + \langle y, A^H z \rangle + \langle z, A y \rangle + \langle z, A^H y \rangle \\
+		&= \left\langle y + z, A \left( y + z \right) \right\rangle + \left\langle y + z, A^H \left( y + z \right) \right\rangle
+
 \end{split}
 ```
 
@@ -134,8 +169,9 @@ record both the approximate eigenvalue as well as the approximate eigenvector in
 # ╔═╡ Cell order:
 # ╟─f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
-# ╠═64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
-# ╠═539cd6af-21b7-4142-bebd-f7e8e1834310
+# ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
+# ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
+# ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
