@@ -461,19 +461,17 @@ md"""
 **(b) Solution:**
 
 Let’s start by doing a recap of all the error types:
-- the arithmetic error due to the storage of the data: $|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}|$;
-- the algorithm error due to the non-null tolerance: $|\mu_1 - \mu_1^{\text{(big)}}|$;
-- the discretization error due to the finite number of mesh points: $|\lambda_1 - \mu_1|$;
-- the model error due to the simplifying assumptions of our model: $|\lambda_\ast - \lambda_1|$.
+- the arithmetic error due to the storage of the data: $|\mu_1^{\text{(fp32)}} - \mu_1^{\text{(big)}}|$;
+- the algorithm error due to the non-null tolerance: $|\mu_1^{\text{(big)}} - \mu_1|$;
+- the discretization error due to the finite number of mesh points: $|\mu_1 - \lambda_1|$;
+- the model error due to the simplifying assumptions of our model: $|\lambda_1 - \lambda_\ast|$.
 
 
-The total error $|\lambda_\ast - \mu_1^{\text{(fp32)}}|$ is the sum of all of these errors.
+The total error is $|\mu_1^{\text{(fp32)}} - \lambda_{\ast}|$.
 
-In our case, without knowing the analytical formula of eigenvalue $\mu_1$ for the discretized problem we can calculate the difference between numerical and analytical solutions, $\mu_1^{\text{(fp64)}}}$ and $\lambda_1$ respectively, thereby estimate the discretization error together with algorithm error:
+In our case, without knowing the analytical formula of eigenvalue $\mu_1$ for the discretized problem we can calculate the difference between numerical and analytical solutions, $\mu_1^{\text{(big)}}$ and $\lambda_1$:
 
-$e_\text{algorithm} + e_\text{discretization} = ||$
-
-Let’s now try to quantify them:
+$|\mu_1^{\text{(big)}} - \lambda_1| \leq e_\text{algorithm} + e_\text{discretization}$
 """
 
 # ╔═╡ 94181a2a-b2c4-4a1d-b99e-515b2a98fec0
@@ -487,30 +485,26 @@ Let’s now try to quantify them:
 # ```
   ╠═╡ =#
 
+# ╔═╡ aca51da5-e031-435c-9699-f49513b96669
+begin
+	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
+	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
+	# Computing the discretization and algorithm errors together
+	e_discrit_plus_algorithm = abs(μ_big - μ_exact_H)
+end
+
+# ╔═╡ 6314891f-55bc-4316-a46c-2785d321d5c6
+# Arithmetic error
+e_arithmetic = abs(μ_big - μ_32)
+
 # ╔═╡ 104d9018-96f5-4d9e-9588-6adba3461770
+# Model error
 e_model = abs(μ_exact_M - μ_exact_H)
 
 # ╔═╡ 04a7bf8f-8954-4f82-bf29-9841db623e02
 # The total error against the analytical ground state eigenvalue
 e_total = abs(μ_32 - μ_exact_H)
-
-# ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	function fd_laplacian_BigFloat(N, a;T=BigFloat)
-    h = 2a / (T(N-1)) 
-	diagonal = -2ones(T, N) ./ h^2
-    side_diagonal = ones(T, N-1) ./ h^2
-    SymTridiagonal(diagonal, side_diagonal)
-    end
-	N_fine=1e4
-	fd_potential_fineMesh = - 0.5 * fd_laplacian_BigFloat(N_fine, a) + 0.5 * ω^2 *Diagonal(fine_grid_points.^2)
-	fine_grid_points = range(-a, stop=a, length=N_fine)
-	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
-	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
-end
-  ╠═╡ =#
 
 # ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 md"""
@@ -519,40 +513,6 @@ md"""
 
 # ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
 # Your code and answers go here
-
-# ╔═╡ 6314891f-55bc-4316-a46c-2785d321d5c6
-e_arithmetic = abs(μ_big - μ_32)
-
-# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
-	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
-
-end
-  ╠═╡ =#
-
-# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
-# ╠═╡ disabled = true
-#=╠═╡
-#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
-
-begin
-	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
-	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
-
-	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
-end
-  ╠═╡ =#
-
-# ╔═╡ aca51da5-e031-435c-9699-f49513b96669
-begin
-	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
-	
-	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
-	e_discrit_plus_algorithm = abs(μ_big - μ_exact_H)
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1692,15 +1652,12 @@ version = "1.4.1+0"
 # ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
 # ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
 # ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
-# ╠═0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╟─0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╠═6314891f-55bc-4316-a46c-2785d321d5c6
 # ╟─94181a2a-b2c4-4a1d-b99e-515b2a98fec0
 # ╠═aca51da5-e031-435c-9699-f49513b96669
-# ╠═6314891f-55bc-4316-a46c-2785d321d5c6
 # ╠═104d9018-96f5-4d9e-9588-6adba3461770
 # ╠═04a7bf8f-8954-4f82-bf29-9841db623e02
-# ╠═b59a8370-2c68-407b-bea7-0d09c7bd7ad6
-# ╠═d20b589c-3ccf-4b03-b766-6d5adbf6c62a
-# ╠═d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
 # ╟─adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 # ╠═76739c9d-d84e-41a8-9979-712e1f47e279
 # ╟─00000000-0000-0000-0000-000000000001
