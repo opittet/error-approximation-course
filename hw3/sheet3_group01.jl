@@ -62,11 +62,10 @@ Exploiting the linearity property of the inner product we have:
 \begin{split}
 0 	&= \langle (y + z), S (y + z) \rangle = \langle y, S (y + z) \rangle + \langle z, S (y + z) \rangle \\ 
 	&= \langle y, S y \rangle + \langle z, Sz \rangle + \langle y, Sz \rangle + \langle z, S y  \rangle \\
-	&= \langle y, Sz \rangle + \langle z, S y  \rangle \qquad \forall y, z \in \mathbb{C}^n
+	&= \langle y, Sz \rangle + \langle z, S y  \rangle \qquad \forall y, z \in \mathbb{C}^n \qquad \qquad \qquad \qquad \qquad \square
 \end{split}
 ```
 
-$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \square$
 
 """
 
@@ -83,20 +82,35 @@ The fact that $\langle x, A x \rangle$ is real means that it must be equal to it
 Applying the linearity property of the inner product:
 
 ```math
-\langle x, A x \rangle + \langle x, A^H x \rangle = \left\langle x, \left(A + A^H\right) x \right\rangle = 0.
+\langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
 ```
 
 From (a) we have:
 
 ```math
 \begin{split}
-\forall y, z \in \mathbb{C}^n \qquad 0 &= \left\langle y, \left(A + A^H\right) z \right\rangle + \left\langle z, \left(A + A^H\right) y \right\rangle \\ 
-		&= \langle y, A z \rangle + \langle y, A^H z \rangle + \langle z, A y \rangle + \langle z, A^H y \rangle \\
-		&= \left\langle y + z, A \left( y + z \right) \right\rangle + \left\langle y + z, A^H \left( y + z \right) \right\rangle
+\forall y, z \in \mathbb{C}^n \qquad 0 &= \left\langle y, \left(A - A^H\right) z \right\rangle + \left\langle z, \left(A - A^H\right) y \right\rangle \\ 
+		&= \langle y, A z \rangle - \langle y, A^H z \rangle + \langle z, A y \rangle - \langle z, A^H y \rangle \\
+		&= \left\langle y + z, A \left( y + z \right) \right\rangle - \left\langle y + z, A^H \left( y + z \right) \right\rangle.
 
 \end{split}
 ```
+This implies that:
 
+$\left\langle y + z, A \left( y + z \right) \right\rangle = \left\langle y + z, A^H \left( y + z \right) \right\rangle$,
+
+which is true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
+$\qquad \qquad  \square$
+
+"""
+
+# ╔═╡ 257b2781-6856-4a89-88ee-a3edfd38c08c
+md"""
+(c) **Solution:**
+
+For any $x \in \mathbb{C}^n$, inner product $\langle x,x \rangle = x\overline{x} \in \mathbb{R}$. Therefore, Rayleigh quotient $R_A(x)$ is real for all $x \in \mathbb{C}^n$ if and only if  $\langle x, Ax \rangle$ is real $\forall x \in \mathbb{C}^n$. The result obtained from (b) completes the proof.  
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 """
 
 # ╔═╡ 048e550d-11a5-49e9-bf86-400005ba5dbe
@@ -172,6 +186,7 @@ record both the approximate eigenvalue as well as the approximate eigenvector in
 # ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
 # ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
+# ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
