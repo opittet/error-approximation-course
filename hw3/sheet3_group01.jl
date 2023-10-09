@@ -82,7 +82,7 @@ md"""
 The fact that $\langle x, A x \rangle$ is real means that it must be equal to its complex conjugate:
 ```math
 
-\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle A x, x \rangle = \langle x, A^H x \rangle  
+\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle x, A^H x \rangle  
 ```
 
 Applying the linearity property of the inner product:
