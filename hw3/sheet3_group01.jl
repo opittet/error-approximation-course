@@ -191,6 +191,41 @@ $\|A\|_F = \|vec(A)\|_2.$
 # ╔═╡ 5a1da87d-1536-4447-a357-3998676f8431
 md"""
 **(b) Solution:**
+
+As we know:
+
+$\|A\|_2 = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Ax\|_2}{\|x\|_2} = \sqrt{\lambda_{\max}(A^H A)}$
+
+On the other hand,
+
+$\|A\|_F = \sqrt{\text{tr}(A^H A)} = \sqrt{\sum_{i=1}^n \lambda_i(A^H A)}$
+
+Matrix $A^H A$ is Hermitian since $(A^H A)^H = A^H A$. Which implies that its' eigenvalues are real. Moreover, it is a positive semi-definite matrix, since:
+
+$\forall x \in \mathbb{C}^n: \quad x^HA^HAx = (Ax)^HAx = \| Ax\|^2 \geq 0$.
+
+Therefore, eigenvalues of $A^H A$ are non-negative. Thus,
+
+$\|A\|_2 = \sqrt{\lambda_{\max}(A^H A)} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F$
+
+Reminding that,
+
+```math
+R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle} \leq \lambda_{max}(A) = \sqrt{\lambda_{max}(A^H A)} = \| A\|_2,
+```
+
+
+and using the results above, we can conclude:
+
+```math
+R_A(x) \leq \|A\|_F.
+```
+"""
+
+# ╔═╡ a7924246-6857-4ff4-9ff6-c6d0d48211b5
+md"""
+**(c) Solution:**
+
 """
 
 # ╔═╡ 94330639-53d6-4082-9b8f-3b2cee1c08a1
@@ -1343,7 +1378,8 @@ version = "1.4.1+1"
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
-# ╠═5a1da87d-1536-4447-a357-3998676f8431
+# ╟─5a1da87d-1536-4447-a357-3998676f8431
+# ╠═a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
 # ╟─bd58235d-2dde-4553-96f7-474f19f423f7
