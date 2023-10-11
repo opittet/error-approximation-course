@@ -226,6 +226,12 @@ R_A(x) \leq \|A\|_F.
 md"""
 **(c) Solution:**
 
+
+As we remember:
+```math
+R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle} \leq \lambda_{max}(A) =\sqrt{\lambda_{\max}(A^H A)} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F.
+```
+This shows that it is a rough estimate of the Rayleigh quotient especially for large matrices since with growing $n$ the sum $\sum_{i=1}^n \lambda_i(A^H A)$ will also grow. This may lead to a larger discrepancy between the upper bound given by the Frobenius norm and the true maximum eigenvalue.
 """
 
 # ╔═╡ 94330639-53d6-4082-9b8f-3b2cee1c08a1
@@ -328,34 +334,8 @@ md"""
 
 # ╔═╡ d5fdd2ff-16c0-4247-a38d-d4eab02714de
 #rayleigh method
-function Rayleigh_met(A,u0,tol=1e-8,maxiter=500)
-	u=u0
-	for i in 1:maxiter
-		u_prev = u
-		Ray_μ = dot(u,A*u)/dot(u,u)
-		u = A*u - Ray_μ*u
-		u /= norm(u)
-		if norm(u-u_prev)< tol
-			break
-		end
-	end
-	return(Ray_μ,u)
-end
-
-# ╔═╡ 0ef64f6e-f260-4295-b503-7442daa67ee7
-#power method
-function power_method(A, x0; tol=1e-8, maxiter=500)
-	x = x0
-	for i in 1:maxiter
-		xprev = x
-		x = A * x
-		x /= norm(x)
-		if min(norm(x - xprev), norm(-x - xprev)) < tol
-			break
-		end
-	end
-	λ = dot(x, A, x)
-	(; λ, x)
+function Rayleigh_met(A,u)
+	Ray_result=dot(u,A*u)/dot(u,u)
 end
 
 # ╔═╡ b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
@@ -366,110 +346,33 @@ A = [30000 -10000 10000;
 # ╔═╡ 7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
 begin
 	λ,v= eigen(A)
-	println(λ)
-	println(v)
-	
+	Rayleigh_met(A,v)
 end
 
 # ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
-#initialisation of the arrays
-
 begin
-	
-	μ_pow_array=[]
-	u1_pow_array=[]
-	u2_pow_array=[]
-	u3_pow_array=[]
-
 	μ_Ray_array=[]
-	u1_Ray_array=[]
-	u2_Ray_array=[]
-	u3_Ray_array=[]
-	
 	ϵ_array=range(start=0.01,stop=0.1,step=0.01)
 	println("length of the error array",ϵ_array)
-	
-	v1=v[1:3]
-	v2=v[4:6]
-	v3=v[7:9]
-end;
 
-	
+	for (i, ϵ_norm) in enumerate(ϵ_array)
+		ϵ_vect=rand(3,1)
+		current_norm=norm(ϵ_vect)
+		ϵ_vect*=ϵ_norm/current_norm
+		println(ϵ_vect)
+		println(i)
+		println(v[1:3])
+		u = v[1:3]+ϵ_vect
+		current_Ray_approx=Rayleigh_met(A,u)
+		println(current_Ray_approx)
+		push!(μ_Ray_array,Rayleigh_met(A,u))
+		#add the power method
+	end
+	println(length(μ_Ray_array))
+	plot(ϵ_array,μ_Ray_array, label="Rayleigh error")
+	plot(ϵ_array,λ, label="true eigenvalue")
 
-
-
-# ╔═╡ 6aefc47d-e9d3-400c-a3a5-031a6dae0cc2
-#data collection
-
-for (i, ϵ_norm) in enumerate(ϵ_array)
-	#create a noise vector with increasing norm per iteration
-
-	ϵ_vect=rand(3,1)
-	current_norm=norm(ϵ_vect)
-	ϵ_vect*=ϵ_norm/current_norm
-	
-	#create the 3 initial vectors with some noise ϵ
-	
-	u1 = v1+ϵ_vect
-	u2 = v2+ϵ_vect
-	u3 = v3+ϵ_vect
-
-	
-	current_Ray_approx_μ=[Rayleigh_met(A,u1)[1],Rayleigh_met(A,u2)[1],Rayleigh_met(A,u3)[1]] 
-	current_Ray_approx_u=[Rayleigh_met(A,u1)[2],Rayleigh_met(A,u2)[2],Rayleigh_met(A,u3)[2]] 
-	
-	current_pow_approx_μ=[-power_method(A,u1)[1],-power_method(A,u2)[1],-power_method(A,u3)[1]] # - because the first μ should be negative, but then the last μ has wrong sign... 
-	current_pow_approx_u=[-power_method(A,u1)[2],-power_method(A,u2)[2],-power_method(A,u3)[2]]
-	
-	println("power μ approx:",current_pow_approx_µ)
-	print("power u approx:",current_pow_approx_u)
-	println("Ray μ approx:",current_Ray_approx)
-
-	#add the current results in the corresponding array
-	
-	push!(μ_Ray_array,current_Ray_approx_µ)
-	push!(u1_pow_array,current_Ray_approx_u[1])
-	push!(u2_pow_array,current_Ray_approx_u[2])		
-	push!(u3_pow_array,current_Ray_approx_u[3])
-	
-	push!(μ_pow_array,current_pow_approx_µ)
-	push!(u1_pow_array,current_pow_approx_u[1])
-	push!(u2_pow_array,current_pow_approx_u[2])		
-	push!(u3_pow_array,current_pow_approx_u[3])
 end
-
-# ╔═╡ e0a99adc-7a80-4767-ae01-70b67dad931b
-#all the plots
-
-for i in range(1,3)
-	
-	#eigenvalues plots
-	
-	plt=plot(yaxis=:log)
-	plot!(ϵ_array,[μ[i] for μ in μ_Ray_array], label="Rayleigh μ")
-	plot!(ϵ_array,[μ[i] for μ in μ_pow_array], label="power method μ")
-	plot!(ϵ_array,fill(λ[i], length(ϵ_array)), label="true eigenvalue λ")
-	display(plt)
-	
-	#eigenvalue error plots
-	
-	plot(yaxis=:log)
-	plot!(ϵ_array,[abs(λ[i]-μ[i]) for μ in μ_Ray_array], label="rayleigh μ error")
-	plot!(ϵ_array,[abs(λ[i]-μ[i]) for μ in μ_pow_array], label="power method μ error")
-
-	#eigenvector norm errors
-
-	plot(yaxis=:log)
-	plot(ϵ_array,[abs(norm(u1)-norm(v1)) for u1 in u1_pow_array],label="power method u1 error")
-	plot(ϵ_array,[abs(norm(u2)-norm(v2)) for u2 in u2_pow_array],label="power method u2 error" )
-	plot(ϵ_array,[abs(norm(u3)-norm(v3)) for u3 in u3_pow_array],label="power method u3 error" )
-
-	plot(ϵ_array,[abs(norm(u1)-norm(v1)) for u1 in u1_pow_array],label="Rayleigh u1 error")
-	plot(ϵ_array,[abs(norm(u2)-norm(v2)) for u2 in u2_pow_array],label="Rayleigh method u2 error" )
-	plot(ϵ_array,[abs(norm(u3)-norm(v3)) for u3 in u3_pow_array],label="Rayleigh method u3 error" )
-end
-
-#why won’t it plot anything?
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1475,14 +1378,14 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
-# ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
+# ╠═64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
 # ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
-# ╟─5a1da87d-1536-4447-a357-3998676f8431
-# ╠═a7924246-6857-4ff4-9ff6-c6d0d48211b5
+# ╠═5a1da87d-1536-4447-a357-3998676f8431
+# ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
 # ╟─bd58235d-2dde-4553-96f7-474f19f423f7
@@ -1490,11 +1393,8 @@ version = "1.4.1+1"
 # ╠═dad9ee8a-525a-4f62-86ae-c3f0818e7182
 # ╠═a326211a-d815-418b-8cf4-703482769fe9
 # ╠═d5fdd2ff-16c0-4247-a38d-d4eab02714de
-# ╠═0ef64f6e-f260-4295-b503-7442daa67ee7
 # ╠═7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
 # ╠═b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
 # ╠═5800a0c5-2fe5-4c42-931b-ceab933811fa
-# ╠═6aefc47d-e9d3-400c-a3a5-031a6dae0cc2
-# ╠═e0a99adc-7a80-4767-ae01-70b67dad931b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
