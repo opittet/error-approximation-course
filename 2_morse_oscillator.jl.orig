@@ -4,481 +4,697 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ dad9ee8a-525a-4f62-86ae-c3f0818e7182
-using LinearAlgebra
+# ╔═╡ 7dad9d40-d336-4489-ad64-4605d7b96173
+using PlutoTeachingTools
 
-# ╔═╡ a326211a-d815-418b-8cf4-703482769fe9
+# ╔═╡ 80b1b579-a871-48af-842a-e74834f944ce
 using Plots
 
-# ╔═╡ f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
+# ╔═╡ 2a357d9b-d06b-48a1-b7c0-266147f4c86c
+using LinearAlgebra
+
+# ╔═╡ dc4aea04-5716-11ee-1952-27c9bb3f0e5e
+md"Error control in scientific modelling (MATH 500, Herbst)"
+
+# ╔═╡ 4b08176a-7122-4c48-bc07-7b1de84d81cb
 md"""
-Error control in scientific modelling (MATH 500, Herbst)
+# Sheet 2: Morse oscillator (10 P)
+*To be handed in via moodle by 05.10.2023*
 """
 
-# ╔═╡ 1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
+# ╔═╡ 24f29d78-220b-4829-ae90-e6533f6029d7
 md"""
-# Sheet 3: Matrix eigenproblems (10 P)
-*To be handed in via moodle by 12.10.2023*
+## Introduction
+
+In this exercise we want to explore the different error contributions based on the [Morse oscillator](https://en.wikipedia.org/wiki/Morse_potential). The Morse oscillator is a simple quantum-mechanical model for a chemical bond. Even though nowadays more accurate models exist, it is still used due to its simplicity. One remarkable feature of the model is that it is able to produce a realistic description of chemical bonding. At the same time the associated Schrödinger equation still has an analytic solution --- even though we will not attempt this computation here: See [wikipedia](https://en.wikipedia.org/wiki/Morse_potential) if you are curious.
+
+In this exercise we will consider the model in one dimension, i.e. our computational domain is simply the real line $\mathbb{R}$. The Hamiltonian of the Morse potential has the usual form of
+```math
+H^M = - \frac12 \Delta + V^M,
+```
+where $V^M$ is the Morse potential energy function, which for all $x\in\mathbb{R}$ is defined as
+```math
+V^M(x) = D \left(1 - \exp\left( - \frac{ω}{\sqrt{2D}} \, (x-x_0) \right) \right)^2
+```
+with $D$ is the dissociation energy and $ω^2$ the force constant and $x_0$ the equilibrium bond length. For our computations we consider the parameters
 """
 
-# ╔═╡ 64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
+# ╔═╡ b98f299c-ab5b-44b8-a47c-3b55c0595a1e
+begin
+	D  = 20.0
+	ω  = 2.25
+	x0 = 0.0
+end;
+
+# ╔═╡ 23ee7361-db58-498c-9879-1b48b282b628
+md"""for which the potential looks as such"""
+
+# ╔═╡ 093f0ea9-f570-4307-9235-24cfb576a57c
+Vm(x) = D * (1 - exp( -ω / sqrt(2D) * (x - x0) ) )^2
+
+# ╔═╡ 506def7a-19b9-4fe8-b836-524f8a13013f
+plot(Vm, xlims=(-3, 10), ylims=(-1, 20), label="Morse potential")
+
+# ╔═╡ 061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
 md"""
-## Exercise 1 (1 + 1.5 + 0.5 P)
-
-We saw in the lecture that if $A \in \mathbb{C}^{n\times n}$ is Hermitian (i.e. $A = A^H$, then the Rayleigh quotient
+Following our discussion about the Schrödinger equation in the lectures, we are interested in the eigenvalues and eigenfunctions of this Hamiltonian, i.e. the $(E^M_n, \varphi^M_n) \in \mathbb{R} \times L^2(\mathbb{R})$ pairs satisfying
 ```math
-R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle}
+H^M \varphi^M_n = E^M_n \varphi^M_n.
 ```
-is real for all $x \in \mathbb{C}^n$. The point of this exercise is to prove the converse, i.e.
-
-> If Rayleigh quotient $R_A(x)$ is real for all $x \in \mathbb{C}^n$,
-> then $A$ is a Hermitian matrix.
-
-To show this we proceed as follows:
-
-(a) Given an arbitrary matrix $S$, show that if $\langle x, S x \rangle = 0$ for all $x \in \mathbb{C}^n$, then we must have
+As mentioned above, this system can actually be solved *analytically* with its eigenvalues given by
 ```math
-\langle y, Sz \rangle + \langle z, Sy \rangle = 0  \qquad \forall y, z \in \mathbb{C}^n
+E^M_n = \omega \left(n + \frac12 \right) - \omega \chi \left(n + \frac12\right)^2
+\qquad n = 0, 1, 2, \ldots, \lfloor\tfrac{2D}{\omega} - \tfrac{1}{2} \rfloor
 ```
-*Hint:* Expand $\langle (y+z), S(y+z) \rangle$.
-
-(b) Use the result of (a) to show if $\langle x, Ax\rangle$
-is real for all $x\in \mathbb{C}^n$, then $A$ must be Hermitian.
-*Hint:* First relate $\langle x, A x\rangle$ to $\langle x, A^H x\rangle$, then use (a)
-
-(c) Prove the above statement, i.e. if $R_A(x)$ is real for all $x \in \mathbb{C}^n$, then $A$ is Hermitian.
+where
+```math
+χ = \frac{ω}{4D}
+```
+is the so-called anharmonicity constant.
 """
 
-# ╔═╡ 539cd6af-21b7-4142-bebd-f7e8e1834310
+# ╔═╡ 42b170a1-08fe-4b53-b56e-2b20d5924dcc
 md"""
-(a) **Solution:**
+## Exercise 1 (1 + 1 P)
 
-Let's consider arbitrary vectors $y, z \in \mathbb{C}^n$. By the property of the vector space, $(y + z)$ is also an element of the same vector space $\mathbb{C}^n$.
-
-Given that $\langle x, S x \rangle = 0$ for all $x \in \mathbb{C}^n$ it is also true that:
-
-$\langle z, S z \rangle = 0,\\$
-$\langle y, S y \rangle = 0,$
-$\langle (y + z), S (y + z) \rangle = 0$
-
-since $(y + z) \in \mathbb{C}^n$.
-
-Exploiting the linearity property of the inner product we have:
+While the Morse oscillator provides already a relatively simple model for a chemical bond, a yet even simpler model is often sufficent: The [Harmonic oscillator](https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator). Its potential simply takes the form
 ```math
-\begin{split}
-0 	&= \langle (y + z), S (y + z) \rangle = \langle y, S (y + z) \rangle + \langle z, S (y + z) \rangle \\ 
-	&= \langle y, S y \rangle + \langle z, Sz \rangle + \langle y, Sz \rangle + \langle z, S y  \rangle \\
-	&= \langle y, Sz \rangle + \langle z, S y  \rangle \qquad \forall y, z \in \mathbb{C}^n \qquad \qquad \qquad \qquad \qquad \square
-\end{split}
+V^H(x) = \frac12 ω^2 (x - x_0)^2.
+```
+Again we are able to find analytical eigenpairs $(E^H_n, \varphi^H_n)$ of the Harmonic oscillator Hamiltonian
+```math
+H^H = - \frac12 \Delta + V^H = - \frac12 \Delta + \frac12 ω^2 (x - x_0)^2,
+```
+where in particular
+```math
+E^H_n = \omega \left(n + \frac12\right)\qquad\text{for $n = 0, 1, 2, \ldots$}
 ```
 
-
+**(a)** Show that $V^H(x)$ is the leading-order (in $x-x_0$) term of $V^M(x)$, i.e. that the Harmonic osillator is indeed a simplified version of the Morse oscillator.
 """
 
-# ╔═╡ bb8a01e3-88f1-47af-a955-b5a819b7483f
+# ╔═╡ fcd25aeb-5106-440b-a857-f08a10c478b4
+#our answer 
 md"""
-(b) **Solution:**
 
-The fact that $\langle x, A x \rangle$ is real means that it must be equal to its complex conjugate:
-```math
+**(a) Solution:** 
 
-\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle x, A^H x \rangle  
-```
-
-Applying the linearity property of the inner product:
+We have 
 
 ```math
-\langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
+V^H(x) = \frac12 ω^2 (x - x_0)^2 
 ```
-
-From (a) we have:
-
+and 
 ```math
-\begin{split}
-\forall y, z \in \mathbb{C}^n \qquad 0 &= \left\langle y, \left(A - A^H\right) z \right\rangle + \left\langle z, \left(A - A^H\right) y \right\rangle \\ 
-		&= \langle y, A z \rangle - \langle y, A^H z \rangle + \langle z, A y \rangle - \langle z, A^H y \rangle \\
-		&= \left\langle y + z, A \left( y + z \right) \right\rangle - \left\langle y + z, A^H \left( y + z \right) \right\rangle.
-
-\end{split}
+V^M(x) = D \left(1 - \exp\left( - \frac{ω}{\sqrt{2D}} \, (x-x_0) \right) \right)^2
 ```
-This implies that:
 
-$\left\langle y + z, A \left( y + z \right) \right\rangle = \left\langle y + z, A^H \left( y + z \right) \right\rangle$,
+One can take the Taylor expansion of $e^{-\frac{ω}{\sqrt{2D}}(x - x_0)}$ around $x_0$:
 
-which is true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
-$\qquad \qquad  \square$
+```math 
+\begin{aligned}
+ V^M \approx & \left(1-1+\frac{ω}{\sqrt{2D}}(x-x_0)+O((x - x_0)^2)\right)^2  \\=&
+\frac{ω^2}{2D}(x-x_0)^2 + O\left((x - x_0)^4\right). \\ 
+\end{aligned}
+```
+Therefore, 
+```math
+V^M(x) \approx V^H(x) + O\left((x - x_0)^4\right).
+```
 
 """
 
-# ╔═╡ 257b2781-6856-4a89-88ee-a3edfd38c08c
+# ╔═╡ 0eb0b23b-9b20-41d5-ab57-3e9d98134403
 md"""
-(c) **Solution:**
-
-For any $x \in \mathbb{C}^n$, inner product $\langle x,x \rangle = x\overline{x} \in \mathbb{R}$. Therefore, Rayleigh quotient $R_A(x)$ is real for all $x \in \mathbb{C}^n$ if and only if  $\langle x, Ax \rangle$ is real $\forall x \in \mathbb{C}^n$. The result obtained from (b) completes the proof.  
-
-$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
+**(b)** Show that the ground state (lowest-eigenvalue eigenfunction) is given by
+```math
+\tilde{\varphi}^H_0(x) = \exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)
+```
+and normalise this function with respect to the standard $L^2(\mathbb{R})$ norm
+```math
+\| f \| = \sqrt{\int_\mathbb{R} |f(x)|^2 dx}.
+```
+For the normalised function we will use the symbol $\varphi_0^H$ in the following.
 """
 
-# ╔═╡ 048e550d-11a5-49e9-bf86-400005ba5dbe
+# ╔═╡ c9f88820-502b-4e34-8fdc-151850d4cb84
+#our answer
+
 md"""
-## Exercise 2 (1.5+1+0.5 P)
+**(b) Solution:** 
 
-Recall that the Frobenius norm of a matrix $A \in \mathbb{C}^{n \times n}$ is given by
+One need to test that the function $\tilde{\varphi}^H_0(x)$ satisfies the following condition: $H^H \tilde{\varphi}^H_0(x) = E^H_0 \tilde{\varphi}^H_0(x)$. 
+
 ```math
-\|A\|_F = \sqrt{\text{tr}(A^H A)} = \sqrt{\sum_{i=1}^n \sum_{j=1}^n |A_{ij}|^2}
+H^H \tilde{\varphi}^H_0(x) = - \frac12 \Delta + V^H = - \frac12 \Delta \tilde{\varphi}^H_0(x) + \frac12 ω^2 (x - x_0)^2  \tilde{\varphi}^H_0(x)
 ```
 
-(a) What is the Frobenius norm of a diagonal matrix? What is the $p$-norm of a diagonal matrix? Conclude whether the Frobenius norm can be associated to any vector $p$-norm?
+with 
 
-(b) Show that
 ```math
-\|A\|_2 \leq \|A\|_F
+ \Delta \tilde{\varphi}^H_0(x)=\frac{d^2}{dx^2}(\exp\left(- \tfrac{1}{2}\omega (x - x_0)^2 \right)) =e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega)
+
 ```
-and use this to conclude
+taken together one gets:
+
 ```math
-R_A(x) \leq \|A\|_F. \qquad\qquad\qquad\text{($\ast$)}
+-\frac12 e^{-\frac{1}{2}\omega (x-x_0)^2} (\omega^2(x-x_0)^2-\omega) + \frac12 ω^2 (x - x_0)^2 e^{-\frac{1}{2}\omega (x-x_0)^2} =
+
+
 ```
 
-(c) Keeping in mind our corollary of Courant-Fisher, namely that
+then we can normalise the function :
+
 ```math
-\lambda_n = \max_{0\neq x\in\mathbb{C}} R_A(x)
+\| \tilde{\varphi}^H_0(x) \| = \sqrt{\int_\mathbb{R} |\tilde{\varphi}^H_0(x)|^2 dx}= \sqrt{\int_\mathbb{R} |e^{-\frac{1}{2}\omega (x-x_0)^2}|^2 dx} 
 ```
-as well as your result from (a) on diagonal matrices, argue why $(\ast)$ is a crude bound, in particular for large matrices.
+```math
+\sqrt{\int_\mathbb{R} |e^{-\omega (x-x_0)^2}| dx} 
+```
+we get 
+
+```math
+\frac{\sqrt{\pi}erf(\sqrt{\omega}x-\sqrt{\omega}x_0)}{2\sqrt{\omega}}+C 
+```
+and then with x from $-\infty$ to $\infty$:
+
+```math
+\frac{\sqrt{\pi}}{\omega}
+``` 
+
+"""
+#issues with my math...
+
+# ╔═╡ 5d05e086-4134-47d5-9817-2a130af5633f
+md"""
+## Exercise 2 (1 + 1 + 1 + 1 P)
+
+We now want to solve the Harmonic oscillator problem numerically using finite differences. To avoid the infinite computational domain, which cannot be treated within a finite differences approach, we will solve the problem only within $\Omega = [-a, a]$ for $a > 0$.
+
+We perform an $N$-point finite-difference approximation within $\Omega$, i.e. we split the domain into $N$ intervals of length $h = \frac{2a}{N-1}$. Recall that for this setup the finite-difference Laplacian is given by
 """
 
-# ╔═╡ 8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
+# ╔═╡ 796a5e6b-85a1-4292-9b08-40b869521a4a
+    function fd_laplacian(N, a;T=Float64)
+        h = 2a / (T(N-1)) 
+		diagonal = -2ones(T, N) ./ h^2
+        side_diagonal = ones(T, N-1) ./ h^2
+        SymTridiagonal(diagonal, side_diagonal)
+    end
+
+# ╔═╡ fb64bea8-011b-4861-ab6a-5933eed969fa
+md"""
+**(a)** Compute the function values of the potential $V^H(x)$ and the normalised first eigenfunction $\varphi_0^H(x)$ on the grid points of a finite differences approximation with $a = 5$ and $N = 1000$ and use this to plot $V^H(x)$ and $\varphi_0^H(x)$ within our computational domain.
+"""
+
+# ╔═╡ 7a91f3f8-a565-4172-81f5-d34aa13b5449
+hint(
+md"""
+You can use the `range` function to generate a vector of grid points.
+"""
+)
+
+# ╔═╡ c86bdbfc-bb52-4d4a-856e-1e987e844540
+md"""
+	**(a) Solution:**
+	"""
+
+# ╔═╡ 4a2845ac-e824-43cd-a3ac-ed962a70a7f8
+begin
+	N  = 1000
+	a  = 5
+	Vh(x)= 0.5 * ω ^2 * (x-x0)^2 
+end;
+
+# ╔═╡ 36cc4758-db01-4f55-9ea6-c0cfd5d56c63
+begin
+	norm_cte= (ω / π)^(0.25)
+	phi_0(x)= norm_cte * exp(-0.5 * ω * (x - x0)^2)
+	
+	grid_points = range(-a, stop=a, length=N)
+	potential_values = [Vh(x) for x in grid_points]
+	eigenfunction_values = [phi_0(x) for x in grid_points]
+end;
+
+# ╔═╡ 7372fe9c-8e45-4dc5-ac94-618aa355843c
+begin
+	plot(grid_points, potential_values, label="Potential", legend=:topright)
+	plot!(grid_points, eigenfunction_values, label="Normalized eigenfunction")
+	xlabel!("x")
+	xlims!(-5, 5)
+	ylims!(-1, 5)
+end
+
+
+# ╔═╡ afbfe440-dd4b-4992-bb9c-a63e06820250
+md"""
+**(b)** Within the finite-differences approximation the potential is just a diagonal term (see the `Diagonal` Julia object). Use Julia's `eigen` function to compute an  approximation to the  ground state eigenvalue and eigenfunction for $a = 5$ and $N = 1000$.
+"""
+
+# ╔═╡ d871ba51-3daa-4b98-b4e7-03a7021f41b6
+hint(
+md"""
+To extract the first column of a matrix `A` as a vector, you can use `A[:, 1]`.
+"""
+)
+
+# ╔═╡ 10a52f62-ed5a-4f3c-a13c-2d270586fadd
+begin
+	fd_Hh = - 0.5 * fd_laplacian(N, a) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	evalues_H, evectors_H = eigen(fd_Hh)
+end;
+
+# ╔═╡ 180dda85-dc90-472b-8311-f852c97d07e2
+begin
+	# Eigenvalues are sorted in increasing order
+	low_idx = 1 
+	# Get the lowest eigenvalue
+	energy_approx_H = evalues_H[low_idx]
+	# Get the corresponding eigenfunction
+	efunction_approx_H = evectors_H[:, low_idx]
+end;
+
+# ╔═╡ bda1f365-2d5f-4ccc-9570-38b53fbc58d8
+md"""
+**(c)** Use the expressions for the exact ground state energy and ground state eigenfunction $\varphi_0$ from *Exercise 1* to verify that the eigenvalue is converged to $10^{-4}$ and the $L^2(\mathbb{R})$-error of the eigenvector is also around $10^{-4}$.
+
+*Hint:* Note, that `eigen` does indeed return the finite difference approximation $(f(x_1), \ldots, f(x_n))^T$ to the eigenfunction $f$, where $\{x_i\}_{i=1}^N$ are the points of your finite differences grid. However, since it normalises the vectors in $\mathbb{R}^N$ using the Euclidean norm, the resulting approximate function $f$ is *not* appropriately $L^2(\mathbb{R})$-normalised. To see this, consider the finite differences approximation to the integral 
+```math
+\int_\Omega f(x) dx,
+```
+which itself is an approximation to $\int_\mathbb{R} f(x) dx$.
+"""
+
+# ╔═╡ 0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
+hint(
+md"""
+It might be useful to write two helper functions:
+1. A function `discretized_l2_norm(f, a)` to approximate the $L^2(\mathbb R)$-norm of a vector `f` of length $N$ representing function discretized to the equispaced grid of $N$ points on the interval $[-a,a]$.
+2. A function `discretized_l2_error(f1, f2, a)` to approximate the $L^2(\mathbb R)$-error between two discretized functions, also using 1.
+"""
+)
+
+# ╔═╡ 9255fc8f-2d62-4889-b0ff-12fc911eb4ed
+function discretized_l2_norm(f, a)
+    dx = 2a / (length(f) - 1)
+    l2_norm = sqrt(sum(abs.(f) .^ 2) * dx)
+    return l2_norm
+end
+
+# ╔═╡ 5f575420-9ad8-4864-8b1c-470ab5b88bd2
+function discretized_l2_error(f1, f2, a)
+    l2_error = discretized_l2_norm(f1 - f2, a)
+    return l2_error
+end
+
+# ╔═╡ 5c49edd5-8b5c-4394-a100-3bbb44634374
+
+begin
+	# The ground state eigenvalue
+	gs_energy_analytical_H = ω * 0.5 
+	
+	# Normalizing the eigenfunction
+	efunc_norm = discretized_l2_norm(efunction_approx_H, a)
+	efunc_approx_normalized = efunction_approx_H/efunc_norm
+
+	# Computing the errors
+	efunc_error = discretized_l2_error(efunc_approx_normalized, eigenfunction_values, a)
+	evalue_error = abs(energy_approx_H - gs_energy_analytical_H)
+	
+	println("Eigenvalue error: $evalue_error")
+	println("Eigenfunction: $efunc_error")
+end
+
+# ╔═╡ 419501f0-36e5-4e59-9b94-0968bfedcea0
+md"""
+We can see that indeed the eigenvalue is converged to $10^{-4}$ and the $L^2(\mathbb{R})$-error of the eigenvector is also around $10^{-4}$.
+"""
+
+# ╔═╡ fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
+md"""
+**(d)** Use the same computational setup to determine an approximation for the first eigenpair of the Morse oscillator Hamiltonian $H^M$. What is the deviation in the numerically obtained ground state eigenvalue between the Morse and Harmonic oscillator model and how does it compare to the expected deviation considering the analytical eigenvalues? Plot the numerical ground state eigenfunctions of $H^M$ and $H^H$. Where do these functions differ?
+"""
+
+# ╔═╡ c3afd2f4-6aa5-472e-a956-93ff037119bc
+md"""
+	**(d) Solution:**
+	"""
+
+# ╔═╡ f1d107de-d176-4c98-91e2-608a34edee84
+begin
+	fd_Hm = - 0.5 * fd_laplacian(N, a) + Diagonal(Vm.(grid_points) )
+	evalues_M, evectors_M = eigen(fd_Hm)
+end;
+
+# ╔═╡ d4458730-95f1-45a5-a444-52bd56388729
+begin
+	energy_approx_M = evalues_M[low_idx]
+	efunction_approx_M = evectors_M[:, low_idx]
+
+	# The deviation in the numerically obtained ground state eigenvalue
+	energy_deviation_numerical = abs(energy_approx_M - energy_approx_H)
+	
+end;
+
+# ╔═╡ 97d3a6b5-991b-483f-8c0e-f6afd038b7c0
+begin
+	gs_energy_analytical_M = 0.5 * ω - 0.25 * ω^2 / (4 * D)
+	energy_deviation_expected = abs(gs_energy_analytical_M - gs_energy_analytical_H)
+	println("Expected deviation in ground state eigenvalue: $energy_deviation_expected")
+	println("Numerical deviation in ground state eigenvalue: $energy_deviation_numerical")
+end
+
+# ╔═╡ 363e6f97-1fe6-4bcf-9c68-e513bb31f4fe
+begin
+	plot(grid_points, efunction_approx_M, label="Morse ground state eigenfunction", xlabel="x", ylabel="ψ(x)")
+	plot!(grid_points, efunction_approx_H, label="Harmonic ground state eigenfunction", legend=:bottomright)
+end
+
+# ╔═╡ fcbe8e9d-f0f6-494c-8b4c-3952ce345357
+md"""
+By analyzing the plots we can notice that the peak of the Morse oscillator ground state eigenfunction is **shifted** in comparison with the Harmonic oscillator ground state eigenfunction. The heights of the two curves also look slightly different.
+"""
+
+# ╔═╡ 475bd69f-4cb9-440a-8f16-757cdce8af83
+md"""
+## Exercise 3 (1 + 2 + 1 P)
+
+We return to the problem of finding numerically an approximate eigenfunction of the Harmonic oscillator $H^H$ and replace the diagonalisation using `eigen` in *Exercise 2(b)* by the inverse power method discussed in the lecture:
+"""
+
+# ╔═╡ 4ed75361-a8e2-469f-8ec5-083b2566745b
+function inverse_power_method(A; u=randn(eltype(A), size(A, 2)),
+                              tol=1e-6, maxiter=500)
+	norm_Δu = NaN
+	Afac = factorize(A)  # Factorise A to make A \ x more economical
+	for i in 1:maxiter
+		u_prev = u
+		u = Afac \ u
+		normalize!(u)
+		norm_Δu = min(norm(u - u_prev), norm(-u - u_prev))
+		norm_Δu < tol && break
+	end
+	μ = dot(u, A, u)
+	norm_Δu ≥ tol && @warn "Inverse power not converged $norm_Δx"
+	(; μ, u)
+end
+
+# ╔═╡ d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
+md"""
+**(a)** For the numerical setup of *Exercise 2(b)* tune the tolerance `tol` such that we obtain an $L^2$-error in the eigenvector and an error in the eigenvalue below $10^{-4}$. Run your computation in both double and single precision. Is single precision sufficiently accurate to not impact the quality of the result?
+"""
+
+# ╔═╡ 75e0104b-a955-439c-86e1-28825df7d1e7
 md"""
 **(a) Solution:**
+"""
+# First, we apply the  inverse power method to the triadiagonal matrix from exercise **(2b)** to check if they will both converge, then we apply the relative difference to see if the 32 bits representation is far from the Float64 result: 
 
-**i)** Frobenious norm of a diagonal matrix.
+# ╔═╡ fff1dd4e-a22b-45c4-9cb3-96771ed47902
+md"""We can conclude that single precision is sufficiently accurate for the problem not to impact the quality of the computed solution."""
 
-Consider a diagonal matrix $D \in \mathbb{C}^{n \times n}$ with diagonal elements $\left\{d_i\right\}_{i=1}^{n}$:
-```math
-D = \begin{bmatrix}
-  d_1 & 0 & \cdots & 0 \\
-  0 & d_2 & \cdots & 0 \\
-  \vdots & \vdots & \ddots & \vdots \\
-  0 & 0 & \cdots & d_n
-\end{bmatrix}.
-```
-Then, Frobenius norm of $D$ is defined as following:
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+end;
 
-$\|D\|_F = \sqrt{\text{tr}(D^H D)} = \sqrt{\sum_{i=1}^n|d_{i}|^2}$
+# ╔═╡ 9665c7d0-ec7d-4a95-9259-1a044ccfc21a
+begin
+	println("\nComparing the algorithm error for both types\n")
+	
+	println("\nSingle  Precision:")
+	println("  Eigenvalue Error: $evalue_error_64")
+	println("  Eigenfunction Error: $efunc_error_64")
+	
+	
+	efunc_error_32 = discretized_l2_error(efunc_approx_32, eigenfunction_values, a)
+	evalue_error_32 = abs(μ_32 - gs_energy_analytical_H)
 
-**ii)** The $p$-norm of a diagonal matrix.
+	println("\nDouble Precision:")
+	println("  Eigenvalue Error: $evalue_error_32")
+	println("  Eigenfunction Error: $evalue_error_32")
+end
 
-Recalling the definition of the $p$-norm of a matrix:
+<<<<<<< HEAD
+=======
+# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
+# ╠═╡ disabled = true
+#=╠═╡
+# md"""
+# The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
+# """
+  ╠═╡ =#
 
-$\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} = \max_{0 \neq x \in \mathbb{C}^n} \frac{\left( \sum_{i=1}^{n}|d_ix_i|^p \right)^{1/p}}{\left( \sum_{i=1}^{n}|x_i|^p \right)^{1/p}}$
-
-Given a matrix partition into column vectors:
-
-$A = \begin{bmatrix}
-  a_1 & a_2 & \cdots & a_n \end{bmatrix},$ where $a_i = \begin{bmatrix}
-  a_{1i} & a_{2i} & \cdots & a_{ni}\end{bmatrix}^{T},$ the **vectorization**  of the matrix can be defined as following:
-
-$vec(A) = \begin{bmatrix}
-  a_{1} \\ a_{2} \\ \vdots \\ a_{n}\end{bmatrix} \in \mathbb{C}^{n \cdot n}.$
-Then 
-
-$\|A\|_F = \|vec(A)\|_2.$
-
+# ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
+md"""
+**(b)** Assume our goal is to approximate the ground state eigenvalue of the Morse oscillator using the single-precision procedure in (a), i.e. the computation of the ground state eigenvalue of the harmonic oscillator using the inverse power method in single precision. Compute the total error against the analytical ground state eigenvalue $E_0^M$. Split this total error into error contributions (model error, discretisation error, algorithm error, arithmetic error) as discussed in the lecture and indicate their respective sizes in each case. Use `BigFloat` as a proxy for estimating the result for "exact" floating-point arithmetic.
 """
 
-
-
-
-# ╔═╡ 5a1da87d-1536-4447-a357-3998676f8431
+# ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# Your code and answers go here
 md"""
 **(b) Solution:**
 
-As we know:
-
-$\|A\|_2 = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Ax\|_2}{\|x\|_2} = \sqrt{\lambda_{\max}(A^H A)}$
-
-On the other hand,
-
-$\|A\|_F = \sqrt{\text{tr}(A^H A)} = \sqrt{\sum_{i=1}^n \lambda_i(A^H A)}$
-
-Matrix $A^H A$ is Hermitian since $(A^H A)^H = A^H A$. Which implies that its' eigenvalues are real. Moreover, it is a positive semi-definite matrix, since:
-
-$\forall x \in \mathbb{C}^n: \quad x^HA^HAx = (Ax)^HAx = \| Ax\|^2 \geq 0$.
-
-Therefore, eigenvalues of $A^H A$ are non-negative. Thus,
-
-$\|A\|_2 = \sqrt{\lambda_{\max}(A^H A)} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F$
-
-Reminding that,
-
+Let’s start by doing a recap of all the error types: 
 ```math
-R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle} \leq \lambda_{max}(A) = \sqrt{\lambda_{max}(A^H A)} = \| A\|_2,
+\begin{aligned}
+e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
+e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
+e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
+e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
+\end{aligned}
 ```
 
+and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
 
-and using the results above, we can conclude:
-
-```math
-R_A(x) \leq \|A\|_F.
-```
+Let’s now try to quantify them:
 """
 
-# ╔═╡ a7924246-6857-4ff4-9ff6-c6d0d48211b5
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+#should we actually redo a function like fd_laplacian in big float? I tried to do that but ran into issues with "ones"
+
+begin
+	A_bigfloat = convert(SymTridiagonal{BigFloat, Vector{BigFloat}}, fd_potential)
+	μ_big_low_tol= inverse_power_method(A_bigfloat,tol=1e-30) #how low should we set the tolerance ?
+
+	e_arithmetic=abs(μ_big_low_tol[1]-μ_32[1])
+end
+
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+begin
+	μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
+end
+
+# ╔═╡ d73bf382-5ecb-48c1-b9f0-8b03c11b6ef3
+begin
+	function fd_laplacian_BigFloat(N, a;T=BigFloat)
+    h = 2a / (T(N-1)) 
+	diagonal = -2ones(T, N) ./ h^2
+    side_diagonal = ones(T, N-1) ./ h^2
+    SymTridiagonal(diagonal, side_diagonal)
+    end
+	N_fine=1e4
+	fd_potential_fineMesh = - 0.5 * fd_laplacian_BigFloat(N_fine, a) + 0.5 * ω^2 *Diagonal(fine_grid_points.^2)
+	fine_grid_points = range(-a, stop=a, length=N_fine)
+	A_fineMesh=convert(BigFloat,fd_potential_fineMesh)
+	μ_fineMesh=inverse_power_method(A_fineMesh,tol=1e-30)
+end
+
+# ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
 md"""
-**(c) Solution:**
-
+**(c)** Use the numerical parameters of your setup to balance all error contributions with the model error, i.e. tune `N`, `tol` and decide between `Float32` and `Float64`, such that each of the error contributions you computed in (b) are roughly on the order of the model error.
 """
 
-# ╔═╡ 94330639-53d6-4082-9b8f-3b2cee1c08a1
+# ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
+# Your code and answers go here
+
+# ╔═╡ 63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+begin
+	fd_Hh_64 = fd_Hh
+	fd_Hh_32 = - 0.5 * fd_laplacian(N, a; T=Float32) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	
+	tol=1e-4
+		
+	μ_64, u_64=inverse_power_method(fd_Hh_64,tol=tol)
+	μ_32, u_32=inverse_power_method(fd_Hh_32,tol=tol)
+
+	efunc_approx_64 = u_64/discretized_l2_norm(u_64, a)
+	efunc_approx_32 = u_32/discretized_l2_norm(u_32, a)
+
+	# Computing the errors
+	efunc_error_64 = discretized_l2_error(efunc_approx_64, eigenfunction_values, a)
+	evalue_error_64 = abs(μ_64 - gs_energy_analytical_H)
+end;
+
+>>>>>>> 241f96741f52adf0b28775a46091a2fbf96dc407
+# ╔═╡ bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
+# ╠═╡ disabled = true
+#=╠═╡
+# Your code and answers go here
+begin 	
+	A_float64=fd_Hh
+	A_float32 = convert(SymTridiagonal{Float32, Vector{Float32}}, fd_Hh)
+	tol=1e-4
+	
+	μ_64=inverse_power_method(A_float64,tol=tol)
+	μ_32=inverse_power_method(A_float32,tol=tol)
+	
+	eigenval_dif=abs(μ_64[1]-μ_32[1])
+	eigenvect_relativ_dif=abs(norm(μ_64[2])-norm(μ_32[2]))
+	
+	println("μ with double precision: ",μ_64[1])
+    println("pseudo arithmetic error: ", eigenval_dif)
+	println("Relative difference of eigenvector norms: ", eigenvect_relativ_dif)
+end
+  ╠═╡ =#
+
+# ╔═╡ 6042a979-c7bb-458f-8ac8-b98a3782832b
 md"""
-## Exercise 3 (2+1+1 P)
-
-In the lectures we saw that minimising the Rayleigh quotient provides a numerical tool for computing eigenvalues via optimisation problems. But even beyond that setting the Rayleigh quotient can be interpreted as a tool to obtain an approximation for the eigenvalue corresponding to an approximate eigenvector. We will explore this in this exercise.
-
-We consider the setting where we want to compute the eigenpair $(\lambda, v) \in \mathbb{R} \times \mathbb{C}^n$ of the Hermitian matrix $A \in \mathbb{C}^{n\times n}$. Employing some numerical scheme we do not get the exact eigenvector $v$ but only the approximation $u = v + \delta$, where $\delta\in\mathbb{C}^n$ is the error compared to $v$. As usual we take $v$ to be normalised. Moreover $\delta$ is always orthogonal to $v$ (Why?).
-
-(a) To simplify our calculations in this exercise, we introduce
-```math
-t = \| \delta \| \in \mathbb{R} \quad d = \delta / t \in \mathbb{C}^n,
-```
-such that we can write $u = v + t d$. Note that both $v$ and $d$ are unit vectors. The Rayleigh quotient $R_A(u)$ provides an approximation to $\lambda$. Show that
-```math
-R_A(u) = \lambda + t^2 \left( \langle d, A d \rangle - \lambda \right) + O(t^4).
-```
-
-(b) Assume now a numerical scheme (e.g. power iteration) yields an approximation $u$ to the exact eigenvector $v$, which is accurate to a tolerance $\varepsilon$, i.e. $\|δ\| = \varepsilon$. We want to estimate the corresponding eigenvalue using $R_A(u)$. How does the error between this estimate and the true eigenvalue $\lambda$ scale with $\varepsilon$?
-
-(c) Reconsider your power iteration implementation from Sheet 1. Extend it, such that it employs the iterated eigenvector $x^{(i)}$ as well as the Rayleigh quotient to estimate the eigenvalue at each step. For the procedure computing the largest eigenvalue of the matrix
-```math
-A = \left(
-\begin{array}{ccc}
-30\,000 & -10\,000 & 10\,000 \\
--10\,000 & -30\,000 & 0 \\
-10\,000 & 0 & 1
-\end{array}
-\right)
-```
-record both the approximate eigenvalue as well as the approximate eigenvector in each iteration in two separate arrays. Use this data to plot the error in the approximate eigenvalue as well as the error in the eigenvector as the iteration proceeds. You should find numerical confirmation to your analysis of (a) and (b).
-
-*Some hints:*
-- For computing the eigenvalue error just take the modulus of the absolute error, for the eigenvector error take the $l_2$-norm (`norm` function in Julia).
-- You can compute the exact eigenvalue and eigenvector using the `eigen` routine of Julia. Note, however, that (real) eigenvectors are only determined up to the sign, so you have to ensure that the same sign convention is used in `eigen` as well as your own algorithm. The easiest is to determine the sign of the first element of the vector returned by your routine as well as `eigen` and multiply one of the vectors by `-1` in case these differ.
-- Usually it is best to employ a `log`-scale on the $y$-axis for such error plots.
+The convergence of the method has not been affected and the order of the error for the eigenvalue is $10^{-4}$ (if we approximate Float64 $\approx$ Bigfloat, then this is the arithmetic error), which is not meaningful: in this case single digit is enough!  
 """
 
-# ╔═╡ d03ece6d-10cc-46c7-a11b-13f7ec50daad
+# ╔═╡ e2378c13-5348-46b8-bf66-23fe25fa9247
 md"""
-**(a) Answer**
-
-By definition:
-
-```math
-R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle}
-```
-and thus replacing $x$ with $u=v+td$ and using that $\langle v,d \rangle=0$ due to orthogonality:
-```math
-R_A(u) = \frac{\langle v+td , A (v+td)\rangle}{\langle v+td, v+td \rangle}=\frac{\langle v,Av \rangle}{\langle v,v\rangle + \langle td,td \rangle} +\frac{\langle td,Atd \rangle}{\langle v+td, v+td \rangle}
-```
-One can decompose term by term 
-
-
-**i)**
-
-```math
-\frac{\langle v,Av \rangle}{\langle v,v\rangle + \langle td,td \rangle} \approx \lambda
-```
-**ii)**
-```math
-\frac{\langle td,Atd \rangle}{\langle v+td, v+td \rangle}=\frac{t^2\langle d,Ad \rangle} {\langle v+td, v+td \rangle}
-```
-################################ -> the rest is just testing 
-```math
-R_A(u) = \frac{⟨v, Av⟩ + ⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-
-
-```
-```math
-R_A(u) = \lambda + \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-```
-
-```math
-R_A(u) = \lambda + t^2 \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{t^2 (⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩)}
-
-```
-
-```math
-R_A(u) = \lambda + t^2 \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-```
+**(b)** Assume our goal is to approximate the ground state eigenvalue of the Morse oscillator using the single-precision procedure in (a), i.e. the computation of the ground state eigenvalue of the harmonic oscillator using the inverse power method in single precision. Compute the total error against the analytical ground state eigenvalue $E_0^M$. Split this total error into error contributions (model error, discretisation error, algorithm error, arithmetic error) as discussed in the lecture and indicate their respective sizes in each case. Use `BigFloat` as a proxy for estimating the result for "exact" floating-point arithmetic.
 """
 
-# ╔═╡ bd58235d-2dde-4553-96f7-474f19f423f7
+# ╔═╡ 0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# Your code and answers go here
 md"""
-**(b) Answer**
+**(b) Solution**
 
-From exercise (a) it is known that the Rayleigh quotient approximation error scales with $t^2$, so if $t=\frac{||\delta||}{d}=\frac{\epsilon}{d}$ with $d$ being a normalised vector, then the error scales with $\epsilon ^2$.
+Let’s start by doing a recap of all the error types: 
+```math
+\begin{aligned}
+e_\text{arithmetic}=&|\mu_1^{\text{(big)}} - \mu_1^{\text{(fp32)}}| \quad \text{the error due to the storage of the data}\\
+e_\text{algorithm}= &|\mu_1 - \mu_1^{\text{(big)}}| \quad \text{error due to the non nul tolerance}\\
+e_\text{discretisation}=&|\lambda_1 - \mu_1| \quad \text{the error due to the finite number of mesh points}\\
+e_\text{model}=&|\lambda_\ast - \lambda_1| \quad \text{the error due to the simplifying assumptions of our model}
+\end{aligned}
+```
 
+and the total error $|\lambda_\ast - \mu_1^{\text{(fp64)}}|$ is the sum of all of these errors.
 
-
+Let’s now try to quantify them:
 """
 
-# ╔═╡ b5f406c4-fb9c-467d-87b1-6c51507da4c3
+# ╔═╡ b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+begin	
+	fd_Hh_big = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	μ_big, u_big=inverse_power_method(fd_Hh_big,tol=tol)
+
+	e_arith64=abs(μ_big-μ_64)
+	e_arith32=abs(μ_big-μ_32)
+
+	println(e_arith64)
+	println(e_arith32)
+	
+end
+
+# ╔═╡ d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+begin
+	function numerical_eigenvalue(N, a; T=Float64, kwargs...)
+	H = - 0.5 * fd_laplacian(N, a; T=BigFloat) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+	inverse_power_method(H; kwargs...).μ
+	end
+	#μ_big= inverse_power_method(A_bigfloat,tol=1e-4)
+	e_algo=abs(μ_big_low_tol[1]-μ_big[1])
+
+end
+
+# ╔═╡ 23b6318e-009a-4d10-b886-78ab5bfeac51
+md"""
+model error: we evaluate the lowest eigenvalue and compare it to 0, as it is imposed by the 0 dirlichet boundaries, $E_1$:
+```math
+E^H_1 = \omega \left(1 + \frac12\right)=\frac{3}{2}\omega
+```
+and thus 
+
+```math
+e_\text{model}=|\lambda_\ast -\lambda_1|=|\lambda_1|=\frac{3}{2}\omega
+```
+"""
+
+# ╔═╡ 5326f45f-2a38-43b4-a1f3-183fd467f4df
+
+
+e_model=3ω/2
+
+
+# ╔═╡ 48eaa3d2-93c6-402d-beb6-1107d88449d2
+
+
+# ╔═╡ 11af728b-959c-4ef4-b3e4-1c1a4cd9b837
+begin
+	λ1=e_model
+	μ1=eigvals(fd_laplacian(N,a))[1]
+	println(μ1)
+	e_disc=abs(λ1-μ1)
+end
+
+# ╔═╡ 1adea645-294d-4529-ba60-4a9c3a4df40a
+
+
+# ╔═╡ 23c7d3af-373a-42b2-9f3c-deb03244657a
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	Ns=500:2000:50
+	p = plot(; yaxis=:log)
+	μ1_list  = [fd_eigenvalue(N, a, 1) for N in Ns]
+	plot!(p, Ns, abs.(μ1_list .- λ1), label="discretisation error")
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
+md"""
+**(c)** Use the numerical parameters of your setup to balance all error contributions with the model error, i.e. tune `N`, `tol` and decide between `Float32` and `Float64`, such that each of the error contributions you computed in (b) are roughly on the order of the model error.
+"""
+
+# ╔═╡ 76739c9d-d84e-41a8-9979-712e1f47e279
 md"""
 **(c) Answer**
 
+the model error is of order $10^0$
+
 """
 
-# ╔═╡ d5fdd2ff-16c0-4247-a38d-d4eab02714de
-#rayleigh method
-function Rayleigh_met(A,u0,tol=1e-8,maxiter=500)
-	u=u0
-	for i in 1:maxiter
-		u_prev = u
-		Ray_μ = dot(u,A*u)/dot(u,u)
-		u = A*u - Ray_μ*u
-		u /= norm(u)
-		if norm(u-u_prev)< tol
-			break
-		end
+# ╔═╡ 3cac56b4-fb51-4304-b262-ffa7a7e0fb4e
+function e_arith_Nlist(Nstart,Nend,Nstep,a;T=Float32)
+	N_list=[Nstart:Nend:Nstep]
+	μ1_list=[]
+	e_arith_list=[]
+	for N in N_list
+		fd_Hh = - 0.5 * fd_laplacian(N, a; T=T) + 0.5 * ω^2 * Diagonal(grid_points.^2)
+		μ1, u=inverse_power_method(fd_Hh,tol=tol)
+		e_arith=abs(μ_big-μ1)
+		push!(e_arith_list,e_arith)
 	end
-	return(Ray_μ,u)
+	p = plot(; yaxis=:log)
+	plot!(p, N_list, e_arith_list, label="arithmetic error")
+
+return e_arith_list
 end
 
-# ╔═╡ 0ef64f6e-f260-4295-b503-7442daa67ee7
-#power method
-function power_method(A, x0; tol=1e-8, maxiter=500)
-	x = x0
-	for i in 1:maxiter
-		xprev = x
-		x = A * x
-		x /= norm(x)
-		if min(norm(x - xprev), norm(-x - xprev)) < tol
-			break
-		end
-	end
-	λ = dot(x, A, x)
-	(; λ, x)
-end
-
-# ╔═╡ b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
-A = [30000 -10000 10000; 
-     -10000 -30000 0; 
-     10000 0 1]
-
-# ╔═╡ 7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
-begin
-	λ,v= eigen(A)
-	println(λ)
-	println(v)
-	
-end
-
-# ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
-#initialisation of the arrays
-
-begin
-	
-	μ_pow_array=[]
-	u1_pow_array=[]
-	u2_pow_array=[]
-	u3_pow_array=[]
-
-	μ_Ray_array=[]
-	u1_Ray_array=[]
-	u2_Ray_array=[]
-	u3_Ray_array=[]
-	
-	ϵ_array=range(start=0.01,stop=0.1,step=0.01)
-	println("length of the error array",ϵ_array)
-	
-	v1=v[1:3]
-	v2=v[4:6]
-	v3=v[7:9]
-end;
-
-	
-
-
-
-# ╔═╡ 6aefc47d-e9d3-400c-a3a5-031a6dae0cc2
-#data collection
-
-for (i, ϵ_norm) in enumerate(ϵ_array)
-	#create a noise vector with increasing norm per iteration
-
-	ϵ_vect=rand(3,1)
-	current_norm=norm(ϵ_vect)
-	ϵ_vect*=ϵ_norm/current_norm
-	
-	#create the 3 initial vectors with some noise ϵ
-	
-	u1 = v1+ϵ_vect
-	u2 = v2+ϵ_vect
-	u3 = v3+ϵ_vect
-
-	
-	current_Ray_approx_μ=[Rayleigh_met(A,u1)[1],Rayleigh_met(A,u2)[1],Rayleigh_met(A,u3)[1]] 
-	current_Ray_approx_u=[Rayleigh_met(A,u1)[2],Rayleigh_met(A,u2)[2],Rayleigh_met(A,u3)[2]] 
-	
-	current_pow_approx_μ=[-power_method(A,u1)[1],-power_method(A,u2)[1],-power_method(A,u3)[1]] # - because the first μ should be negative, but then the last μ has wrong sign... 
-	current_pow_approx_u=[-power_method(A,u1)[2],-power_method(A,u2)[2],-power_method(A,u3)[2]]
-	
-	println("power μ approx:",current_pow_approx_µ)
-	print("power u approx:",current_pow_approx_u)
-	println("Ray μ approx:",current_Ray_approx)
-
-	#add the current results in the corresponding array
-	
-	push!(μ_Ray_array,current_Ray_approx_µ)
-	push!(u1_pow_array,current_Ray_approx_u[1])
-	push!(u2_pow_array,current_Ray_approx_u[2])		
-	push!(u3_pow_array,current_Ray_approx_u[3])
-	
-	push!(μ_pow_array,current_pow_approx_µ)
-	push!(u1_pow_array,current_pow_approx_u[1])
-	push!(u2_pow_array,current_pow_approx_u[2])		
-	push!(u3_pow_array,current_pow_approx_u[3])
-end
-
-# ╔═╡ e0a99adc-7a80-4767-ae01-70b67dad931b
-#all the plots
-
-for i in range(1,3)
-	
-	#eigenvalues plots
-	
-	plt=plot(yaxis=:log)
-	plot!(ϵ_array,[μ[i] for μ in μ_Ray_array], label="Rayleigh μ")
-	plot!(ϵ_array,[μ[i] for μ in μ_pow_array], label="power method μ")
-	plot!(ϵ_array,fill(λ[i], length(ϵ_array)), label="true eigenvalue λ")
-	display(plt)
-	
-	#eigenvalue error plots
-	
-	plot(yaxis=:log)
-	plot!(ϵ_array,[abs(λ[i]-μ[i]) for μ in μ_Ray_array], label="rayleigh μ error")
-	plot!(ϵ_array,[abs(λ[i]-μ[i]) for μ in μ_pow_array], label="power method μ error")
-
-	#eigenvector norm errors
-
-	plot(yaxis=:log)
-	plot(ϵ_array,[abs(norm(u1)-norm(v1)) for u1 in u1_pow_array],label="power method u1 error")
-	plot(ϵ_array,[abs(norm(u2)-norm(v2)) for u2 in u2_pow_array],label="power method u2 error" )
-	plot(ϵ_array,[abs(norm(u3)-norm(v3)) for u3 in u3_pow_array],label="power method u3 error" )
-
-	plot(ϵ_array,[abs(norm(u1)-norm(v1)) for u1 in u1_pow_array],label="Rayleigh u1 error")
-	plot(ϵ_array,[abs(norm(u2)-norm(v2)) for u2 in u2_pow_array],label="Rayleigh method u2 error" )
-	plot(ϵ_array,[abs(norm(u3)-norm(v3)) for u3 in u3_pow_array],label="Rayleigh method u3 error" )
-end
-
-#why won’t it plot anything?
+# ╔═╡ 9ce0b6c1-887a-4311-96b0-f2bbb37a50b0
+e_arith_Nlist(10,100,10,5)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoTeachingTools = "661c6b06-c737-4d37-b85c-46df65de6f69"
 
 [compat]
 Plots = "~1.39.0"
+PlutoTeachingTools = "~0.2.13"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -487,7 +703,13 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "5e256db6c75b471ea99b497bdce369f472c9aed2"
+project_hash = "e6abf62d24e0c259ba7942121920191b88fff29b"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "91bd53c39b9cbfb5ef4b015e8b582d344532bd0a"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.2.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -516,6 +738,12 @@ git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
 
+[[deps.CodeTracking]]
+deps = ["InteractiveUtils", "UUIDs"]
+git-tree-sha1 = "a1296f0fe01a4c3f9bf0dc2934efbf4416f5db31"
+uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
+version = "1.3.4"
+
 [[deps.CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
 git-tree-sha1 = "02aa26a4cf76381be7f66e020a3eddeb27b0a092"
@@ -524,9 +752,9 @@ version = "0.7.2"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
-git-tree-sha1 = "67c1f244b991cad9b0aa4b7540fb758c2488b129"
+git-tree-sha1 = "d9a8f86737b665e15a9641ecbac64deef9ce6724"
 uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-version = "3.24.0"
+version = "3.23.0"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -598,6 +826,10 @@ deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
+
+[[deps.Distributed]]
+deps = ["Random", "Serialization", "Sockets"]
+uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -716,15 +948,33 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "5eab648309e2e060198b45820af1a37182de3cce"
+git-tree-sha1 = "19e974eced1768fb46fd6020171f2cec06b1edb5"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.0"
+version = "1.9.15"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
 git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
+
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "c47c5fa4c5308f27ccaac35504858d8914e102f9"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.4"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "d75853a0bdbfb1ac815478bacd89cd27b550ace6"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.3"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -758,6 +1008,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "6f2675ef130a300a112286de91973805fcc5ffbc"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.91+0"
+
+[[deps.JuliaInterpreter]]
+deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
+git-tree-sha1 = "81dc6aefcbe7421bd62cb6ca0e700779330acff8"
+uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
+version = "0.9.25"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -900,6 +1156,17 @@ deps = ["Dates", "Logging"]
 git-tree-sha1 = "0d097476b6c381ab7906460ef1ef1638fbce1d91"
 uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 version = "1.0.2"
+
+[[deps.LoweredCodeUtils]]
+deps = ["JuliaInterpreter"]
+git-tree-sha1 = "60168780555f3e663c536500aa790b6368adc02a"
+uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
+version = "2.3.0"
+
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1048,6 +1315,30 @@ version = "1.39.0"
     ImageInTerminal = "d8c32880-2388-543b-8c61-d9f865259254"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.PlutoHooks]]
+deps = ["InteractiveUtils", "Markdown", "UUIDs"]
+git-tree-sha1 = "072cdf20c9b0507fdd977d7d246d90030609674b"
+uuid = "0ff47ea0-7a50-410d-8455-4348d5de0774"
+version = "0.0.5"
+
+[[deps.PlutoLinks]]
+deps = ["FileWatching", "InteractiveUtils", "Markdown", "PlutoHooks", "Revise", "UUIDs"]
+git-tree-sha1 = "8f5fa7056e6dcfb23ac5211de38e6c03f6367794"
+uuid = "0ff47ea0-7a50-410d-8455-4348d5de0420"
+version = "0.1.6"
+
+[[deps.PlutoTeachingTools]]
+deps = ["Downloads", "HypertextLiteral", "LaTeXStrings", "Latexify", "Markdown", "PlutoLinks", "PlutoUI", "Random"]
+git-tree-sha1 = "542de5acb35585afcf202a6d3361b430bc1c3fbd"
+uuid = "661c6b06-c737-4d37-b85c-46df65de6f69"
+version = "0.2.13"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "e47cd150dbe0443c3a3651bc5b9cbd5576ab75b7"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.52"
+
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
 git-tree-sha1 = "03b4c25b43cb84cee5c90aa9b5ea0a78fd848d2f"
@@ -1056,9 +1347,9 @@ version = "1.2.0"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "00805cd429dcb4870060ff49ef443486c262e38e"
+git-tree-sha1 = "7eb1686b4f04b82f96ed7a4ea5890a4f0c7a09f1"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.4.1"
+version = "1.4.0"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1106,6 +1397,12 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
+
+[[deps.Revise]]
+deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "Requires", "UUIDs", "Unicode"]
+git-tree-sha1 = "7364d5f608f3492a4352ab1d40b3916955dc6aec"
+uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
+version = "3.5.5"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -1192,6 +1489,11 @@ git-tree-sha1 = "9a6ae7ed916312b41236fcef7e0af564ef934769"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.9.13"
 
+[[deps.Tricks]]
+git-tree-sha1 = "aadb748be58b492045b4f56166b5188aa63ce549"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.7"
+
 [[deps.URIs]]
 git-tree-sha1 = "b7a5e99f24892b6824a954199a45e9ffcc1c70f0"
 uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
@@ -1237,9 +1539,9 @@ version = "0.2.0"
 
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
-git-tree-sha1 = "7558e29847e99bc3f04d6569e82d0f5c54460703"
+git-tree-sha1 = "ed8d92d9774b077c53e1da50fd81a36af3744c1c"
 uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
-version = "1.21.0+1"
+version = "1.21.0+0"
 
 [[deps.Wayland_protocols_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1467,34 +1769,74 @@ version = "3.5.0+0"
 
 [[deps.xkbcommon_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
-git-tree-sha1 = "9c304562909ab2bab0262639bd4f444d7bc2be37"
+git-tree-sha1 = "9ebfc140cc56e8c2156a15ceac2f0302e327ac0a"
 uuid = "d8fb68d0-12a3-5cfd-a85a-d49703b185fd"
-version = "1.4.1+1"
+version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
-# ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
-# ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
-# ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
-# ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
-# ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
-# ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
-# ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
-# ╟─5a1da87d-1536-4447-a357-3998676f8431
-# ╠═a7924246-6857-4ff4-9ff6-c6d0d48211b5
-# ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
-# ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
-# ╟─bd58235d-2dde-4553-96f7-474f19f423f7
-# ╠═b5f406c4-fb9c-467d-87b1-6c51507da4c3
-# ╠═dad9ee8a-525a-4f62-86ae-c3f0818e7182
-# ╠═a326211a-d815-418b-8cf4-703482769fe9
-# ╠═d5fdd2ff-16c0-4247-a38d-d4eab02714de
-# ╠═0ef64f6e-f260-4295-b503-7442daa67ee7
-# ╠═7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
-# ╠═b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
-# ╠═5800a0c5-2fe5-4c42-931b-ceab933811fa
-# ╠═6aefc47d-e9d3-400c-a3a5-031a6dae0cc2
-# ╠═e0a99adc-7a80-4767-ae01-70b67dad931b
+# ╟─dc4aea04-5716-11ee-1952-27c9bb3f0e5e
+# ╟─4b08176a-7122-4c48-bc07-7b1de84d81cb
+# ╠═7dad9d40-d336-4489-ad64-4605d7b96173
+# ╟─24f29d78-220b-4829-ae90-e6533f6029d7
+# ╠═b98f299c-ab5b-44b8-a47c-3b55c0595a1e
+# ╟─23ee7361-db58-498c-9879-1b48b282b628
+# ╠═80b1b579-a871-48af-842a-e74834f944ce
+# ╠═093f0ea9-f570-4307-9235-24cfb576a57c
+# ╠═506def7a-19b9-4fe8-b836-524f8a13013f
+# ╟─061ff8be-a2e3-4c8d-a8e4-c76bd2df1d15
+# ╠═42b170a1-08fe-4b53-b56e-2b20d5924dcc
+# ╟─fcd25aeb-5106-440b-a857-f08a10c478b4
+# ╟─0eb0b23b-9b20-41d5-ab57-3e9d98134403
+# ╠═c9f88820-502b-4e34-8fdc-151850d4cb84
+# ╟─5d05e086-4134-47d5-9817-2a130af5633f
+# ╠═2a357d9b-d06b-48a1-b7c0-266147f4c86c
+# ╠═796a5e6b-85a1-4292-9b08-40b869521a4a
+# ╟─fb64bea8-011b-4861-ab6a-5933eed969fa
+# ╟─7a91f3f8-a565-4172-81f5-d34aa13b5449
+# ╠═c86bdbfc-bb52-4d4a-856e-1e987e844540
+# ╠═4a2845ac-e824-43cd-a3ac-ed962a70a7f8
+# ╠═36cc4758-db01-4f55-9ea6-c0cfd5d56c63
+# ╟─7372fe9c-8e45-4dc5-ac94-618aa355843c
+# ╟─afbfe440-dd4b-4992-bb9c-a63e06820250
+# ╟─d871ba51-3daa-4b98-b4e7-03a7021f41b6
+# ╠═10a52f62-ed5a-4f3c-a13c-2d270586fadd
+# ╠═180dda85-dc90-472b-8311-f852c97d07e2
+# ╟─bda1f365-2d5f-4ccc-9570-38b53fbc58d8
+# ╟─0eda0fc0-4992-4f7f-9e2e-c7dfc17400c8
+# ╠═9255fc8f-2d62-4889-b0ff-12fc911eb4ed
+# ╠═5f575420-9ad8-4864-8b1c-470ab5b88bd2
+# ╠═5c49edd5-8b5c-4394-a100-3bbb44634374
+# ╟─419501f0-36e5-4e59-9b94-0968bfedcea0
+# ╟─fbe331ef-dcdb-4d83-a9b7-ef88646a9ab9
+# ╟─c3afd2f4-6aa5-472e-a956-93ff037119bc
+# ╠═f1d107de-d176-4c98-91e2-608a34edee84
+# ╠═d4458730-95f1-45a5-a444-52bd56388729
+# ╠═97d3a6b5-991b-483f-8c0e-f6afd038b7c0
+# ╠═363e6f97-1fe6-4bcf-9c68-e513bb31f4fe
+# ╟─fcbe8e9d-f0f6-494c-8b4c-3952ce345357
+# ╟─475bd69f-4cb9-440a-8f16-757cdce8af83
+# ╠═4ed75361-a8e2-469f-8ec5-083b2566745b
+# ╟─d3cd7b09-6dfe-4dc3-a564-89f8c24d59e0
+# ╟─75e0104b-a955-439c-86e1-28825df7d1e7
+# ╠═63c40ce7-6bd6-4d82-befd-ee79b40fdce5
+# ╠═9665c7d0-ec7d-4a95-9259-1a044ccfc21a
+# ╟─fff1dd4e-a22b-45c4-9cb3-96771ed47902
+# ╠═bc8ad43e-d1d1-41cc-acf7-5b3e5f1fbd44
+# ╟─6042a979-c7bb-458f-8ac8-b98a3782832b
+# ╟─e2378c13-5348-46b8-bf66-23fe25fa9247
+# ╠═0c65f882-9e4c-4842-a973-520a7d6c4d2a
+# ╠═b59a8370-2c68-407b-bea7-0d09c7bd7ad6
+# ╠═d20b589c-3ccf-4b03-b766-6d5adbf6c62a
+# ╠═23b6318e-009a-4d10-b886-78ab5bfeac51
+# ╠═5326f45f-2a38-43b4-a1f3-183fd467f4df
+# ╠═48eaa3d2-93c6-402d-beb6-1107d88449d2
+# ╠═11af728b-959c-4ef4-b3e4-1c1a4cd9b837
+# ╠═1adea645-294d-4529-ba60-4a9c3a4df40a
+# ╠═23c7d3af-373a-42b2-9f3c-deb03244657a
+# ╟─adeb62bd-0a5b-41c7-beee-0a0774cf1d3f
+# ╠═76739c9d-d84e-41a8-9979-712e1f47e279
+# ╠═3cac56b4-fb51-4304-b262-ffa7a7e0fb4e
+# ╠═9ce0b6c1-887a-4311-96b0-f2bbb37a50b0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
