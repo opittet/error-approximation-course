@@ -282,8 +282,32 @@ R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle}
 ```
 and thus replacing $x$ with $u=v+td$ and using that $\langle v,d \rangle=0$ due to orthogonality:
 ```math
-R_A(u) = \frac{\langle v+td , A (v+td)\rangle}{\langle v+td, v+td \rangle}=\frac{\langle v,Av \rangle}{\langle v,v\rangle + \langle td,td \rangle} +\frac{\langle td,Atd \rangle}{\langle v+td, v+td \rangle}
+\begin{align}
+R_A(u) &= \frac{\langle v+td , A (v+td)\rangle}{\langle v+td, v+td \rangle}=\frac{\langle v,Av \rangle}{\langle v,v\rangle + \langle td,td \rangle} +\frac{\langle td,Atd \rangle}{\langle v,v\rangle + \langle td,td \rangle} = \\
+&= \frac{\lambda \langle v,v \rangle + \lambda(t^2 \langle d,d \rangle - t^2 \langle d,d \rangle)}{\langle v,v\rangle + t^2 \langle d,d \rangle} + \frac{t^2\langle d,Ad \rangle}{\langle v,v\rangle + t^2 \langle d,d \rangle} = \\
+&= \lambda + \frac{t^2 \left( - \lambda  \langle d,d \rangle + \langle d,Ad \rangle\right)}{\langle v,v\rangle + t^2 \langle d,d \rangle}.
+\end{align}
 ```
+
+Using the fact that both $v$ and $d$ are unit vectors:
+
+$\langle v,v \rangle = \| v \|^2 = 1,$ and 
+$\langle d,d \rangle = \| d \|^2 = 1.$
+
+Therefore,
+
+```math
+\begin{align}
+R_A(u) &= \lambda + \frac{ \left( t^2\langle d,Ad \rangle - t^2\lambda \right)}{1 + t^2} =\\
+	&= \lambda + \frac{\left(1 + t^2\right)\left(t^2\langle d,Ad \rangle - t^2 \lambda\right) - t^4 \left( - \lambda   + \langle d,Ad \rangle\right)}{1 + t^2} = \\
+	&= \lambda + t^2\left(\langle d,Ad \rangle - \lambda\right) - \frac{ t^4 \left( - \lambda   + \langle d,Ad \rangle\right)}{1 + t^2} = \\
+ 	&= \lambda + t^2\left(\langle d,Ad \rangle - \lambda\right) + O(t^4).
+\end{align}
+```
+"""
+
+# ╔═╡ ff09621d-5b84-454e-8073-1180e4c66dd9
+md"""
 One can decompose term by term 
 
 
@@ -1384,10 +1408,11 @@ version = "1.4.1+1"
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
-# ╠═5a1da87d-1536-4447-a357-3998676f8431
+# ╟─5a1da87d-1536-4447-a357-3998676f8431
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
+# ╟─ff09621d-5b84-454e-8073-1180e4c66dd9
 # ╟─bd58235d-2dde-4553-96f7-474f19f423f7
 # ╠═b5f406c4-fb9c-467d-87b1-6c51507da4c3
 # ╠═dad9ee8a-525a-4f62-86ae-c3f0818e7182
