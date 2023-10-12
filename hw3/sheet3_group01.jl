@@ -375,34 +375,6 @@ begin
 	plot!(1:num_iterations, eigenvector_errors, yaxis=:log, label="Eigenvector Error")
 end
 
-# ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
-# ╠═╡ disabled = true
-#=╠═╡
-# begin
-# 	μ_Ray_array=[]
-# 	ϵ_array=range(start=0.01,stop=0.1,step=0.01)
-# 	println("length of the error array",ϵ_array)
-
-# 	for (i, ϵ_norm) in enumerate(ϵ_array)
-# 		ϵ_vect=rand(3,1)
-# 		current_norm=norm(ϵ_vect)
-# 		ϵ_vect*=ϵ_norm/current_norm
-# 		println(ϵ_vect)
-# 		println(i)
-# 		println(v[1:3])
-# 		u = v[1:3]+ϵ_vect
-# 		current_Ray_approx=Rayleigh_quotient(A,u)
-# 		println(current_Ray_approx)
-# 		push!(μ_Ray_array,Rayleigh_quotient(A,u))
-# 		#add the power method
-# 	end
-# 	println(length(μ_Ray_array))
-# 	plot(ϵ_array,μ_Ray_array, label="Rayleigh error")
-# 	plot(ϵ_array,λ, label="true eigenvalue")
-
-end
-  ╠═╡ =#
-
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
