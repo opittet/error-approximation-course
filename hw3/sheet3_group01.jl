@@ -306,40 +306,6 @@ R_A(u) &= \lambda + \frac{ \left( t^2\langle d,Ad \rangle - t^2\lambda \right)}{
 ```
 """
 
-# ╔═╡ ff09621d-5b84-454e-8073-1180e4c66dd9
-md"""
-One can decompose term by term 
-
-
-**i)**
-
-```math
-\frac{\langle v,Av \rangle}{\langle v,v\rangle + \langle td,td \rangle} \approx \lambda
-```
-**ii)**
-```math
-\frac{\langle td,Atd \rangle}{\langle v+td, v+td \rangle}=\frac{t^2\langle d,Ad \rangle} {\langle v+td, v+td \rangle}
-```
-################################ -> the rest is just testing 
-```math
-R_A(u) = \frac{⟨v, Av⟩ + ⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-
-
-```
-```math
-R_A(u) = \lambda + \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-```
-
-```math
-R_A(u) = \lambda + t^2 \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{t^2 (⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩)}
-
-```
-
-```math
-R_A(u) = \lambda + t^2 \frac{⟨v, A(td)⟩ + ⟨td, A(v)⟩ + ⟨td, A(td)⟩}{⟨v, v⟩ + ⟨v, td⟩ + ⟨td, v⟩ + ⟨td, td⟩}
-```
-"""
-
 # ╔═╡ bd58235d-2dde-4553-96f7-474f19f423f7
 md"""
 **(b) Answer**
@@ -1412,7 +1378,6 @@ version = "1.4.1+1"
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
 # ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
-# ╟─ff09621d-5b84-454e-8073-1180e4c66dd9
 # ╟─bd58235d-2dde-4553-96f7-474f19f423f7
 # ╠═b5f406c4-fb9c-467d-87b1-6c51507da4c3
 # ╠═dad9ee8a-525a-4f62-86ae-c3f0818e7182
