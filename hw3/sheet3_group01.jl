@@ -88,19 +88,9 @@ Applying the linearity property of the inner product:
 \langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
 ```
 
-From (a) we have:
-
-```math
-\begin{split}
-\forall y, z \in \mathbb{C}^n \qquad 0 &= \left\langle y, \left(A - A^H\right) z \right\rangle + \left\langle z, \left(A - A^H\right) y \right\rangle \\ 
-		&= \langle y, A z \rangle - \langle y, A^H z \rangle + \langle z, A y \rangle - \langle z, A^H y \rangle \\
-		&= \left\langle y + z, A \left( y + z \right) \right\rangle - \left\langle y + z, A^H \left( y + z \right) \right\rangle.
-
-\end{split}
-```
 This implies that:
 
-$\left\langle y + z, A \left( y + z \right) \right\rangle = \left\langle y + z, A^H \left( y + z \right) \right\rangle$,
+$\left\langle x, A x \right\rangle = \left\langle x, A^H x \right\rangle$,
 
 which is true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
 $\qquad \qquad  \square$
@@ -166,8 +156,9 @@ $\|D\|_F = \sqrt{\text{tr}(D^H D)} = \sqrt{\sum_{i=1}^n|d_{i}|^2}$
 
 Recalling the definition of the $p$-norm of a matrix:
 
-$\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} = \max_{0 \neq x \in \mathbb{C}^n} \frac{\left( \sum_{i=1}^{n}|d_ix_i|^p \right)^{1/p}}{\left( \sum_{i=1}^{n}|x_i|^p \right)^{1/p}}$
+$\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} =\max_{ \| x\|_p = 1}\|Dx\|_p = \max_{\| x\|_p = 1} \left( \sum_{i=1}^{n}|d_ix_i|^p \right)^{1/p} = \sigma_{max}(D),$
 
+where $\sigma_{max}(D)$ is the biggest singular value of the matrix $D$
 Given a matrix partition into column vectors:
 
 $A = \begin{bmatrix}
@@ -205,10 +196,10 @@ Therefore, eigenvalues of $A^H A$ are non-negative. Thus,
 
 $\|A\|_2 = \sqrt{\lambda_{\max}(A^H A)} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F$
 
-Reminding that,
+Using Cauchy-Schwartz inequality we obtain:
 
 ```math
-R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle} \leq \lambda_{max}(A) = \sqrt{\lambda_{max}(A^H A)} = \| A\|_2,
+| R_A(x) | = \frac{|\langle x , A x\rangle|}{\langle x, x \rangle} \leq \frac{\| x\|_2 \| A x\|_2}{\| x\|^2_2} \leq \frac{\| A\|_2 \| x\|_2}{\| x\|_2} = \| A\|_2,
 ```
 
 
@@ -226,7 +217,7 @@ md"""
 
 As we remember:
 ```math
-R_A(x) = \frac{\langle x , A x\rangle}{\langle x, x \rangle} \leq \lambda_{max}(A) =\sqrt{\lambda_{\max}(A^H A)} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F.
+| R_A(x) | = \frac{| \langle x , A x\rangle | }{\langle x, x \rangle} \leq \sqrt{\sum_{i=1}^n \lambda_i(A^H A)} = \|A\|_F.
 ```
 This shows that it is a rough estimate of the Rayleigh quotient especially for large matrices since with growing $n$ the sum $\sum_{i=1}^n \lambda_i(A^H A)$ will also grow. This may lead to a larger discrepancy between the upper bound given by the Frobenius norm and the true maximum eigenvalue.
 """
@@ -1419,7 +1410,7 @@ version = "1.4.1+1"
 # ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
-# ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
+# ╠═8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
 # ╟─5a1da87d-1536-4447-a357-3998676f8431
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
