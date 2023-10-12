@@ -150,15 +150,17 @@ D = \begin{bmatrix}
 ```
 Then, Frobenius norm of $D$ is defined as following:
 
-$\|D\|_F = \sqrt{\text{tr}(D^H D)} = \sqrt{\sum_{i=1}^n|d_{i}|^2}$
+$\|D\|_F = \sqrt{\text{tr}(D^H D)} = \sqrt{\sum_{i=1}^n|d_{i}|^2} = \sqrt{\sum_{i=1}^n\sigma_{i}^2}$
 
 **ii)** The $p$-norm of a diagonal matrix.
 
 Recalling the definition of the $p$-norm of a matrix:
 
-$\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} =\max_{ \| x\|_p = 1}\|Dx\|_p = \max_{\| x\|_p = 1} \left( \sum_{i=1}^{n}|d_ix_i|^p \right)^{1/p} = \sigma_{max}(D),$
+$\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} =\max_{ \| x\|_p = 1}\|Dx\|_p = \max_{\| x\|_p = 1} \left( \sum_{i=1}^{n}|d_ix_i|^p \right)^{1/p} =|d_{max}| = \sigma_{max}(D),$
 
-where $\sigma_{max}(D)$ is the biggest singular value of the matrix $D$
+where $\sigma_{max}(D)$ is the biggest singular value of the matrix $D$.
+
+
 Given a matrix partition into column vectors:
 
 $A = \begin{bmatrix}
@@ -1407,7 +1409,7 @@ version = "1.4.1+1"
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
 # ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
-# ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
+# ╠═bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╠═8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
