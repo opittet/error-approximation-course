@@ -335,6 +335,9 @@ begin
 	r_quotient_exact = Rayleigh_quotient(A, v_exact)
 end
 
+# ╔═╡ 6172b0ab-ca55-4b55-9dcf-d5cb77627513
+λ_exact
+
 # ╔═╡ e4edcc0e-e008-4424-9daa-84001d0064c5
 begin
 	r_quotient_list = []
@@ -380,29 +383,32 @@ begin
 end
 
 # ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
-begin
-	μ_Ray_array=[]
-	ϵ_array=range(start=0.01,stop=0.1,step=0.01)
-	println("length of the error array",ϵ_array)
+# ╠═╡ disabled = true
+#=╠═╡
+# begin
+# 	μ_Ray_array=[]
+# 	ϵ_array=range(start=0.01,stop=0.1,step=0.01)
+# 	println("length of the error array",ϵ_array)
 
-	for (i, ϵ_norm) in enumerate(ϵ_array)
-		ϵ_vect=rand(3,1)
-		current_norm=norm(ϵ_vect)
-		ϵ_vect*=ϵ_norm/current_norm
-		println(ϵ_vect)
-		println(i)
-		println(v[1:3])
-		u = v[1:3]+ϵ_vect
-		current_Ray_approx=Rayleigh_quotient(A,u)
-		println(current_Ray_approx)
-		push!(μ_Ray_array,Rayleigh_quotient(A,u))
-		#add the power method
-	end
-	println(length(μ_Ray_array))
-	plot(ϵ_array,μ_Ray_array, label="Rayleigh error")
-	plot(ϵ_array,λ, label="true eigenvalue")
+# 	for (i, ϵ_norm) in enumerate(ϵ_array)
+# 		ϵ_vect=rand(3,1)
+# 		current_norm=norm(ϵ_vect)
+# 		ϵ_vect*=ϵ_norm/current_norm
+# 		println(ϵ_vect)
+# 		println(i)
+# 		println(v[1:3])
+# 		u = v[1:3]+ϵ_vect
+# 		current_Ray_approx=Rayleigh_quotient(A,u)
+# 		println(current_Ray_approx)
+# 		push!(μ_Ray_array,Rayleigh_quotient(A,u))
+# 		#add the power method
+# 	end
+# 	println(length(μ_Ray_array))
+# 	plot(ϵ_array,μ_Ray_array, label="Rayleigh error")
+# 	plot(ϵ_array,λ, label="true eigenvalue")
 
 end
+  ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1424,6 +1430,7 @@ version = "1.4.1+1"
 # ╠═d5fdd2ff-16c0-4247-a38d-d4eab02714de
 # ╠═b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
 # ╠═7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
+# ╠═6172b0ab-ca55-4b55-9dcf-d5cb77627513
 # ╠═6f4c05de-07f6-46fc-b430-8ab9297ea7f5
 # ╠═e4edcc0e-e008-4424-9daa-84001d0064c5
 # ╠═5b609c66-9627-442c-923a-6116c868cd90
@@ -1431,6 +1438,6 @@ version = "1.4.1+1"
 # ╠═2b748d15-e04f-4789-84f3-f422aee8d059
 # ╠═b00865cb-7a3c-439f-8cff-ac78b05dce47
 # ╠═3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
-# ╠═5800a0c5-2fe5-4c42-931b-ceab933811fa
+# ╟─5800a0c5-2fe5-4c42-931b-ceab933811fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
