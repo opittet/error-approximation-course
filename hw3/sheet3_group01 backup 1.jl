@@ -88,34 +88,12 @@ Applying the linearity property of the inner product:
 \langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
 ```
 
-From 1a):
+This implies that:
 
-```math
-\begin{align}
+$\left\langle x, A x \right\rangle = \left\langle x, A^H x \right\rangle$,
 
-0=& \langle y, \left(A - A^H\right) z \rangle - \langle z, \left(A - A^H\right) y \rangle \\ 
-=& \langle  \left(A - A^H\right)^H y, z \rangle - \langle z, \left(A - A^H\right) y \rangle \\
-=& -\langle  \left(A - A^H\right) y, z \rangle - \langle z, \left(A - A^H\right) y \rangle
-\end{align}
-```
-```math
-\langle  \left(A - A^H\right) y, z \rangle =\langle y, \left(A - A^H\right) z \rangle
-\qquad \qquad  (\dagger)
-```
-Now one can replace $z$ with $iz$, as both are in $\mathbb{C}^n$, let's now expand both sides:
-
-
-```math
-\begin{align}
-\langle  \left(A - A^H\right) y, iz \rangle =& \langle iz, \left(A - A^H\right) y \rangle \\
-\overline{i}\langle  \left(A - A^H\right) y, z \rangle =& i\langle z, \left(A - A^H\right) y \rangle \\
--\langle  \left(A - A^H\right) y, z \rangle =& \langle z, \left(A - A^H\right) y \rangle \qquad \qquad (\ddagger)
-
-\end{align}
-```
-
-($\dagger$) and ($\ddagger$) can only be both true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
-$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \square$
+which is true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
+$\qquad \qquad  \square$
 
 """
 
@@ -1405,7 +1383,7 @@ version = "1.4.1+1"
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
 # ╠═bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
-# ╠═048e550d-11a5-49e9-bf86-400005ba5dbe
+# ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╠═8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
 # ╟─5a1da87d-1536-4447-a357-3998676f8431
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
@@ -1425,5 +1403,6 @@ version = "1.4.1+1"
 # ╠═2b748d15-e04f-4789-84f3-f422aee8d059
 # ╠═b00865cb-7a3c-439f-8cff-ac78b05dce47
 # ╠═3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
+# ╟─5800a0c5-2fe5-4c42-931b-ceab933811fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
