@@ -73,6 +73,47 @@ Exploiting the linearity property of the inner product we have:
 """
 
 # ╔═╡ bb8a01e3-88f1-47af-a955-b5a819b7483f
+md"""
+(b) **Solution:**
+
+The fact that $\langle x, A x \rangle$ is real means that it must be equal to its complex conjugate:
+```math
+
+\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle x, A^H x \rangle
+```
+Applying the linearity property of the inner product:
+```math
+\langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
+```
+From 1a):
+```math
+\begin{align}
+
+0=& \langle y, \left(A - A^H\right) z \rangle - \langle z, \left(A - A^H\right) y \rangle \ 
+=& \langle  \left(A - A^H\right)^H y, z \rangle - \langle z, \left(A - A^H\right) y \rangle \
+=& -\langle  \left(A - A^H\right) y, z \rangle - \langle z, \left(A - A^H\right) y \rangle
+\end{align}
+```
+```math
+\langle  \left(A - A^H\right) y, z \rangle =\langle y, \left(A - A^H\right) z \rangle
+\qquad \qquad  (\dagger)
+```
+Now one can replace $z$ with $iz$, as both are in $\mathbb{C}^n$, let's now expand both sides:
+
+```math
+\begin{align}
+\langle  \left(A - A^H\right) y, iz \rangle =& \langle iz, \left(A - A^H\right) y \rangle \\
+\overline{i}\langle  \left(A - A^H\right) y, z \rangle =& i\langle z, \left(A - A^H\right) y \rangle \\
+-\langle  \left(A - A^H\right) y, z \rangle =& \langle z, \left(A - A^H\right) y \rangle \qquad \qquad (\ddagger)
+
+\end{align}
+```
+
+
+($\dagger$) and ($\ddagger$) can only be both true if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \square$
+
+"""
 
 
 # ╔═╡ 257b2781-6856-4a89-88ee-a3edfd38c08c
