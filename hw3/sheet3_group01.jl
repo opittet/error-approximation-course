@@ -5,10 +5,7 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ dad9ee8a-525a-4f62-86ae-c3f0818e7182
-using LinearAlgebra
-
-# ╔═╡ a326211a-d815-418b-8cf4-703482769fe9
-using Plots
+using LinearAlgebra, Plots
 
 # ╔═╡ f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
 md"""
@@ -318,14 +315,13 @@ From exercise (a) it is known that the Rayleigh quotient approximation error sca
 
 # ╔═╡ b5f406c4-fb9c-467d-87b1-6c51507da4c3
 md"""
-**(c) Answer**
+**(c) Solution:**
 
 """
 
 # ╔═╡ d5fdd2ff-16c0-4247-a38d-d4eab02714de
-#rayleigh method
-function Rayleigh_met(A,u)
-	Ray_result=dot(u,A*u)/dot(u,u)
+function Rayleigh_quotient(A, u)
+	return dot(u, A * u) / dot(u, u)
 end
 
 # ╔═╡ b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
@@ -335,8 +331,8 @@ A = [30000 -10000 10000;
 
 # ╔═╡ 7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
 begin
-	λ,v= eigen(A)
-	Rayleigh_met(A,v)
+	λ, v= eigen(A)
+	Rayleigh_quotient(A, v)
 end
 
 # ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
@@ -1368,7 +1364,7 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─f9e8cdb0-5239-11ee-0bdd-cf0684181c0b
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
-# ╠═64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
+# ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
 # ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
@@ -1377,11 +1373,10 @@ version = "1.4.1+1"
 # ╟─5a1da87d-1536-4447-a357-3998676f8431
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
-# ╠═d03ece6d-10cc-46c7-a11b-13f7ec50daad
+# ╟─d03ece6d-10cc-46c7-a11b-13f7ec50daad
 # ╟─bd58235d-2dde-4553-96f7-474f19f423f7
-# ╠═b5f406c4-fb9c-467d-87b1-6c51507da4c3
+# ╟─b5f406c4-fb9c-467d-87b1-6c51507da4c3
 # ╠═dad9ee8a-525a-4f62-86ae-c3f0818e7182
-# ╠═a326211a-d815-418b-8cf4-703482769fe9
 # ╠═d5fdd2ff-16c0-4247-a38d-d4eab02714de
 # ╠═7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
 # ╠═b8dd4739-7e4b-4d1d-89a1-ac7f48144e3e
