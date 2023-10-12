@@ -160,8 +160,9 @@ $\|D\|_p = \max_{0 \neq x \in \mathbb{C}^n}\frac{\|Dx\|_p}{\|x\|_p} =\max_{ \| x
 
 where $\sigma_{max}(D)$ is the biggest singular value of the matrix $D$.
 
+Now it's visible that it's not that easy to associate the Frobenius norm to any vector $p$-norm.
 
-Given a matrix partition into column vectors:
+On the other hand, given a matrix partition into column vectors:
 
 $A = \begin{bmatrix}
   a_1 & a_2 & \cdots & a_n \end{bmatrix},$ where $a_i = \begin{bmatrix}
@@ -329,24 +330,23 @@ begin
 end
 
 # ╔═╡ 6172b0ab-ca55-4b55-9dcf-d5cb77627513
-λ_exact
-
-# ╔═╡ e4edcc0e-e008-4424-9daa-84001d0064c5
-begin
-	r_quotient_list = []
-	v_list = []
-	λ_list = []
-end;
+λ_exact[3]
 
 # ╔═╡ 6f4c05de-07f6-46fc-b430-8ab9297ea7f5
 function power_method_with_RQ(A, x0=randn(eltype(A), size(A, 2)); tol=1e-8, maxiter=500)
+	r_quotient_list = []
+	v_list = []
+	λ_list = []
+	
 	x = x0
 	for i in 1:maxiter
 		xprev = x
 		x = A * x
+		
 		x /= norm(x)
 
-		push!(λ_list, dot(x, x))
+		λ = Rayleigh_quotient(A, x)
+		push!(λ_list, λ)
 		push!(v_list, x)
 		
 		if min(norm(x - xprev), norm(-x - xprev)) < tol
@@ -357,23 +357,45 @@ function power_method_with_RQ(A, x0=randn(eltype(A), size(A, 2)); tol=1e-8, maxi
 	(; λ_list, v_list)
 end
 
+# ╔═╡ 5b3c7416-60bb-45f1-85df-b9c283818ad0
+v_exact[1, 3]
+
 # ╔═╡ 5b609c66-9627-442c-923a-6116c868cd90
-e_values, e_vectors = power_method_with_RQ(A)
+begin
+	e_values, e_vectors = power_method_with_RQ(A, maxiter=400);
+	
+	 if v_exact[1, 3] * e_vectors[length(e_vectors)][1] < 0.
+	        e_vectors *= -1
+	 end
+end
+
+# ╔═╡ 66f94d93-db42-4444-ac50-1e0c0a1c283c
+e_vectors[1][1]
 
 # ╔═╡ f30fc650-6cd1-4288-a5b9-f35214a5dd97
 num_iterations = length(e_values)
 
 # ╔═╡ 2b748d15-e04f-4789-84f3-f422aee8d059
-eigenvalue_errors = abs.(e_values .- v_exact[3])
+begin
+	eigenvalue_errors = abs.(e_values .- λ_exact[3])
+	eigenvector_errors = [norm(e_vectors[i] - v_exact[:, 3]) for i in 1:num_iterations]
+end
 
-# ╔═╡ b00865cb-7a3c-439f-8cff-ac78b05dce47
-eigenvector_errors = [norm(e_vectors[i] - v_exact[:, 3]) for i in 1:num_iterations]
+# ╔═╡ 81e237ce-406a-4e56-8dc8-52ec2477d41f
+begin
+	eigenvector_errors_shifted = [value == 0.0 ? 1.e-12 : value for value in eigenvector_errors]
+	
+	eigenvalue_errors_shifted = [value == 0.0 ? 1.e-12 : value for value in eigenvalue_errors]
+end;
 
 # ╔═╡ 3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
 begin
-	plot(1:num_iterations, eigenvalue_errors, yaxis=:log, label="Eigenvalue Error", legend=:topleft)
-	plot!(1:num_iterations, eigenvector_errors, yaxis=:log, label="Eigenvector Error")
+	plot(1:num_iterations, eigenvalue_errors_shifted, yaxis=:log, label="Eigenvalue Error", legend=:topleft)
+	plot!(1:num_iterations, eigenvector_errors_shifted, yaxis=:log, label="Eigenvector Error")
 end
+
+# ╔═╡ 18a9c3e5-03fd-4494-8f7e-953147c4a437
+
 
 # ╔═╡ 5800a0c5-2fe5-4c42-931b-ceab933811fa
 # ╠═╡ disabled = true
@@ -1409,10 +1431,10 @@ version = "1.4.1+1"
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
 # ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
-# ╠═bb8a01e3-88f1-47af-a955-b5a819b7483f
+# ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
-# ╠═8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
+# ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
 # ╟─5a1da87d-1536-4447-a357-3998676f8431
 # ╟─a7924246-6857-4ff4-9ff6-c6d0d48211b5
 # ╟─94330639-53d6-4082-9b8f-3b2cee1c08a1
@@ -1425,12 +1447,14 @@ version = "1.4.1+1"
 # ╠═7bdc8ea0-e8ad-495a-b350-9b6fb17be3f4
 # ╠═6172b0ab-ca55-4b55-9dcf-d5cb77627513
 # ╠═6f4c05de-07f6-46fc-b430-8ab9297ea7f5
-# ╠═e4edcc0e-e008-4424-9daa-84001d0064c5
+# ╠═66f94d93-db42-4444-ac50-1e0c0a1c283c
+# ╠═5b3c7416-60bb-45f1-85df-b9c283818ad0
 # ╠═5b609c66-9627-442c-923a-6116c868cd90
 # ╠═f30fc650-6cd1-4288-a5b9-f35214a5dd97
 # ╠═2b748d15-e04f-4789-84f3-f422aee8d059
-# ╠═b00865cb-7a3c-439f-8cff-ac78b05dce47
+# ╠═81e237ce-406a-4e56-8dc8-52ec2477d41f
 # ╠═3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
+# ╠═18a9c3e5-03fd-4494-8f7e-953147c4a437
 # ╟─5800a0c5-2fe5-4c42-931b-ceab933811fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
