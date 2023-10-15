@@ -73,53 +73,6 @@ Exploiting the linearity property of the inner product we have:
 """
 
 # ╔═╡ bb8a01e3-88f1-47af-a955-b5a819b7483f
-md"""
-(b) **Solution:**
-
-The fact that $\langle x, A x \rangle$ is real means that it must be equal to its complex conjugate:
-```math
-
-\langle x, A x \rangle = \overline{\langle x, A x \rangle} = \langle A x, x \rangle = \langle x, A^H x \rangle
-```
-Applying the linearity property of the inner product:
-```math
-\langle x, A x \rangle - \langle x, A^H x \rangle = \left\langle x, \left(A - A^H\right) x \right\rangle = 0.
-```
-Using (a):
-```math
-\begin{align}
-
-0 &= \langle y, \left(A - A^H\right) z \rangle + \langle z, \left(A - A^H\right) y \rangle = \\ 
-  &= \langle  \left(A - A^H\right)^H y, z \rangle + \langle z, \left(A - A^H\right) y \rangle = \\
-  &= -\langle  \left(A - A^H\right) y, z \rangle + \langle z, \left(A - A^H\right) y \rangle.
-\end{align}
-```
-Therefore, 
-
-```math
-\langle  \left(A - A^H\right) y, z \rangle =\langle z, \left(A - A^H\right) y \rangle
-\qquad \qquad  (\dagger)
-```
-Now one can replace $z$ with $iz$, as both are in $\mathbb{C}^n$, let's now expand both sides:
-
-```math
-\begin{align}
-\langle  \left(A - A^H\right) y, iz \rangle =& \langle iz, \left(A - A^H\right) y \rangle \quad \implies \\
-\overline{i}\langle  \left(A - A^H\right) y, z \rangle =& i\langle z, \left(A - A^H\right) y \rangle  \quad \implies \\
--\langle  \left(A - A^H\right) y, z \rangle =& \langle z, \left(A - A^H\right) y \rangle \qquad \qquad (\ddagger)
-
-\end{align}
-```
-
-
-($\dagger$) and ($\ddagger$) can only be both true only if 
-
-$\langle  \left(A - A^H\right) y, z \rangle = \langle z, \left(A - A^H\right) y \rangle = 0 \quad \forall y, z \in \mathbb{C}^n$.
-
-Which is possible if and only if $A = A^H$. In other words, matrix $A$ should be Hermitian.
-$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad  \square$
-
-"""
 
 
 # ╔═╡ 257b2781-6856-4a89-88ee-a3edfd38c08c
@@ -326,7 +279,7 @@ R_A(u) &= \lambda + \frac{ \left( t^2\langle d,Ad \rangle - t^2\lambda \right)}{
 md"""
 **(b) Answer**
 
-From exercise (a) it is known that the Rayleigh quotient approximation error scales with $t^2$, so if $t=||\delta||=\epsilon$ , then the error scales with $\epsilon ^2$.
+From exercise (a) it is known that the Rayleigh quotient approximation error scales with $t^2$, so if $t=\frac{||\delta||}{d}=\frac{\epsilon}{d}$ with $d$ being a normalised vector, then the error scales with $\epsilon ^2$.
 
 
 
@@ -355,10 +308,11 @@ begin
 end
 
 # ╔═╡ 6172b0ab-ca55-4b55-9dcf-d5cb77627513
-λ_exact[3] # the biggest exact eigenvalue
+λ_exact[3]
 
 # ╔═╡ 6f4c05de-07f6-46fc-b430-8ab9297ea7f5
 function power_method_with_RQ(A, x0=randn(eltype(A), size(A, 2)); tol=1e-8, maxiter=500)
+	r_quotient_list = []
 	v_list = []
 	λ_list = []
 	
@@ -377,27 +331,27 @@ function power_method_with_RQ(A, x0=randn(eltype(A), size(A, 2)); tol=1e-8, maxi
 			break
 		end
 	end
+	λ = dot(x, A, x)
 	(; λ_list, v_list)
 end
 
 # ╔═╡ 5b609c66-9627-442c-923a-6116c868cd90
 begin
-	# Calculating eigen pair using power method
 	e_values, e_vectors = power_method_with_RQ(A, maxiter=400);
 	
 	 if v_exact[1, 3] * e_vectors[length(e_vectors)][1] < 0.
 	        e_vectors *= -1
 	 end
-end;
+end
 
 # ╔═╡ f30fc650-6cd1-4288-a5b9-f35214a5dd97
-n_iterations = length(e_values)
+num_iterations = length(e_values)
 
 # ╔═╡ 2b748d15-e04f-4789-84f3-f422aee8d059
 begin
 	eigenvalue_errors = abs.(e_values .- λ_exact[3])
-	eigenvector_errors = [norm(e_vectors[i] - v_exact[:, 3]) for i in 1:n_iterations]
-end;
+	eigenvector_errors = [norm(e_vectors[i] - v_exact[:, 3]) for i in 1:num_iterations]
+end
 
 # ╔═╡ 81e237ce-406a-4e56-8dc8-52ec2477d41f
 begin
@@ -408,37 +362,12 @@ end;
 
 # ╔═╡ 3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
 begin
-	plot(1:n_iterations, log.(10,eigenvalue_errors_shifted),  ylabel="Error in log base 10",xlabel="Number of iterations", label="Eigenvalue Error", legend=:topright)
-	plot!(1:n_iterations, log.(10,eigenvector_errors_shifted),  label="Eigenvector Error (t)")
+	plot(1:num_iterations, eigenvalue_errors_shifted, yaxis=:log, label="Eigenvalue Error", legend=:topleft)
+	plot!(1:num_iterations, eigenvector_errors_shifted, yaxis=:log, label="Eigenvector Error")
 end
 
-# ╔═╡ 25bf7ffc-b7c9-4f75-9d2b-bdc11cf1fad7
-begin
-	plot(1:n_iterations, log.(10,eigenvalue_errors_shifted),  ylabel="Error in log base 10",xlabel="Number of iterations", label="Eigenvalue Error", legend=:topright)
-	plot!(1:n_iterations, log.(10,eigenvector_errors_shifted .^ 2),  label="Eigenvector Error Squared (t^2)")
-end
+# ╔═╡ 18a9c3e5-03fd-4494-8f7e-953147c4a437
 
-# ╔═╡ 42bff697-9c96-4346-acf1-fbc2a6604dfe
-md"""
-Analyzing the plot obtained above we can easily see the result from (a) and (b), particularly, that the Rayleigh quotient approximation error scales with $t^2$.
-"""
-
-# ╔═╡ fae4a37b-a4fd-4942-8293-fa8eef81f234
-# using EasyFit
-
-# ╔═╡ 3f58c6aa-1de7-46ef-ad34-97a79d2937be
-# fit_μ= fitlinear(50:n_iterations,log.(10,eigenvalue_errors_shifted[50:end]))
-
-# ╔═╡ ff897ff9-54bf-408c-a774-13b68ee3bb71
-# fit_v=fitlinear(50:n_iterations,log.(10,eigenvector_errors_shifted[50:end]))
-
-# ╔═╡ 47e2bf8b-1d39-4441-b4fc-8fdba55874d7
-# md"""
-# One can see on the graph above that the error goes down exponentially with the number of iterations, from which the slope can be computed with a linear fit $ax+b$ with an excellent Pearson correlation coefficient. The slope given by $a$ is then evaluated to see if it confirms the estimation error from points **(3a)** and **(3b)**. 
-
-# It is interesting to notice that the estimation cannot get closer to $~10^{-12.5}$. This is probably due to the numerical precision reaching its limit.
-
-# """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -650,15 +579,15 @@ version = "3.3.8+0"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "27442171f28c952804dede8ff72828a96f2bfc1f"
+git-tree-sha1 = "d73afa4a2bb9de56077242d98cf763074ab9a970"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.72.10"
+version = "0.72.9"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "025d171a2847f616becc0f84c8dc62fe18f0f6dd"
+git-tree-sha1 = "1596bab77f4f073a14c62424283e7ebff3072eca"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.72.10+0"
+version = "0.72.9+1"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -1034,10 +963,10 @@ deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.Qt6Base_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Vulkan_Loader_jll", "Xorg_libSM_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_cursor_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "libinput_jll", "xkbcommon_jll"]
-git-tree-sha1 = "7c29f0e8c575428bd84dc3c72ece5178caa67336"
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
+git-tree-sha1 = "364898e8f13f7eaaceec55fd3d08680498c0aa6e"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
-version = "6.5.2+2"
+version = "6.4.2+3"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1126,9 +1055,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "d1bf48bfcc554a3761a133fe3a9bb01488e06916"
+git-tree-sha1 = "75ebe04c5bed70b91614d684259b661c9e6274a4"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.33.21"
+version = "0.34.0"
 
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
@@ -1204,12 +1133,6 @@ git-tree-sha1 = "ca0969166a028236229f63514992fc073799bb78"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.2.0"
 
-[[deps.Vulkan_Loader_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXrandr_jll", "xkbcommon_jll"]
-git-tree-sha1 = "2f0486047a07670caad3a81a075d2e518acc5c59"
-uuid = "a44049a8-05dd-5a78-86c9-5fde0876e88c"
-version = "1.3.243+0"
-
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "7558e29847e99bc3f04d6569e82d0f5c54460703"
@@ -1239,18 +1162,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "cf2c7de82431ca6f39250d2fc4aacd0daa1675c0"
 uuid = "ffd25f8a-64ca-5728-b0f7-c24cf3aae800"
 version = "5.4.4+0"
-
-[[deps.Xorg_libICE_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "e5becd4411063bdcac16be8b66fc2f9f6f1e8fe5"
-uuid = "f67eecfb-183a-506d-b269-f58e52b52d7c"
-version = "1.0.10+1"
-
-[[deps.Xorg_libSM_jll]]
-deps = ["Libdl", "Pkg", "Xorg_libICE_jll"]
-git-tree-sha1 = "4a9d9e4c180e1e8119b5ffc224a7b59d3a7f7e18"
-uuid = "c834827a-8449-5923-a945-d239c165b7dd"
-version = "1.2.3+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
@@ -1330,12 +1241,6 @@ git-tree-sha1 = "730eeca102434283c50ccf7d1ecdadf521a765a4"
 uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
 version = "1.1.2+0"
 
-[[deps.Xorg_xcb_util_cursor_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_jll", "Xorg_xcb_util_renderutil_jll"]
-git-tree-sha1 = "04341cb870f29dcd5e39055f895c39d016e18ccd"
-uuid = "e920d4aa-a673-5f3a-b3d7-f755a4d47c43"
-version = "0.1.4+0"
-
 [[deps.Xorg_xcb_util_image_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
 git-tree-sha1 = "0fab0a40349ba1cba2c1da699243396ff8e94b97"
@@ -1395,23 +1300,11 @@ git-tree-sha1 = "49ce682769cd5de6c72dcf1b94ed7790cd08974c"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
 version = "1.5.5+0"
 
-[[deps.eudev_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "gperf_jll"]
-git-tree-sha1 = "431b678a28ebb559d224c0b6b6d01afce87c51ba"
-uuid = "35ca27e7-8b34-5b7f-bca9-bdc33f59eb06"
-version = "3.2.9+0"
-
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "868e669ccb12ba16eaf50cb2957ee2ff61261c56"
 uuid = "214eeab7-80f7-51ab-84ad-2988db7cef09"
 version = "0.29.0+0"
-
-[[deps.gperf_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "3516a5630f741c9eecb3720b1ec9d8edc3ecc033"
-uuid = "1a1c6b14-54f6-533d-8383-74cd7377aa70"
-version = "3.1.1+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1430,23 +1323,11 @@ deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
 version = "5.8.0+0"
 
-[[deps.libevdev_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "141fe65dc3efabb0b1d5ba74e91f6ad26f84cc22"
-uuid = "2db6ffa8-e38f-5e21-84af-90c45d0032cc"
-version = "1.11.0+0"
-
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "daacc84a041563f965be61859a36e17c4e4fcd55"
 uuid = "f638f0a6-7fb0-5443-88ba-1cc74229b280"
 version = "2.0.2+0"
-
-[[deps.libinput_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "eudev_jll", "libevdev_jll", "mtdev_jll"]
-git-tree-sha1 = "ad50e5b90f222cfe78aa3d5183a20a12de1322ce"
-uuid = "36db933b-70db-51c0-b978-0f229ee0e533"
-version = "1.18.0+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
@@ -1459,12 +1340,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
 git-tree-sha1 = "b910cb81ef3fe6e78bf6acee440bda86fd6ae00c"
 uuid = "f27f6e37-5d2b-51aa-960f-b287f2bc3b7a"
 version = "1.3.7+1"
-
-[[deps.mtdev_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "814e154bdb7be91d78b6802843f76b6ece642f11"
-uuid = "009596ad-96f7-51b1-9f1b-5ce2d5e8a71e"
-version = "1.1.6+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1500,7 +1375,7 @@ version = "1.4.1+1"
 # ╟─1a4ed4ac-e68a-485f-8ce1-8cd8210fc04a
 # ╟─64dbc4f4-c01c-4f84-b07a-d3c383f88fc7
 # ╟─539cd6af-21b7-4142-bebd-f7e8e1834310
-# ╟─bb8a01e3-88f1-47af-a955-b5a819b7483f
+# ╠═bb8a01e3-88f1-47af-a955-b5a819b7483f
 # ╟─257b2781-6856-4a89-88ee-a3edfd38c08c
 # ╟─048e550d-11a5-49e9-bf86-400005ba5dbe
 # ╟─8b70db77-a3e1-4c3f-a1b3-5a5ac47d33e2
@@ -1521,11 +1396,7 @@ version = "1.4.1+1"
 # ╠═2b748d15-e04f-4789-84f3-f422aee8d059
 # ╠═81e237ce-406a-4e56-8dc8-52ec2477d41f
 # ╠═3e6d0876-4f8e-43e5-a51d-de8e0356cdcb
-# ╟─25bf7ffc-b7c9-4f75-9d2b-bdc11cf1fad7
-# ╟─42bff697-9c96-4346-acf1-fbc2a6604dfe
-# ╠═fae4a37b-a4fd-4942-8293-fa8eef81f234
-# ╠═3f58c6aa-1de7-46ef-ad34-97a79d2937be
-# ╠═ff897ff9-54bf-408c-a774-13b68ee3bb71
-# ╟─47e2bf8b-1d39-4441-b4fc-8fdba55874d7
+# ╠═18a9c3e5-03fd-4494-8f7e-953147c4a437
+# ╟─5800a0c5-2fe5-4c42-931b-ceab933811fa
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
