@@ -106,18 +106,7 @@ geschgorin_centres = diag(M)
 if ismissing(geschgorin_centres)  still_missing() end
 
 # ╔═╡ b9eb3ffa-2b3e-4aa6-8c7b-7b59c1d16c5f
-diag(M)[1]
-
-# ╔═╡ e3b8d897-689d-43de-9fca-a0abac6577b2
-begin
-	geschgorin_radii=[]
-	nb_rows=size(M,1)
-	print(nb_rows)
-	for i in 1:nb_rows
-		Radius=sum(abs.(M[i,:]))-diag(M)[i] 
-		push!(geschgorin_radii,Radius)
-	end
-end
+geschgorin_radii = [sum(abs(M[i, j]) for j in 1:size(M, 1) if i != j) for i in 1:size(M, 1)]
 
 # ╔═╡ 0bd84bf3-7fb3-4d1d-9213-34927cf65632
 md"Now add code to compute the radii:"
@@ -145,10 +134,7 @@ For comparison we compute the exact eigenvalues. Add code to do so:
 """
 
 # ╔═╡ 4e97e5cf-3221-4b7f-bee8-93a6cff9dc0e
-begin
-	exact_values= eigen(M)
-	exact_eigenvalues = exact_values.values
-end
+exact_eigenvalues = eigen(M).values
 
 # ╔═╡ ac758750-b732-41c7-8ca5-c5384e1bbe91
 if ismissing(exact_eigenvalues) still_missing() end
@@ -165,6 +151,9 @@ Both Bauer-Fike and Kato-Temple need the **residuals**. Thus we first compute th
 Add code to do so, keeping in mind that the "computed" eigvectors in our example are just the unit vectors.
 """
 
+# ╔═╡ 4ca9217b-b1b9-4c3d-91fb-3267084bd0f2
+computed_eigenvectors = [Vector([i == j ? 1.0 : 0.0 for j in 1:size(M, 1)]) for i in 1:size(M, 1)]
+
 # ╔═╡ 98fff413-443a-480d-a732-cd469efc312d
 md"""
 the residual are defined as:
@@ -173,54 +162,11 @@ $r_i = A \widetilde{x_i}-\widetilde{\lambda}_i \widetilde{x_i}$
 Let’s compute the $\widetilde{\lambda}_i$ with the Rayleigh quotient:
 """
 
-# ╔═╡ c066993b-7930-49c2-926a-6a4c3605bbe0
-function Rayleigh_quotient(A, u)
-	return dot(u, A * u) / dot(u, u)
-end
-
-# ╔═╡ f25657b8-0d76-4f7d-a519-cb5584cd0a07
-function power_method_with_RQ(A, x0=randn(eltype(A), size(A, 2)); tol=1e-8, maxiter=500)
-	r_quotient_list = []
-	v_list = []
-	λ_list = []
-	
-	x = x0
-	for i in 1:maxiter
-		xprev = x
-		x = A * x
-		
-		x /= norm(x)
-
-		λ = Rayleigh_quotient(A, x)
-		push!(λ_list, λ)
-		push!(v_list, x)
-		
-		if min(norm(x - xprev), norm(-x - xprev)) < tol
-			break
-		end
-	end
-	λ = dot(x, A, x)
-	(; λ_list, v_list)
-end
-
-# ╔═╡ e950583c-0431-4d15-8a7a-15d03103e8c4
-
-
-# ╔═╡ 8d4d48aa-d9f4-49ca-b447-e53c33c45a95
-begin
-	
-	powermeth=power_method_with_RQ(M)
-	computed_eigenvectors=powermeth.v_list[end]
-end
-
 # ╔═╡ b7a6e73f-54d5-4988-8250-970c1e7fae8d
 if ismissing(computed_eigenvectors) still_missing() end
 
-# ╔═╡ 2f200998-ee50-42e9-88c5-935b73f81b1f
-println(power_method_with_RQ(M).v_list)
-
 # ╔═╡ 17c4ef12-9d03-43ac-b431-6e47d5cb4791
-residuals = M*computed_eigenvectors .-(powermeth.λ_list[end]*computed_eigenvectors)
+residuals = M * computed_eigenvectors .- computed_eigenvalues .* computed_eigenvectors
 
 # ╔═╡ 4417faf2-468d-436d-9dec-d083d51904e8
 if ismissing(residuals) still_missing() end
@@ -235,7 +181,7 @@ The following code should produce a vector of error estimates, one for each eige
 """
 
 # ╔═╡ 43995e70-9149-44e7-926a-b7b86f066894
-error_Bauer_Fike = residuals
+error_Bauer_Fike = norm.(residuals)
 
 # ╔═╡ e4c31bbb-2fa7-4575-bff3-0c50c8454172
 if ismissing(error_Bauer_Fike)
@@ -1447,7 +1393,6 @@ version = "1.4.1+0"
 # ╠═6c935ccb-8fa6-4332-a4be-d5e50b77edd0
 # ╟─5d96e770-68fd-4212-bdf5-965130336ba0
 # ╠═b9eb3ffa-2b3e-4aa6-8c7b-7b59c1d16c5f
-# ╠═e3b8d897-689d-43de-9fca-a0abac6577b2
 # ╟─0bd84bf3-7fb3-4d1d-9213-34927cf65632
 # ╟─13bd0541-13cd-41b5-b594-82340f0fd2de
 # ╟─236e6a1c-4e8d-473e-bc22-d9298b0625b1
@@ -1458,13 +1403,9 @@ version = "1.4.1+0"
 # ╟─ac758750-b732-41c7-8ca5-c5384e1bbe91
 # ╟─df6115cc-821d-4f43-969e-ca3395c22f70
 # ╟─0fea8e6a-549e-4175-8337-a21783a82333
-# ╠═98fff413-443a-480d-a732-cd469efc312d
-# ╠═c066993b-7930-49c2-926a-6a4c3605bbe0
-# ╠═f25657b8-0d76-4f7d-a519-cb5584cd0a07
-# ╠═e950583c-0431-4d15-8a7a-15d03103e8c4
-# ╠═8d4d48aa-d9f4-49ca-b447-e53c33c45a95
+# ╠═4ca9217b-b1b9-4c3d-91fb-3267084bd0f2
+# ╟─98fff413-443a-480d-a732-cd469efc312d
 # ╟─b7a6e73f-54d5-4988-8250-970c1e7fae8d
-# ╠═2f200998-ee50-42e9-88c5-935b73f81b1f
 # ╠═17c4ef12-9d03-43ac-b431-6e47d5cb4791
 # ╟─4417faf2-468d-436d-9dec-d083d51904e8
 # ╟─559193fe-946d-426a-8c93-5df3f2c577ca
