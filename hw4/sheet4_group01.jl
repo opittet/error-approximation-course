@@ -215,7 +215,34 @@ Code up your algorithm for computing the $\delta_i$ again as a vector of floats,
 """
 
 # ╔═╡ e1d2835f-6743-4a6a-b0a2-65969206790f
-δ = missing
+begin
+	δ_beg =abs(computed_eigenvalues[1]-computed_eigenvalues[2])-norm(residuals[1])
+	δ_end =abs(computed_eigenvalues[end-1]-computed_eigenvalues[end])-norm(residuals[end])
+	δ_inbetween=[]
+	println(length(computed_eigenvalues)-1)
+	for i in 2:(length(computed_eigenvalues)-1)
+		δi_left=abs(computed_eigenvalues[i-1]-computed_eigenvalues[i])-norm(residuals[i])
+		δi_right=abs(computed_eigenvalues[i]-computed_eigenvalues[i+1])-norm(residuals[i+1])
+		if δi_left ≤ δi_right
+			δi_min = δi_left
+		else
+			δi_min = δi_right
+		end
+		push!(δ_inbetween,δi_min)
+	end
+	println(δ_inbetween)
+	δ=[δ_beg;δ_inbetween;δ_end]
+	
+	for δ_elem in δ
+		if δ_elem < 0 
+			δ_elem=0
+		end
+	end
+
+	print(δ)
+		
+	
+end
 
 # ╔═╡ e8ffa42c-9e11-4d5d-bfaf-bee808529e90
 if ismissing(δ)
@@ -228,7 +255,7 @@ end
 md"With $\delta$ in place, the computation of the Kato-Temple bound is simple. Code it up here:"
 
 # ╔═╡ 9ea7c309-0191-44b9-a584-0f8beb38c58e
-error_Kato_Temple = missing
+error_Kato_Temple = δ
 
 # ╔═╡ 21f08e09-6eba-4a67-bbe9-fcfbfbe7dbc2
 begin
