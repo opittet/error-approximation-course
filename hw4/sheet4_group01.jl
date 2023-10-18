@@ -51,13 +51,15 @@ where $ε = |\lambda - \tilde{\lambda}|$.
 
 # ╔═╡ 28f73adf-4e82-4443-bf8f-a54366367647
 md"""
+**Proof:**
+
 From the definition of $r$ , one can see that it can be represented on a $2D$ plane as a 2 component vector with base ($\cos\theta,\sin\theta$), then one can rewrite the $L_2$ norm$||r||_2^2$ as:
 ```math
 \begin{align}
 
- ||r||_2^2 \geq & \epsilon^2 \cos^2 \theta  + \delta^2 \sin^2 \theta \\
-\geq& \epsilon^2 (1-\sin^2 \theta)  + \delta^2 \sin^2 \theta \\
-\geq& (\delta^2-\epsilon^2)\sin^2 \theta + \epsilon^2
+ ||r||_2^2 \geq & \epsilon^2 \cos^2 \theta  + \delta^2 \sin^2 \theta =  \\
+=& \epsilon^2 (1-\sin^2 \theta)  + \delta^2 \sin^2 \theta = \\
+=& (\delta^2-\epsilon^2)\sin^2 \theta + \epsilon^2.
 \qquad \qquad \qquad (\dagger)
 
 \end{align}
@@ -65,16 +67,16 @@ From the definition of $r$ , one can see that it can be represented on a $2D$ pl
 From isolating $\sin\theta$ in $(\dagger)$, one gets:
 
 ```math
-\begin{align}
-\sin^2 \theta \leq& \frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2} \\
-\sin\theta \leq& \sqrt{\frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}} \qquad \qquad \qquad \qquad \square \\
-
-
-
-
-\end{align}
-
+\sin^2 \theta \leq \frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}
 ```
+
+
+Therefore,
+```math
+\sin\theta \leq \sqrt{\frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}} 
+```
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 
 """
@@ -1453,7 +1455,7 @@ version = "1.4.1+0"
 # ╟─eef9571a-53bc-11ee-0ea6-3dd4c0f8b8c1
 # ╟─891b0858-ee8b-4d3c-9597-d63f26c313c8
 # ╠═38dcfe23-c56e-4f1d-8880-79dee68cc317
-# ╠═e025eed5-5a26-4942-93ec-6d8b480aa189
+# ╟─e025eed5-5a26-4942-93ec-6d8b480aa189
 # ╠═28f73adf-4e82-4443-bf8f-a54366367647
 # ╟─bb86a0c6-e5d0-41af-990c-7125ffd46139
 # ╠═683f6d92-32b6-4abb-b6db-34c8a379edb7
