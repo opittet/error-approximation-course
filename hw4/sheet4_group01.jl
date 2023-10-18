@@ -49,6 +49,36 @@ where $ε = |\lambda - \tilde{\lambda}|$.
 *Hint:* Follow the proof of Theorem 3.6.
 """
 
+# ╔═╡ 28f73adf-4e82-4443-bf8f-a54366367647
+md"""
+From the definition of $r$ , one can see that it can be represented on a $2D$ plane as a 2 component vector with base ($\cos\theta,\sin\theta$), then one can rewrite the $L_2$ norm$||r||_2^2$ as:
+```math
+\begin{align}
+
+ ||r||_2^2 \geq & \epsilon^2 \cos^2 \theta  + \delta^2 \sin^2 \theta \\
+\geq& \epsilon^2 (1-\sin^2 \theta)  + \delta^2 \sin^2 \theta \\
+\geq& (\delta^2-\epsilon^2)\sin^2 \theta + \epsilon^2
+\qquad \qquad \qquad (\dagger)
+
+\end{align}
+```
+From isolating $\sin\theta$ in $(\dagger)$, one gets:
+
+```math
+\begin{align}
+\sin^2 \theta \leq& \frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2} \\
+\sin\theta \leq& \sqrt{\frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}} \qquad \qquad \qquad \qquad \square \\
+
+
+
+
+\end{align}
+
+```
+
+
+"""
+
 # ╔═╡ 65c64938-1bb6-4d74-b0de-e23ecc6c7706
 md"""
 - M12 = $(@bind M12 PlutoUI.Slider(-1.0:0.001:1.0; default=0.001, show_value=true))
@@ -255,7 +285,7 @@ end
 md"With $\delta$ in place, the computation of the Kato-Temple bound is simple. Code it up here:"
 
 # ╔═╡ 9ea7c309-0191-44b9-a584-0f8beb38c58e
-error_Kato_Temple = δ
+error_Kato_Temple = norm.(residuals).^(2)./δ
 
 # ╔═╡ 21f08e09-6eba-4a67-bbe9-fcfbfbe7dbc2
 begin
@@ -312,6 +342,20 @@ md"""
 Once you have everything coded up and your plot above shows the Gerschgorin disks, the Bauer-Fike bound and the Kato-Temple bound, play a bit with the sliders to make the off-diagonal elements larger and smaller.
 
 The tighter the bounds, the better --- in this case they plainly provide a better way to estimate errors. In which regime is which of the bounds the most favourable?
+"""
+
+# ╔═╡ e9321ed3-573d-4326-a1b2-6cfd46127deb
+md"""
+**(Answer)**
+
+First let's compare the Bauer-Fike bounds with the Gerschgorin disks: the prior seem to always be a better approximation.   
+
+More interestingly, The Kato-Temple and the Bauer-Fike have different behaviours when twicking the off-diagonal elements:
+- Bauer-Fike is much more stable than the Kato-Temple, this means that if one starts with very low off-diagonal terms, the Kato-Temple will be much more restrictive, but  as the error grows, the Bauer-Fike bounds are not as affected by this change as the Kato-Temple bounds,which explode to much higher values, rendering it useless in comparison.
+
+
+
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1409,7 +1453,8 @@ version = "1.4.1+0"
 # ╟─eef9571a-53bc-11ee-0ea6-3dd4c0f8b8c1
 # ╟─891b0858-ee8b-4d3c-9597-d63f26c313c8
 # ╠═38dcfe23-c56e-4f1d-8880-79dee68cc317
-# ╟─e025eed5-5a26-4942-93ec-6d8b480aa189
+# ╠═e025eed5-5a26-4942-93ec-6d8b480aa189
+# ╠═28f73adf-4e82-4443-bf8f-a54366367647
 # ╟─bb86a0c6-e5d0-41af-990c-7125ffd46139
 # ╠═683f6d92-32b6-4abb-b6db-34c8a379edb7
 # ╟─65c64938-1bb6-4d74-b0de-e23ecc6c7706
@@ -1445,5 +1490,6 @@ version = "1.4.1+0"
 # ╠═9ea7c309-0191-44b9-a584-0f8beb38c58e
 # ╟─5a732b84-f565-4072-9f76-515857a4cf19
 # ╟─4d0f39a2-9fe8-4d4f-82e8-98e56c9bc7b6
+# ╠═e9321ed3-573d-4326-a1b2-6cfd46127deb
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
