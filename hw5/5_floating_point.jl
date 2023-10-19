@@ -73,7 +73,7 @@ With $r= \frac12$, except that here the first index is $1$ and $2$ indices of $k
 With the terms to the power $k$ vanishing as $r=\frac12$, the result obtained for this troncated geometric series is:
 
 ```math
-\sum_{k=1}^\infty r^{4k-1} +r^{4k}=\frac{r^3+r^4}{1-r^4}=\frac{8+16}{1-16}
+\sum_{k=1}^\infty r^{4k-1} +r^{4k}=\frac{r^3+r^4}{1-r^4}=\frac{0.125+0.0625}{1-0.0625}=0.2
 ```
 
 """
