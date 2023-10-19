@@ -49,32 +49,33 @@ where $ε = |\lambda - \tilde{\lambda}|$.
 *Hint:* Follow the proof of Theorem 3.6.
 """
 
-# ╔═╡ 28f73adf-4e82-4443-bf8f-a54366367647
+# ╔═╡ 67e877c0-1ab1-4fdc-b949-805cc95062f9
 md"""
-From the definition of $r$ , one can see that it can be represented on a $2D$ plane as a 2 component vector with base ($\cos\theta,\sin\theta$), then one can rewrite the $L_2$ norm$||r||_2^2$ as:
+**Proof:**
+
+Following the proof of Theorem 3.6 we can see that:
 ```math
 \begin{align}
 
- ||r||_2^2 \geq & \epsilon^2 \cos^2 \theta  + \delta^2 \sin^2 \theta \\
-\geq& \epsilon^2 (1-\sin^2 \theta)  + \delta^2 \sin^2 \theta \\
-\geq& (\delta^2-\epsilon^2)\sin^2 \theta + \epsilon^2
-\qquad \qquad \qquad (\dagger)
+ ||r||_2^2 \geq & \epsilon^2 \cos^2 \theta  + \delta^2 \sin^2 \theta =  \\
+=& \epsilon^2 (1-\sin^2 \theta)  + \delta^2 \sin^2 \theta = \\
+=& (\delta^2-\epsilon^2)\sin^2 \theta + \epsilon^2.
 
 \end{align}
 ```
-From isolating $\sin\theta$ in $(\dagger)$, one gets:
+From isolating $\sin\theta$:
 
 ```math
-\begin{align}
-\sin^2 \theta \leq& \frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2} \\
-\sin\theta \leq& \sqrt{\frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}} \qquad \qquad \qquad \qquad \square \\
-
-
-
-
-\end{align}
-
+\sin^2 \theta \leq \frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}
 ```
+
+
+Therefore,
+```math
+\sin\theta \leq \sqrt{\frac{||r||_2^2-\epsilon^2}{\delta^2-\epsilon^2}} 
+```
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 
 """
@@ -135,11 +136,11 @@ geschgorin_centres = diag(M)
 # ╔═╡ 5d96e770-68fd-4212-bdf5-965130336ba0
 if ismissing(geschgorin_centres)  still_missing() end
 
-# ╔═╡ b9eb3ffa-2b3e-4aa6-8c7b-7b59c1d16c5f
-geschgorin_radii = [sum(abs(M[i, j]) for j in 1:size(M, 1) if i != j) for i in 1:size(M, 1)]
-
 # ╔═╡ 0bd84bf3-7fb3-4d1d-9213-34927cf65632
 md"Now add code to compute the radii:"
+
+# ╔═╡ db46ad09-e970-464d-bbf5-a28278b25914
+geschgorin_radii = [sum(abs(M[i, j]) for j in 1:size(M, 1) if i != j) for i in 1:size(M, 1)]
 
 # ╔═╡ 13bd0541-13cd-41b5-b594-82340f0fd2de
 if ismissing(geschgorin_radii)  still_missing() end
@@ -181,16 +182,8 @@ Both Bauer-Fike and Kato-Temple need the **residuals**. Thus we first compute th
 Add code to do so, keeping in mind that the "computed" eigvectors in our example are just the unit vectors.
 """
 
-# ╔═╡ 4ca9217b-b1b9-4c3d-91fb-3267084bd0f2
+# ╔═╡ f25657b8-0d76-4f7d-a519-cb5584cd0a07
 computed_eigenvectors = [Vector([i == j ? 1.0 : 0.0 for j in 1:size(M, 1)]) for i in 1:size(M, 1)]
-
-# ╔═╡ 98fff413-443a-480d-a732-cd469efc312d
-md"""
-the residual are defined as:
-
-$r_i = A \widetilde{x_i}-\widetilde{\lambda}_i \widetilde{x_i}$
-Let’s compute the $\widetilde{\lambda}_i$ with the Rayleigh quotient:
-"""
 
 # ╔═╡ b7a6e73f-54d5-4988-8250-970c1e7fae8d
 if ismissing(computed_eigenvectors) still_missing() end
@@ -222,7 +215,7 @@ end
 
 # ╔═╡ b6a495a9-2939-4faf-ab55-bd98421b61b0
 md"""
-Next we tackle the **Kato-Temple bound**. For this we need as the trickier ingredient a *lower bound* on the spectral distance $\delta$ between the approximate eigenvalue $\tilde{lambda}_i$ we have computed and the closest exact eigenvalue $\lambda_j$ with $j\neq i$ (i.e. the closest exact eigenvalue not counting the one we currently approximate).
+Next we tackle the **Kato-Temple bound**. For this we need as the trickier ingredient a *lower bound* on the spectral distance $\delta$ between the approximate eigenvalue $\tilde{\lambda}_i$ we have computed and the closest exact eigenvalue $\lambda_j$ with $j\neq i$ (i.e. the closest exact eigenvalue not counting the one we currently approximate).
 
 For this we will employ the lower-bound trick mentioned in the lecture. In particular for the spectral distance of the first eigenvalue we obtain
 ```math
@@ -244,35 +237,24 @@ An additional complication is that as the residuals $\|r_i\|$ get too large and 
 Code up your algorithm for computing the $\delta_i$ again as a vector of floats, one for each eigenvalue.
 """
 
-# ╔═╡ e1d2835f-6743-4a6a-b0a2-65969206790f
+# ╔═╡ 56eb6309-9f2f-4c48-b2c8-1fd1a88a1874
 begin
-	δ_beg =abs(computed_eigenvalues[1]-computed_eigenvalues[2])-norm(residuals[1])
-	δ_end =abs(computed_eigenvalues[end-1]-computed_eigenvalues[end])-norm(residuals[end])
-	δ_inbetween=[]
-	println(length(computed_eigenvalues)-1)
-	for i in 2:(length(computed_eigenvalues)-1)
-		δi_left=abs(computed_eigenvalues[i-1]-computed_eigenvalues[i])-norm(residuals[i])
-		δi_right=abs(computed_eigenvalues[i]-computed_eigenvalues[i+1])-norm(residuals[i+1])
-		if δi_left ≤ δi_right
-			δi_min = δi_left
-		else
-			δi_min = δi_right
-		end
-		push!(δ_inbetween,δi_min)
-	end
-	println(δ_inbetween)
-	δ=[δ_beg;δ_inbetween;δ_end]
-	
-	for δ_elem in δ
-		if δ_elem < 0 
-			δ_elem=0
-		end
-	end
+	δ_list = [0. for i in 1:5]
+	δ_list[1] = abs(computed_eigenvalues[1] - computed_eigenvalues[2]) - error_Bauer_Fike[2]
 
-	print(δ)
-		
-	
+	δ_list[5] = abs(computed_eigenvalues[5] - computed_eigenvalues[4]) - error_Bauer_Fike[4]
+
+	for i in 2:4
+	δ_left = abs(computed_eigenvalues[i] - computed_eigenvalues[i-1]) - error_Bauer_Fike[i-1]
+	δ_right = abs(computed_eigenvalues[i] - computed_eigenvalues[i+1]) - error_Bauer_Fike[i+1]
+
+	δ_list[i] = min(δ_left, δ_right)
+
+	end
 end
+
+# ╔═╡ e1d2835f-6743-4a6a-b0a2-65969206790f
+δ = [max(0, i) for i in δ_list]
 
 # ╔═╡ e8ffa42c-9e11-4d5d-bfaf-bee808529e90
 if ismissing(δ)
@@ -285,7 +267,7 @@ end
 md"With $\delta$ in place, the computation of the Kato-Temple bound is simple. Code it up here:"
 
 # ╔═╡ 9ea7c309-0191-44b9-a584-0f8beb38c58e
-error_Kato_Temple = norm.(residuals).^(2)./δ
+error_Kato_Temple = error_Bauer_Fike .^2 ./ δ
 
 # ╔═╡ 21f08e09-6eba-4a67-bbe9-fcfbfbe7dbc2
 begin
@@ -344,17 +326,12 @@ Once you have everything coded up and your plot above shows the Gerschgorin disk
 The tighter the bounds, the better --- in this case they plainly provide a better way to estimate errors. In which regime is which of the bounds the most favourable?
 """
 
-# ╔═╡ e9321ed3-573d-4326-a1b2-6cfd46127deb
+# ╔═╡ b71698f6-eb55-435b-ba95-39521c1dccff
 md"""
-**(Answer)**
+**Answer:**
 
-First let's compare the Bauer-Fike bounds with the Gerschgorin disks: the prior seem to always be a better approximation.   
-
-More interestingly, The Kato-Temple and the Bauer-Fike have different behaviours when twicking the off-diagonal elements:
-- Bauer-Fike is much more stable than the Kato-Temple, this means that if one starts with very low off-diagonal terms, the Kato-Temple will be much more restrictive, but  as the error grows, the Bauer-Fike bounds are not as affected by this change as the Kato-Temple bounds,which explode to much higher values, rendering it useless in comparison.
-
-
-
+- The Bauer-Fike bounds seem to always be a better approximation than the Gerschgorin disks.
+- The Bauer-Fike bounds exhibit better stability compared to the Kato-Temple bounds. When we start with off-diagonal values close to zero, Kato-Temple bounds are very strict. But as we increase the absolute values of the off-diagonal elements, Bauer-Fike bounds handle these changes better, while Kato-Temple bounds can become impractical due to significant growth.
 
 """
 
@@ -1453,8 +1430,8 @@ version = "1.4.1+0"
 # ╟─eef9571a-53bc-11ee-0ea6-3dd4c0f8b8c1
 # ╟─891b0858-ee8b-4d3c-9597-d63f26c313c8
 # ╠═38dcfe23-c56e-4f1d-8880-79dee68cc317
-# ╠═e025eed5-5a26-4942-93ec-6d8b480aa189
-# ╠═28f73adf-4e82-4443-bf8f-a54366367647
+# ╟─e025eed5-5a26-4942-93ec-6d8b480aa189
+# ╟─67e877c0-1ab1-4fdc-b949-805cc95062f9
 # ╟─bb86a0c6-e5d0-41af-990c-7125ffd46139
 # ╠═683f6d92-32b6-4abb-b6db-34c8a379edb7
 # ╟─65c64938-1bb6-4d74-b0de-e23ecc6c7706
@@ -1464,8 +1441,8 @@ version = "1.4.1+0"
 # ╟─1e69d36b-8167-46e2-bd90-b094d0a4ad85
 # ╠═6c935ccb-8fa6-4332-a4be-d5e50b77edd0
 # ╟─5d96e770-68fd-4212-bdf5-965130336ba0
-# ╠═b9eb3ffa-2b3e-4aa6-8c7b-7b59c1d16c5f
 # ╟─0bd84bf3-7fb3-4d1d-9213-34927cf65632
+# ╠═db46ad09-e970-464d-bbf5-a28278b25914
 # ╟─13bd0541-13cd-41b5-b594-82340f0fd2de
 # ╟─236e6a1c-4e8d-473e-bc22-d9298b0625b1
 # ╟─e2155c0c-787f-400f-afd5-1f3aac2ab30d
@@ -1475,8 +1452,7 @@ version = "1.4.1+0"
 # ╟─ac758750-b732-41c7-8ca5-c5384e1bbe91
 # ╟─df6115cc-821d-4f43-969e-ca3395c22f70
 # ╟─0fea8e6a-549e-4175-8337-a21783a82333
-# ╠═4ca9217b-b1b9-4c3d-91fb-3267084bd0f2
-# ╟─98fff413-443a-480d-a732-cd469efc312d
+# ╠═f25657b8-0d76-4f7d-a519-cb5584cd0a07
 # ╟─b7a6e73f-54d5-4988-8250-970c1e7fae8d
 # ╠═17c4ef12-9d03-43ac-b431-6e47d5cb4791
 # ╟─4417faf2-468d-436d-9dec-d083d51904e8
@@ -1484,12 +1460,13 @@ version = "1.4.1+0"
 # ╠═43995e70-9149-44e7-926a-b7b86f066894
 # ╟─e4c31bbb-2fa7-4575-bff3-0c50c8454172
 # ╟─b6a495a9-2939-4faf-ab55-bd98421b61b0
+# ╠═56eb6309-9f2f-4c48-b2c8-1fd1a88a1874
 # ╠═e1d2835f-6743-4a6a-b0a2-65969206790f
 # ╟─e8ffa42c-9e11-4d5d-bfaf-bee808529e90
 # ╟─de80375a-ac06-4b7a-a340-e9a32dfcac74
 # ╠═9ea7c309-0191-44b9-a584-0f8beb38c58e
 # ╟─5a732b84-f565-4072-9f76-515857a4cf19
 # ╟─4d0f39a2-9fe8-4d4f-82e8-98e56c9bc7b6
-# ╠═e9321ed3-573d-4326-a1b2-6cfd46127deb
+# ╟─b71698f6-eb55-435b-ba95-39521c1dccff
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
