@@ -41,9 +41,12 @@ Rewrite the following expressions in order to avoid cancellation for the indicat
 
 # ╔═╡ 1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 md"""
+
+**Solution**
+
+
 Using Herbie, one can find the most computationally efficient & precise way of computing these calculations:
 
-1) $ sqrt()
 
 """
 
@@ -59,7 +62,10 @@ and deduce that $x = 0.1$ has the base $2$ representation $0.000\overline{1100}$
 """
 
 # ╔═╡ 081476f4-351f-4611-a653-67a46b0c2624
-md""" 
+md"""
+**Proof**
+
+
 This resembles the case of a geometric series:
 
 ```math
@@ -68,21 +74,40 @@ This resembles the case of a geometric series:
 ```
 With $r= \frac12$, except that here the first index is $1$ and $2$ indices of $k$ are skipped every $4$ iterations.
 
-```math
-\begin{align}
-\sum_{k=1}^\infty r^{4k-1} +r^{4k}= \lim_{k \to \infty} & r^3+r^4+r^7+r^8+...+r^{4k-1}+r^{4k} \\
+By taking the 2 terms of the series one by one: 
 
-(1-r^4)\sum_{k=1}^\infty r^{4k-1} +r^{4k}= &(1-r^4)  \lim_{k \to \infty} (r^3+r^4+r^7+r^8+...+r^{4k-1}+r^{4k}) \\
-= &\lim_{k \to \infty}  r^3+r^4+r^7+r^8+...+r^{4k-1}+r^{4k}-r^7-r^8-...-r^{4k}-r^{4k+1} \\
-= &\lim_{k \to \infty} r^3+r^4 -r^{4k}-r^{4k+1}
-
-\end{align}
-```
-With the terms to the power $k$ vanishing as $r=\frac12$, the result obtained for this troncated geometric series is:
 
 ```math
-\sum_{k=1}^\infty r^{4k-1} +r^{4k}=\frac{r^3+r^4}{1-r^4}=\frac{0.125+0.0625}{1-0.0625}=0.2
+\sum_{i=1}^\infty r^{4i}= \sum_{i=1}^\infty (\frac12^4)^i= \sum_{i=1}^\infty (\frac{1}{16})^i= -\tilde{r}^0+\sum_{i=0}^\infty \tilde{r}^i
+
 ```
+
+With $\tilde{r}=\frac{1}{16}$, one can rewrite it using the geometric series' result:
+
+```math
+\sum_{i=1}^\infty r^{4i}= -1 + \frac{1}{1-\tilde{r}}=1-\frac{1}{1-\frac{1}{16}}=\frac{1}{15}
+```
+
+Doing the same thing with the other term $\sum_{i=1}^\infty r^{4i-1}$ one gets:
+
+```math
+\sum_{i=1}^\infty r^{4i-1}=\frac{1}{r}\sum_{i=1}^\infty r^{4i}
+
+```
+And as it has been shown that just above that $\sum_{i=1}^\infty r^{4i}=\frac{1}{15}$, one can rewrite it as:
+
+```math 
+
+\sum_{i=1}^\infty r^{4i-1}=\frac12 \frac{1}{15}=\frac{1}{30}
+
+```
+Summing both sums, the result obtained for the truncated series is:
+
+```math
+\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1}=\frac{1}{15}+\frac{1}{30}=\frac{3}{30}=0.1 
+```
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 """
 
@@ -105,18 +130,17 @@ end
 ```
 """
 
-# ╔═╡ 9364f526-5149-4730-b0c7-fa619cfa598c
+# ╔═╡ f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 md"""
 **Exercise 3 Answer**
+In this exercise the goal is to replicate the max() function from Julia, there are a couple of edge cases that will pose problem to our naive Max function above that should be checked and corrected,
 
-In this exercise the goal is to replicate the max() function from Julia, there are a couple of edge cases that will pose problem to our naive Max(a,b) that should be checked and corrected:
+Let's begin by defining the naive Max(a,b) function: 
 
-1) if there is a NaN: "Not a Number" should never be a max nor a min, since it is not comparable to a number in $\mathbb{R}$, the convention chosen by Julia is to return "NaN".
-
-2) if $a,b$ $\pm0$: when dealing with limits, the sign from which one is approaching $0$ matters, therefore we should check that if the sign is mentioned it should be taken into account.
 """
 
-# ╔═╡ 549d5975-a3cc-44b1-95c4-cdbf148f21ba
+# ╔═╡ 7465768c-2f08-41a7-9158-ef3e2b8df505
+# the functions to troubleshoot the potential issues
 begin 
 
 	function Max(a, b)
@@ -138,33 +162,95 @@ begin
 	
 end
 
-# ╔═╡ bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
+# ╔═╡ 9364f526-5149-4730-b0c7-fa619cfa598c
+md"""
+Let's now go over the problematic cases and try to find a way to overcome the issues:
 
+1) if there is a NaN: "Not a Number" should never be a max nor a min, since it is not comparable to a number in $\mathbb{R}$, the convention chosen by Julia is to return "NaN".
+
+Let's see how the issue appears:
+
+
+"""
+
+# ╔═╡ 63990f4d-a336-426b-b56f-5cce35779567
 begin
-	#the naive functions do not take into consideration the sign of the 0 
-	println(Max(-0.0,0.0))
-	println(Min(-0.0,0.0),"\n")
+	# if there is a NaN, it will always return b, as the condition a>b is never fullfilled 
+	
+	println(Max(NaN,Inf))
+	println(Min(NaN,Inf))
+	println(Max(Inf,NaN))	
+	println(Max(NaN,NaN))
+end
 
+# ╔═╡ 73e898e0-560f-4833-8dc8-093a70064c42
+md"""
+To circumvent the NaN case (issue 1.), one should check if there are NaN's, and if so return NaN 
+
+```julia
+	if isnan(a) || isnan(b)
+		return NaN
+	end
+```
+"""
+
+# ╔═╡ fb97e4d3-9950-4a6c-b34d-4ac70a1745e4
+begin
 	#they also only return NaN if both a and b are NaN's
 	println(Max(NaN,Inf))
 	println(Min(NaN,Inf))
 	println(Max(NaN,NaN))
 end
 
+# ╔═╡ a54db2e7-2088-4ed4-8263-8f278fcac55a
+md"""
+Let's move on to another possibly problematic occurence:
+
+2) if $a,b$ $\pm0$: when dealing with limits, the sign from which one is approaching $0$ matters, therefore we should check that if the sign is mentioned it should be taken into account.
+"""
+
+# ╔═╡ bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
+
+begin
+	#the naive functions do not take into consideration the sign of the 0 
+	println(Max(-0.0,0.0))
+	println(Min(-0.0,0.0),"\n")
+end
+
+# ╔═╡ 55c4903b-63af-413e-8cfb-7653abe0da1d
+md"""
+For the case of approximating $0$ from both sides, it should return the unsigned 0.0 as it is bigger than $-0.0$
+
+In order to do that, one should check if both sides are considered as "equal" and then check if they differ by a sign, and if so the term without the minus sign should get returned:
+
+```julia
+if a == b
+	if a == 0.0 || b == 0.0
+			return 0.0
+	end
+end
+```
+
+Now that both cases have been resolved, one can write the Max_corrected() function, that will reproduce the implemented max() function from Julia:
+"""
+
 # ╔═╡ 606c3200-95e2-4d77-b34b-b6b47daedd8d
 #here is the corrected function to circumvent the issues 
 
 function Max_corrected(a,b)
-	if a==b
-		if a==-0.0 || b==-0.0
+	if a == b
+		if a == 0.0 || b == 0.0
 				return 0.0
 		end
-	return a
+		return a
 	end
+
+	
 	if isnan(a) || isnan(b)
 		return NaN
 	end
-	if a>b
+	
+	if a > b
 		return a 
 	else 
 		return b 
@@ -514,9 +600,15 @@ version = "17.4.0+0"
 # ╠═feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╠═081476f4-351f-4611-a653-67a46b0c2624
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
+# ╟─f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
+# ╠═7465768c-2f08-41a7-9158-ef3e2b8df505
 # ╠═9364f526-5149-4730-b0c7-fa619cfa598c
-# ╠═549d5975-a3cc-44b1-95c4-cdbf148f21ba
+# ╠═63990f4d-a336-426b-b56f-5cce35779567
+# ╠═73e898e0-560f-4833-8dc8-093a70064c42
+# ╠═fb97e4d3-9950-4a6c-b34d-4ac70a1745e4
+# ╠═a54db2e7-2088-4ed4-8263-8f278fcac55a
 # ╠═bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
+# ╠═55c4903b-63af-413e-8cfb-7653abe0da1d
 # ╠═606c3200-95e2-4d77-b34b-b6b47daedd8d
 # ╠═98f09752-c95b-45c6-801b-954ebe2f7e92
 # ╠═626a224c-8812-4e6b-b27d-6f0f96714e3f
