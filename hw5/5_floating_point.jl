@@ -39,6 +39,14 @@ Rewrite the following expressions in order to avoid cancellation for the indicat
 *Tip: You might try yourself or use a tool like Herbie (https://herbie.uwplse.org/demo/) to automatically search over expressions. In any case, include a short explanation additionally.*
 """
 
+# ╔═╡ 1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
+md"""
+Using Herbie, one can find the most computationally efficient & precise way of computing these calculations:
+
+1) $ sqrt()
+
+"""
+
 # ╔═╡ feaad6a4-3d7a-403a-8a3b-6135285d364b
 md"""
 ## Exercise 2 (2.5 P)
@@ -137,7 +145,7 @@ begin
 	println(Max(-0.0,0.0))
 	println(Min(-0.0,0.0),"\n")
 
-	#they also only return if both a and b are NaN's
+	#they also only return NaN if both a and b are NaN's
 	println(Max(NaN,Inf))
 	println(Min(NaN,Inf))
 	println(Max(NaN,NaN))
@@ -502,6 +510,7 @@ version = "17.4.0+0"
 # ╟─7eda14a6-02c2-4eb2-b774-dccea23f5632
 # ╟─73097e41-590f-4975-9781-19351dfbfed5
 # ╟─64892b7a-5ae5-11ee-3683-214c5333532e
+# ╠═1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 # ╠═feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╠═081476f4-351f-4611-a653-67a46b0c2624
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
