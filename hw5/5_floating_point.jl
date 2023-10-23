@@ -111,6 +111,24 @@ $\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 """
 
+# ╔═╡ 44a13521-29bd-43a3-95b7-f8bacb16f5aa
+md"""
+
+First thing one can do is to rewrite $\hat{x}$ as the sum demonstrated above and applying the float$32$ to it: 
+
+```math
+\hat{x} = fl(0.1)=fl(\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1})=\sum_{i=1}^{31} 2^{-4i} + 2^{-4i-1}
+```
+
+
+To demonstrate the relative error, one of the ways is to show that  
+
+```math
+\frac{x - \hat{x}}{x} =\frac{\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1}}{}
+```
+
+"""
+
 # ╔═╡ e8e1fd4b-7776-4533-af2e-279be0319a85
 md"""
 ## Exercise 3 (2.5 P)
@@ -133,6 +151,8 @@ end
 # ╔═╡ f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 md"""
 **Exercise 3 Answer**
+
+
 In this exercise the goal is to replicate the max() function from Julia, there are a couple of edge cases that will pose problem to our naive Max function above that should be checked and corrected,
 
 Let's begin by defining the naive Max(a,b) function: 
@@ -185,7 +205,7 @@ end
 
 # ╔═╡ 73e898e0-560f-4833-8dc8-093a70064c42
 md"""
-To circumvent the NaN case (issue 1.), one should check if there are NaN's, and if so return NaN 
+To circumvent the NaN case (issue 1.), one should check if there are NaN's, and if so return NaN:
 
 ```julia
 	if isnan(a) || isnan(b)
@@ -194,19 +214,11 @@ To circumvent the NaN case (issue 1.), one should check if there are NaN's, and 
 ```
 """
 
-# ╔═╡ fb97e4d3-9950-4a6c-b34d-4ac70a1745e4
-begin
-	#they also only return NaN if both a and b are NaN's
-	println(Max(NaN,Inf))
-	println(Min(NaN,Inf))
-	println(Max(NaN,NaN))
-end
-
 # ╔═╡ a54db2e7-2088-4ed4-8263-8f278fcac55a
 md"""
 Let's move on to another possibly problematic occurence:
 
-2) if $a,b$ $\pm0$: when dealing with limits, the sign from which one is approaching $0$ matters, therefore we should check that if the sign is mentioned it should be taken into account.
+2) if $a,b$ $\pm0$: when dealing with limits, the sign from which one is approaching $0$ matters, therefore one should check that if the sign is mentioned it should be taken into account.
 """
 
 # ╔═╡ bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
@@ -219,7 +231,7 @@ end
 
 # ╔═╡ 55c4903b-63af-413e-8cfb-7653abe0da1d
 md"""
-For the case of approximating $0$ from both sides, it should return the unsigned 0.0 as it is bigger than $-0.0$
+For the case of approximating $0$ from both sides, it should return the unsigned $0.0$ as it is bigger than $-0.0$
 
 In order to do that, one should check if both sides are considered as "equal" and then check if they differ by a sign, and if so the term without the minus sign should get returned:
 
@@ -238,6 +250,14 @@ Now that both cases have been resolved, one can write the Max_corrected() functi
 #here is the corrected function to circumvent the issues 
 
 function Max_corrected(a,b)
+	#NaN part 
+	
+	if isnan(a) || isnan(b)
+		return NaN
+	end
+	
+
+	# 0.0 ≠ -0.0 part
 	if a == b
 		if a == 0.0 || b == 0.0
 				return 0.0
@@ -245,10 +265,7 @@ function Max_corrected(a,b)
 		return a
 	end
 
-	
-	if isnan(a) || isnan(b)
-		return NaN
-	end
+	#rest of the cases
 	
 	if a > b
 		return a 
@@ -599,13 +616,13 @@ version = "17.4.0+0"
 # ╠═1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 # ╠═feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╠═081476f4-351f-4611-a653-67a46b0c2624
+# ╠═44a13521-29bd-43a3-95b7-f8bacb16f5aa
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
-# ╟─f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
+# ╠═f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 # ╠═7465768c-2f08-41a7-9158-ef3e2b8df505
 # ╠═9364f526-5149-4730-b0c7-fa619cfa598c
 # ╠═63990f4d-a336-426b-b56f-5cce35779567
 # ╠═73e898e0-560f-4833-8dc8-093a70064c42
-# ╠═fb97e4d3-9950-4a6c-b34d-4ac70a1745e4
 # ╠═a54db2e7-2088-4ed4-8263-8f278fcac55a
 # ╠═bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
 # ╠═55c4903b-63af-413e-8cfb-7653abe0da1d
