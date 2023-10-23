@@ -75,7 +75,7 @@ and deduce that $x = 0.1$ has the base $2$ representation $0.000\overline{1100}$
 
 # ╔═╡ 081476f4-351f-4611-a653-67a46b0c2624
 md"""
-**Proof**
+**Solution:**
 
 
 This resembles the case of a geometric series:
@@ -197,62 +197,70 @@ end
 
 # ╔═╡ f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 md"""
-**Exercise 3 Answer**
+**Solution:**
 
 
-In this exercise the goal is to replicate the max() function from Julia, there are a couple of edge cases that will pose problem to our naive Max function above that should be checked and corrected,
+In this exercise the goal is to replicate the max() function from Julia, there are a couple of edge cases that will pose problems to our naive max function above that should be checked and corrected,
 
 Let's begin by defining the naive Max(a,b) function: 
 
 """
 
 # ╔═╡ 7465768c-2f08-41a7-9158-ef3e2b8df505
-# the functions to troubleshoot the potential issues
-begin 
+function Max(a, b)
+	if a > b
+		return a
+	else
+		return b
+	end
+end
 
-	function Max(a, b)
-		if a > b
-			return a
-		else
-			return b
-		end
+# ╔═╡ 4388de8f-4425-49ce-83cb-d827785fa5e9
+md"""
+We also define a function for finding the minimum to compare the results afterwards.
+"""
+
+# ╔═╡ 63eca55f-f98f-4ad7-a0b6-21138a6c7df4
+function Min(a, b)
+	if a < b
+		return a
+	else
+		return b
 	end
-	#for completeness, a Min() function has been built to compare the results
-	
-	function Min(a, b)
-		if a < b
-			return a
-		else
-			return b
-		end
-	end
-	
 end
 
 # ╔═╡ 9364f526-5149-4730-b0c7-fa619cfa598c
 md"""
-Let's now go over the problematic cases and try to find a way to overcome the issues:
+Let's now go over the problematic cases and try to find a way to overcome the issues.
 
-1) if there is a NaN: "Not a Number" should never be a max nor a min, since it is not comparable to a number in $\mathbb{R}$, the convention chosen by Julia is to return "NaN".
-
-Let's see how the issue appears:
-
-
+##### Not a Number (NaN)
 """
 
-# ╔═╡ 63990f4d-a336-426b-b56f-5cce35779567
-begin
-	# if there is a NaN, it will always return b, as the condition a>b is never fullfilled 
-	
-	println(Max(NaN,Inf))
-	println(Min(NaN,Inf))
-	println(Max(Inf,NaN))	
-	println(Max(NaN,NaN))
-end
+# ╔═╡ 00296b33-9bbe-4723-a3fd-355ce99a9484
+md"""
+Let's check what happens to our `Max()` function if at least one of the inputs is NaN.
+"""
+
+# ╔═╡ 80a7925d-6c1c-48c1-8763-76f29aa59047
+Max(NaN, -1.)
+
+# ╔═╡ 1abc04e5-423b-45f6-bae8-b5e19580cd34
+Max(NaN, Inf)
+
+# ╔═╡ 2da8d976-ed45-477d-a4e2-768376290de1
+Max(Inf,NaN)
+
+# ╔═╡ 72696b2d-3bda-411c-a9f6-28610f01bff7
+Max(NaN,NaN)
+
+# ╔═╡ 51a876a5-fb65-4a9c-a5f1-83c278a62487
+md"""
+The problem here is that NaN should never be a max nor a min, since it is not comparable to a number in $\mathbb{R}$. In this case, the convention chosen by Julia is to return NaN.
+"""
 
 # ╔═╡ 73e898e0-560f-4833-8dc8-093a70064c42
 md"""
-To circumvent the NaN case (issue 1.), one should check if there are NaN's, and if so return NaN:
+To circumvent the NaN case, we should add an additional check if there is NaN given as an input:
 
 ```julia
 	if isnan(a) || isnan(b)
@@ -261,11 +269,14 @@ To circumvent the NaN case (issue 1.), one should check if there are NaN's, and 
 ```
 """
 
+# ╔═╡ 0468e498-fdde-41f8-b202-6c152a3416dc
+md"""
+##### Max(a, b $\pm0$)
+"""
+
 # ╔═╡ a54db2e7-2088-4ed4-8263-8f278fcac55a
 md"""
-Let's move on to another possibly problematic occurence:
-
-2) if $a,b$ $\pm0$: when dealing with limits, the sign from which one is approaching $0$ matters, therefore one should check that if the sign is mentioned it should be taken into account.
+When dealing with limits, the sign from which one is approaching $0$ matters, therefore one should check that if the sign is mentioned it should be taken into account.
 """
 
 # ╔═╡ bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
@@ -405,15 +416,27 @@ end
 # ╠═9c772d3c-b394-494c-a908-58533618113a
 # ╠═f29c6589-0707-4264-b7f5-eb6c97010e8d
 # ╠═354b70cf-2bda-4986-9db3-b5c5741ccbd0
+# ╟─1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
+# ╟─feaad6a4-3d7a-403a-8a3b-6135285d364b
+# ╟─081476f4-351f-4611-a653-67a46b0c2624
+# ╟─44a13521-29bd-43a3-95b7-f8bacb16f5aa
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
-# ╠═f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
+# ╟─f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 # ╠═7465768c-2f08-41a7-9158-ef3e2b8df505
-# ╠═9364f526-5149-4730-b0c7-fa619cfa598c
-# ╠═63990f4d-a336-426b-b56f-5cce35779567
-# ╠═73e898e0-560f-4833-8dc8-093a70064c42
+# ╟─4388de8f-4425-49ce-83cb-d827785fa5e9
+# ╠═63eca55f-f98f-4ad7-a0b6-21138a6c7df4
+# ╟─9364f526-5149-4730-b0c7-fa619cfa598c
+# ╟─00296b33-9bbe-4723-a3fd-355ce99a9484
+# ╠═80a7925d-6c1c-48c1-8763-76f29aa59047
+# ╠═1abc04e5-423b-45f6-bae8-b5e19580cd34
+# ╠═2da8d976-ed45-477d-a4e2-768376290de1
+# ╠═72696b2d-3bda-411c-a9f6-28610f01bff7
+# ╟─51a876a5-fb65-4a9c-a5f1-83c278a62487
+# ╟─73e898e0-560f-4833-8dc8-093a70064c42
+# ╟─0468e498-fdde-41f8-b202-6c152a3416dc
 # ╠═a54db2e7-2088-4ed4-8263-8f278fcac55a
-# ╠═bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
-# ╠═55c4903b-63af-413e-8cfb-7653abe0da1d
+# ╟─bbf1a1ee-889d-43f2-8c82-5c5d20f3fedf
+# ╟─55c4903b-63af-413e-8cfb-7653abe0da1d
 # ╠═606c3200-95e2-4d77-b34b-b6b47daedd8d
 # ╠═98f09752-c95b-45c6-801b-954ebe2f7e92
 # ╠═626a224c-8812-4e6b-b27d-6f0f96714e3f
