@@ -41,12 +41,21 @@ Rewrite the following expressions in order to avoid cancellation for the indicat
 
 # ╔═╡ 1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 md"""
+**Solution:**
 
-**Solution**
+1. The initial expression $\sqrt{x + 1} - 1$ for $x ≈ 0$ can lead to significant cancellation errors due to the substraction of two nearly eaqual values. By rationalizing the expression we can get an improved version:
+$\frac{x}{\sqrt{x + 1} + 1}.$
+2. To avoid cancellation caused by direct subtraction of $\sin(x)$ and $\sin(y)$ where $x ≈ y$ we can rewrite the initial expression by applying triginometrical formulas:
+$2\sin\left(\frac{x-y}{2}\right)\cos\left(\frac{x+y}{2}\right).$
+3. To avoid direct substraction we can rewite the original expression by factorizing the difference of the squares which will be numerically more stable in case $x ≈ y$:
+$(x + y)(x- y).$
+4. To prevent cancellation error caused by subtraction $1 - \cos(x)$ and division by $\sin(x)$ we can employ trigonometric double angle formulas:
+$\tan\left(\frac{x}{2}\right).$
+5. Since the square root of a non-negative value is always non-negative and $\cos^2{\theta} ≈ 0$, the original expression can be rewritten, escaping the difference of squares of almost equal values, as follows:
+$c = |a - b \cdot \cos{\theta}|.$
 
 
-Using Herbie, one can find the most computationally efficient & precise way of computing these calculations:
-
+    
 
 """
 
@@ -66,66 +75,79 @@ md"""
 **Solution:**
 
 
-This resembles the case of a geometric series:
+Dealing with geometric series we know that:
 
 ```math
 
-\sum_{k=0}^\infty r^k = \frac{1}{1-r} \qquad \text{if } |r|<1
+\sum_{k=0}^\infty r^k = \frac{1}{1-r} \qquad \text{where } |r|<1.
 ```
-With $r= \frac12$, except that here the first index is $1$ and $2$ indices of $k$ are skipped every $4$ iterations.
-
-By taking the 2 terms of the series one by one: 
+In our case, we have: 
 
 
 ```math
-\sum_{i=1}^\infty r^{4i}= \sum_{i=1}^\infty (\frac12^4)^i= \sum_{i=1}^\infty (\frac{1}{16})^i= -\tilde{r}^0+\sum_{i=0}^\infty \tilde{r}^i
+\sum_{i=1}^\infty 2^{-4i} = \sum_{i=1}^\infty (\frac{1}{16})^i = \sum_{i=0}^\infty (\frac{1}{16})^i - 1 = \frac{1}{1-\frac{1}{16}} - 1 = \frac{1}{15},
 
 ```
 
-With $\tilde{r}=\frac{1}{16}$, one can rewrite it using the geometric series' result:
+and
 
 ```math
-\sum_{i=1}^\infty r^{4i}= -1 + \frac{1}{1-\tilde{r}}=1-\frac{1}{1-\frac{1}{16}}=\frac{1}{15}
+\sum_{i=1}^\infty 2^{-4i-1} = \frac{1}{2}\sum_{i=1}^\infty 2^{-4i} = \frac12 \cdot \frac{1}{15}=\frac{1}{30}.
+
 ```
 
-Doing the same thing with the other term $\sum_{i=1}^\infty r^{4i-1}$ one gets:
+Therefore,
 
 ```math
-\sum_{i=1}^\infty r^{4i-1}=\frac{1}{r}\sum_{i=1}^\infty r^{4i}
-
+\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1}=\frac{1}{15}+\frac{1}{30}=\frac{3}{30}=0.1. 
 ```
-And as it has been shown that just above that $\sum_{i=1}^\infty r^{4i}=\frac{1}{15}$, one can rewrite it as:
-
-```math 
-
-\sum_{i=1}^\infty r^{4i-1}=\frac12 \frac{1}{15}=\frac{1}{30}
-
-```
-Summing both sums, the result obtained for the truncated series is:
-
-```math
-\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1}=\frac{1}{15}+\frac{1}{30}=\frac{3}{30}=0.1 
-```
-
-$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 """
 
-# ╔═╡ 44a13521-29bd-43a3-95b7-f8bacb16f5aa
+# ╔═╡ e507f754-8472-4d33-94ca-49547422e07c
 md"""
+In order to convert a fraction to binary we need to repeatedly multiply by two, take decimal as the digit and take obtained fraction as the starting point for the next step. 
 
-First thing one can do is to rewrite $\hat{x}$ as the sum demonstrated above and applying the float$32$ to it: 
+In our case:
 
-```math
-\hat{x} = fl(0.1)=fl(\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1})=\sum_{i=1}^{31} 2^{-4i} + 2^{-4i-1}
-```
+$0.1×2=0.2  \to \textbf{0}$
+$0.2×2=0.4 \to \textbf{0}$
+$0.4×2=0.8 \to \textbf{0}$
+$0.8×2=1.6 \to \textbf{1}$
 
+and so on. By repeting the procedure above we get:
 
-To demonstrate the relative error, one of the ways is to show that  
+$0.1 \to 0.0001100110011001100...$
 
-```math
-\frac{x - \hat{x}}{x} =\frac{\sum_{i=1}^\infty 2^{-4i} + 2^{-4i-1}}{}
-```
+which shows that $0.1$ indeed has the base $2$ representation as $0.000\overline{1100}.$
+
+"""
+
+# ╔═╡ 67fb0e96-1c73-4b15-ae49-2ad0f3872261
+md"""
+The IEEE single-precision floating-point format (`Float32`) uses 32 bits of computer memory to represent numeric values and the bits are arranged as follows:
+
+$(-1)^{b_{31}} × 2^{(b_{30} \dots b_{23})_2 - 127} × (1 + \sum_{i=1}^{23}b_{23-i}2^{-i}),$
+
+where $b_i$ with $i=0, \dots, 31$ denote bits. In our case we have:
+
+$0.000\overline{1100} = 1.100\overline{1100} × 2^{-4}.$
+
+Therefore,
+- the exponent is equal to $-4$ and by adding the bias we get:
+$(-4 + 127)_{10} = (123)_{10} = (1111011)_2 = (b_{29} \dots b_{23})_2$
+- the mantissa can be obtained from $1.100\overline{1100}$ by looking at the fractional part of the binary representation after the binary point and filling out all available bits $b_i$ where $i=0 \cdots 22$:
+
+$10011001100110011001100 = b_{22} \cdots b_0$
+- the sign bit $b_{31}$ is $0$.
+
+Thus, by converting the IEEE single-precision representation of $0.1$ back to binary we get:
+
+$\frac{x - \hat{x}}{x} = - \frac{0.0\overline{1100} × 2^{-28}}{0.0\overline{1100} × 2^{-2}} =- 2^{-26} = - \frac14 2^{-24} = - \frac14 u$
+
+which completes the proof.
+
+$\qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \qquad \square$
 
 """
 
@@ -148,7 +170,7 @@ end
 ```
 """
 
-# ╔═╡ f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
+# ╔═╡ 55585617-e29d-4242-8a88-04426eadfaeb
 md"""
 **Solution:**
 
@@ -159,7 +181,7 @@ Let's begin with defining the `naive_max(a,b)` function:
 
 """
 
-# ╔═╡ 7465768c-2f08-41a7-9158-ef3e2b8df505
+# ╔═╡ 77dee7db-b620-4525-afa4-41fa7c77c37f
 function naive_max(a, b)
 	if a > b
 		return a
@@ -168,12 +190,12 @@ function naive_max(a, b)
 	end
 end
 
-# ╔═╡ 4388de8f-4425-49ce-83cb-d827785fa5e9
+# ╔═╡ 20fd8ab0-0a2a-4fa9-b985-2e554825318c
 md"""
 We also define a function for finding the minimum to compare the results afterwards.
 """
 
-# ╔═╡ 63eca55f-f98f-4ad7-a0b6-21138a6c7df4
+# ╔═╡ 817bbe6a-cc66-4165-99b9-d07b165bcdce
 function naive_min(a, b)
 	if a < b
 		return a
@@ -182,41 +204,41 @@ function naive_min(a, b)
 	end
 end
 
-# ╔═╡ 9364f526-5149-4730-b0c7-fa619cfa598c
+# ╔═╡ 871f67b3-0dd1-44d2-929a-1b158baeae5f
 md"""
 Let's now go over the problematic cases and try to find a way to overcome the issues.
 
 ##### 1 $\quad$ Comparing with Not a Number (NaN)
 """
 
-# ╔═╡ 00296b33-9bbe-4723-a3fd-355ce99a9484
+# ╔═╡ a07f753f-dd5f-43d8-8fe9-b0d91c060e5d
 md"""
-Let's check what happens to our `Max()` function if at least one of the inputs is NaN.
+Let's check what happens to our `naive_max()` function if at least one of the inputs is `NaN`.
 """
 
-# ╔═╡ 80a7925d-6c1c-48c1-8763-76f29aa59047
+# ╔═╡ 186fc0a4-3cd3-417a-b023-d0da407204d1
 naive_max(NaN, -1.)
 
-# ╔═╡ 1abc04e5-423b-45f6-bae8-b5e19580cd34
+# ╔═╡ e22e14cf-2772-4d98-96c8-7ba70a543026
 naive_max(NaN, Inf)
 
-# ╔═╡ 2da8d976-ed45-477d-a4e2-768376290de1
+# ╔═╡ 387a8774-68d9-4cf6-bd38-efb4a5d51a40
 naive_max(Inf, NaN)
 
-# ╔═╡ 72696b2d-3bda-411c-a9f6-28610f01bff7
+# ╔═╡ 16d6a8c0-6d80-4bc4-a10b-b4810c58a864
 naive_max(NaN, NaN)
 
-# ╔═╡ 51a876a5-fb65-4a9c-a5f1-83c278a62487
+# ╔═╡ 993704da-c390-47b7-93d0-94406d98f0df
 md"""
-The problem here is that NaN should never be a max nor a min since it is not comparable to a number in $\mathbb{R}$ and the solution chosen by Julia is to return NaN.
+The problem here is that `NaN` cannot be a max or a min since it is not comparable to a number and the solution is to return `NaN`.
 """
 
-# ╔═╡ 89415b80-75c6-483d-b9e5-a62b3fc7434d
+# ╔═╡ 90ba0114-f9b8-470a-b6f1-cdc1d36f625b
 max(NaN, -1.)
 
-# ╔═╡ 73e898e0-560f-4833-8dc8-093a70064c42
+# ╔═╡ f32077ea-2311-4574-881b-3d7fd6dbcc0a
 md"""
-To circumvent the NaN case, we should add an additional check if there is NaN given as an input:
+In this case, we should add an additional check if there is `NaN` given as an input:
 
 ```julia
 	if isnan(a) || isnan(b)
@@ -225,51 +247,68 @@ To circumvent the NaN case, we should add an additional check if there is NaN gi
 ```
 """
 
-# ╔═╡ 0468e498-fdde-41f8-b202-6c152a3416dc
+# ╔═╡ 1591dbb4-85f4-4363-ba3f-6d3eab914b7b
 md"""
-##### 2 $\quad$ Comparing $+0$ with $-0$
+##### 2 $\quad$ Comparing `+0` with `-0`
 """
 
-# ╔═╡ a54db2e7-2088-4ed4-8263-8f278fcac55a
+# ╔═╡ ef51b271-2d90-46ab-9ec6-45296f46a0bd
 md"""
-Another thing that should be taken into account is that the naive functions do not compare correctly $0$ with different signs. When dealing with the limits, the sign from which one is approaching $0$ matters.
+Another problematic case is that the naive functions do not compare correctly $0$ with different signs.
 """
 
-# ╔═╡ 63f1426c-2897-4307-aa6a-2a526d4f330c
+# ╔═╡ baea45c8-d530-4bd5-a042-783b74217e2f
+naive_max(-0.0, 0.0), naive_max(0.0, -0.0)
+
+# ╔═╡ bd4960a1-a7a8-416f-b0b3-7b83ff71a0eb
+naive_min(-0.0, 0.0), naive_min(0.0, -0.0)
+
+# ╔═╡ b65246a7-f01e-499b-9c14-c81af47c0da9
 md"""
-For the case of approximating $0$ from both sides, it should return the unsigned $0$ as it is bigger than $-0$.
-"""
-
-# ╔═╡ f797bb5d-2612-4c2f-935d-a23d20b6eabd
-naive_max(-0.0, 0.0)
-
-# ╔═╡ 609c4a7d-adec-4898-843d-97207646977e
-naive_min(-0.0, 0.0)
-
-# ╔═╡ 55c4903b-63af-413e-8cfb-7653abe0da1d
-md"""
-In order to fix it, we should check if both sides are considered as "equal" and then check if they differ by a sign, and if so the term without the minus sign should get returned:
+In order to fix this, we should check if both sides are equal to $0$ and then check if they differ by a sign:
 
 ```julia
-if a == b
-	if a == 0.0 || b == 0.0
-			return 0.0
+if a == 0.0 && b == 0.0
+	if sign(a) > sign(b)
+		return a
+	else
+		return b
 	end
 end
+
 ```
 """
 
-# ╔═╡ d3be9a7b-8506-43d2-b081-dc44396ecdb4
+# ╔═╡ c3a1bbb7-7cd1-40c1-b14b-9c348e46d554
 md"""
-##### Corrected function
+##### 3 $\quad$ Comparing `+Inf` with `-Inf`
 """
 
-# ╔═╡ 9a69ba18-d34d-4533-8039-a0d3f49b5821
+# ╔═╡ de277800-612c-4703-aab2-661464f468f4
 md"""
-Now that both cases have been resolved, one can write the `max_corrected()` function, that will reproduce the implemented `max()` function from Julia:
+We can see that `naive_max()` function handles the `±Inf` cases correctly:
 """
 
-# ╔═╡ 606c3200-95e2-4d77-b34b-b6b47daedd8d
+# ╔═╡ 8132521a-dd5b-4d1d-a435-a94f57d11eed
+naive_max(-Inf, Inf), naive_max(Inf, -Inf)
+
+# ╔═╡ a6b9dab6-e5c7-4f5f-aed8-7dbd68ba49f0
+naive_min(-Inf, Inf), naive_min(Inf, -Inf)
+
+# ╔═╡ 7ec3ecd7-2771-4205-81ef-ca0a66a56709
+naive_max(-Inf, 0.), naive_max(Inf, 0.)
+
+# ╔═╡ ebfa4bdb-7966-44e5-9c57-817f1d18e548
+md"""
+##### Final corrected function
+"""
+
+# ╔═╡ 0ed90ff2-3e27-4b1a-b48e-5bdee687e23e
+md"""
+Now that the problematic cases have been resolved, we can write the `max_corrected()` function, and compare it with the implemented `max()` function from Julia:
+"""
+
+# ╔═╡ c6f4d614-ccac-4f81-b583-93f950e9ff5e
 function max_corrected(a, b)
 	"""
 	The corrected max function
@@ -277,34 +316,29 @@ function max_corrected(a, b)
 	# NaN case
 	if isnan(a) || isnan(b)
 		return NaN
-	end
-	
-	# 0.0 ≠ -0.0 case
-	if a == b
-		if a == 0.0 || b == 0.0
-				return 0.0
-		end
-		return a
-	end
 
-	# The rest of the cases
-	if a > b
-		return a 
-	else 
-		return b 
-	end
+	# 0.0 ≠ -0.0 case
+	elseif a == 0.0 && b == 0.0
+        if sign(a) > sign(b)
+            return a
+        else
+            return b
+    	end
+    else
+        return naive_max(a, b)  
+    end
 end
 
-# ╔═╡ fff559c8-ff25-4372-9971-54651bc28de5
+# ╔═╡ a7f43fbf-3d6d-4b6d-bfc4-580673270a59
 md"""
 Comparing our improved function with `max()` implemented in Julia:
 """
 
-# ╔═╡ 38dfc775-3037-4b46-a9c7-3423da527159
-max_corrected(NaN,Inf), max(NaN,Inf)
+# ╔═╡ 4bdd8fc6-2150-4899-9f06-624aefbf0889
+max_corrected(NaN, Inf), max(NaN, Inf)
 
-# ╔═╡ 96bc07af-a064-49d4-bb31-477f2b6dffbd
-max_corrected(-0.0,0.0) == max(-0.0,0.0)
+# ╔═╡ ee8204cc-ecfb-47c1-9a87-1ee7612c59eb
+max_corrected(-0.0, 0.0) == max(-0.0, 0.0)
 
 # ╔═╡ 11298834-e667-4cb0-ae57-2d8004b05893
 md"""
@@ -352,7 +386,42 @@ let x = [1.1, 2.2, 3.3]
 end
 
 # ╔═╡ feecb363-1d58-4be6-96d1-19cc31335b70
-# Your code and answer here
+begin
+	# Float16
+	e_value16, e_vector16 = power_method(Float16.(A))
+	# Repeating  calculations for BFloat16
+	e_valueB16, e_vectorB16 = power_method(BFloat16.(A))
+	
+	e_values, e_vectors = eigen(A)
+
+	e_value64 = e_values[end]
+	e_vector64 = e_vectors[:,end]
+end
+
+# ╔═╡ e87e6b8a-e582-4bb6-9307-34f6eba88e0b
+error_evalue16 = abs(e_value64 - e_value16)
+
+# ╔═╡ 4b6de9e7-5e1c-45d9-8a28-060762587535
+error_evector16 = norm(e_vector64 - e_vector16)
+
+# ╔═╡ af5c5e8b-3492-424f-aac4-59dc2695987a
+residual_norm16 = norm(A * e_vector16 - e_value16 * e_vector16)
+
+# ╔═╡ 73d1ec14-c16b-46e8-8664-f00a2c266ac6
+residual_normB16 = norm(A * e_vectorB16 - e_valueB16 * e_vectorB16)
+
+# ╔═╡ 90aa8134-9be6-498a-9c92-813d5f1136ea
+residual_norm64 = norm(A * e_vector64 - e_value64 * e_vector64)
+
+# ╔═╡ 65feed5f-f14a-4a0a-95a0-36baf3c9ee43
+md"""
+We can see that the residual norm of the obtained eigen pair in both `Float16` and `BFloat16` are bigger than in `Float64` as expected since lower precision can lead to larger numerical errors during the matrix-vector multiplication.
+"""
+
+# ╔═╡ 9f1d9e3d-5366-4f97-a269-02ae637cc2ed
+md"""
+`BFloat16` format uses the same number of bits as `Float16` but allocates bits differently to improve the representation of larger values. As a result, we can see that the residual norms obtained with both formats are similar.
+"""
 
 # ╔═╡ 026027ca-351e-48d8-bd1d-2e424cd664fa
 md"""
@@ -366,6 +435,23 @@ let
 	float32_vector = randn(Float32, 3)
 	interval.(float32_vector)
 end
+
+# ╔═╡ d10e111f-b87d-4a27-a754-ce678bc56fd5
+e_value32, e_vector32 = power_method(Float32.(A), tol=1e-8)
+
+# ╔═╡ aab0f269-63c2-4080-a47c-6decb53aa3a9
+residual_norm32 = norm(A * e_vector32 - e_value32 * e_vector32)
+
+# ╔═╡ 6067f026-7782-4982-a0f0-8a27463b5bdd
+interval.(norm(A * e_vector32 - e_value32 * e_vector32))
+
+# ╔═╡ ecbd14ab-737b-4348-9490-267601e99a61
+residual_norm32_interval = norm(interval.(A) * interval.(e_vector32) - interval.(e_value32) * interval.(e_vector32))
+
+# ╔═╡ 23bfddf4-d5ad-4dbc-b0e3-ad2eec8b0a41
+md"""
+In general, `Float32` format has limited precision but as demonstrated in the previous code example we are able to achieve a residual norm on the order of $1e-7$.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -636,33 +722,38 @@ version = "17.4.0+0"
 # ╟─1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 # ╟─feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╟─081476f4-351f-4611-a653-67a46b0c2624
-# ╟─44a13521-29bd-43a3-95b7-f8bacb16f5aa
+# ╟─e507f754-8472-4d33-94ca-49547422e07c
+# ╟─67fb0e96-1c73-4b15-ae49-2ad0f3872261
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
-# ╟─f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
-# ╠═7465768c-2f08-41a7-9158-ef3e2b8df505
-# ╟─4388de8f-4425-49ce-83cb-d827785fa5e9
-# ╠═63eca55f-f98f-4ad7-a0b6-21138a6c7df4
-# ╟─9364f526-5149-4730-b0c7-fa619cfa598c
-# ╟─00296b33-9bbe-4723-a3fd-355ce99a9484
-# ╠═80a7925d-6c1c-48c1-8763-76f29aa59047
-# ╠═1abc04e5-423b-45f6-bae8-b5e19580cd34
-# ╠═2da8d976-ed45-477d-a4e2-768376290de1
-# ╠═72696b2d-3bda-411c-a9f6-28610f01bff7
-# ╟─51a876a5-fb65-4a9c-a5f1-83c278a62487
-# ╠═89415b80-75c6-483d-b9e5-a62b3fc7434d
-# ╟─73e898e0-560f-4833-8dc8-093a70064c42
-# ╟─0468e498-fdde-41f8-b202-6c152a3416dc
-# ╟─a54db2e7-2088-4ed4-8263-8f278fcac55a
-# ╟─63f1426c-2897-4307-aa6a-2a526d4f330c
-# ╠═f797bb5d-2612-4c2f-935d-a23d20b6eabd
-# ╠═609c4a7d-adec-4898-843d-97207646977e
-# ╟─55c4903b-63af-413e-8cfb-7653abe0da1d
-# ╟─d3be9a7b-8506-43d2-b081-dc44396ecdb4
-# ╟─9a69ba18-d34d-4533-8039-a0d3f49b5821
-# ╠═606c3200-95e2-4d77-b34b-b6b47daedd8d
-# ╟─fff559c8-ff25-4372-9971-54651bc28de5
-# ╠═38dfc775-3037-4b46-a9c7-3423da527159
-# ╠═96bc07af-a064-49d4-bb31-477f2b6dffbd
+# ╟─55585617-e29d-4242-8a88-04426eadfaeb
+# ╠═77dee7db-b620-4525-afa4-41fa7c77c37f
+# ╟─20fd8ab0-0a2a-4fa9-b985-2e554825318c
+# ╠═817bbe6a-cc66-4165-99b9-d07b165bcdce
+# ╟─871f67b3-0dd1-44d2-929a-1b158baeae5f
+# ╟─a07f753f-dd5f-43d8-8fe9-b0d91c060e5d
+# ╠═186fc0a4-3cd3-417a-b023-d0da407204d1
+# ╠═e22e14cf-2772-4d98-96c8-7ba70a543026
+# ╠═387a8774-68d9-4cf6-bd38-efb4a5d51a40
+# ╠═16d6a8c0-6d80-4bc4-a10b-b4810c58a864
+# ╟─993704da-c390-47b7-93d0-94406d98f0df
+# ╠═90ba0114-f9b8-470a-b6f1-cdc1d36f625b
+# ╟─f32077ea-2311-4574-881b-3d7fd6dbcc0a
+# ╟─1591dbb4-85f4-4363-ba3f-6d3eab914b7b
+# ╟─ef51b271-2d90-46ab-9ec6-45296f46a0bd
+# ╠═baea45c8-d530-4bd5-a042-783b74217e2f
+# ╠═bd4960a1-a7a8-416f-b0b3-7b83ff71a0eb
+# ╟─b65246a7-f01e-499b-9c14-c81af47c0da9
+# ╟─c3a1bbb7-7cd1-40c1-b14b-9c348e46d554
+# ╟─de277800-612c-4703-aab2-661464f468f4
+# ╠═8132521a-dd5b-4d1d-a435-a94f57d11eed
+# ╠═a6b9dab6-e5c7-4f5f-aed8-7dbd68ba49f0
+# ╠═7ec3ecd7-2771-4205-81ef-ca0a66a56709
+# ╟─ebfa4bdb-7966-44e5-9c57-817f1d18e548
+# ╟─0ed90ff2-3e27-4b1a-b48e-5bdee687e23e
+# ╠═c6f4d614-ccac-4f81-b583-93f950e9ff5e
+# ╟─a7f43fbf-3d6d-4b6d-bfc4-580673270a59
+# ╠═4bdd8fc6-2150-4899-9f06-624aefbf0889
+# ╠═ee8204cc-ecfb-47c1-9a87-1ee7612c59eb
 # ╟─11298834-e667-4cb0-ae57-2d8004b05893
 # ╠═2cb083cf-a8fc-40ab-b68e-7865c7bafb63
 # ╠═38e4320c-0fe4-42da-82ce-51e20b129bba
@@ -671,7 +762,19 @@ version = "17.4.0+0"
 # ╟─cce824e3-a693-4a4d-9e51-eabdf27da8d7
 # ╠═f95f989b-25b7-400c-a321-0f4ff4c90bb7
 # ╠═feecb363-1d58-4be6-96d1-19cc31335b70
+# ╠═e87e6b8a-e582-4bb6-9307-34f6eba88e0b
+# ╠═4b6de9e7-5e1c-45d9-8a28-060762587535
+# ╠═af5c5e8b-3492-424f-aac4-59dc2695987a
+# ╠═73d1ec14-c16b-46e8-8664-f00a2c266ac6
+# ╠═90aa8134-9be6-498a-9c92-813d5f1136ea
+# ╟─65feed5f-f14a-4a0a-95a0-36baf3c9ee43
+# ╟─9f1d9e3d-5366-4f97-a269-02ae637cc2ed
 # ╟─026027ca-351e-48d8-bd1d-2e424cd664fa
 # ╠═1fda2189-cfa4-4da8-8645-20bb22df0c54
+# ╠═d10e111f-b87d-4a27-a754-ce678bc56fd5
+# ╠═aab0f269-63c2-4080-a47c-6decb53aa3a9
+# ╠═6067f026-7782-4982-a0f0-8a27463b5bdd
+# ╠═ecbd14ab-737b-4348-9490-267601e99a61
+# ╟─23bfddf4-d5ad-4dbc-b0e3-ad2eec8b0a41
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
