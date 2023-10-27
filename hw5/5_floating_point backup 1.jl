@@ -4,6 +4,18 @@
 using Markdown
 using InteractiveUtils
 
+# ╔═╡ 9c772d3c-b394-494c-a908-58533618113a
+# ╠═╡ disabled = true
+#=╠═╡
+begin 
+	import Pkg
+	Pkg.add("Decimals")
+	
+	Pkg.add("DecFP")
+
+end
+  ╠═╡ =#
+
 # ╔═╡ 2cb083cf-a8fc-40ab-b68e-7865c7bafb63
 begin
 	using LinearAlgebra
@@ -406,13 +418,17 @@ end
 # ╟─7eda14a6-02c2-4eb2-b774-dccea23f5632
 # ╟─73097e41-590f-4975-9781-19351dfbfed5
 # ╟─64892b7a-5ae5-11ee-3683-214c5333532e
+# ╠═1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
+# ╠═feaad6a4-3d7a-403a-8a3b-6135285d364b
+# ╠═081476f4-351f-4611-a653-67a46b0c2624
+# ╠═44a13521-29bd-43a3-95b7-f8bacb16f5aa
+# ╠═9c772d3c-b394-494c-a908-58533618113a
+# ╠═f29c6589-0707-4264-b7f5-eb6c97010e8d
+# ╠═354b70cf-2bda-4986-9db3-b5c5741ccbd0
 # ╟─1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 # ╟─feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╟─081476f4-351f-4611-a653-67a46b0c2624
 # ╟─44a13521-29bd-43a3-95b7-f8bacb16f5aa
-# ╠═9c772d3c-b394-494c-a908-58533618113a
-# ╠═f29c6589-0707-4264-b7f5-eb6c97010e8d
-# ╠═354b70cf-2bda-4986-9db3-b5c5741ccbd0
 # ╟─e8e1fd4b-7776-4533-af2e-279be0319a85
 # ╟─f8d063ad-b90f-436b-9bbd-85ff2f8dd1d6
 # ╠═7465768c-2f08-41a7-9158-ef3e2b8df505

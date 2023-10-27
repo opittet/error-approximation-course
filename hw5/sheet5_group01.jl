@@ -43,7 +43,7 @@ Rewrite the following expressions in order to avoid cancellation for the indicat
 md"""
 **Solution:**
 
-1. The initial expression $\sqrt{x + 1} - 1$ for $x ≈ 0$ can lead to significant cancellation errors due to the substraction of two nearly eaqual values. By rationalizing the expression we can get an improved version:
+1. The initial expression $\sqrt{x + 1} - 1$ for $x ≈ 0$ can lead to significant cancellation errors due to the substraction of two nearly equal values. By rationalizing the expression we can get an improved version:
 $\frac{x}{\sqrt{x + 1} + 1}.$
 2. To avoid cancellation caused by direct subtraction of $\sin(x)$ and $\sin(y)$ where $x ≈ y$ we can rewrite the initial expression by applying triginometrical formulas:
 $2\sin\left(\frac{x-y}{2}\right)\cos\left(\frac{x+y}{2}\right).$
@@ -719,7 +719,7 @@ version = "17.4.0+0"
 # ╟─7eda14a6-02c2-4eb2-b774-dccea23f5632
 # ╟─73097e41-590f-4975-9781-19351dfbfed5
 # ╟─64892b7a-5ae5-11ee-3683-214c5333532e
-# ╟─1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
+# ╠═1c5d1cc9-13e2-46ec-ad2c-8cca52011bc4
 # ╟─feaad6a4-3d7a-403a-8a3b-6135285d364b
 # ╟─081476f4-351f-4611-a653-67a46b0c2624
 # ╟─e507f754-8472-4d33-94ca-49547422e07c
