@@ -21,6 +21,7 @@ begin
 	using PlutoUI
 	using Printf
 	using LinearMaps
+	using Arpack
 
 
 end
@@ -80,23 +81,21 @@ md"""
 
 """
 
+# ╔═╡ 1386c13f-8fbb-4ffa-a0a4-aa30f1a9c4ac
+md"""
+Now that the shifted $\lambda$ has been obtained, one can obtain the desired original $\lambda$ by doing:
+$\lambda_{i,shifted}=\frac{1}{\lambda_i -\sigma} \implies \lambda_i=\frac{1}{\lambda_{i,shifted}}-\sigma$
+"""
+
 # ╔═╡ 6cb1101b-9a4c-4a1d-bf74-e84ea4aa36d3
-begin
-	#ortho_qr(A) = Matrix(qr(A).Q)
-	#println(typeof(A))
-	#println(typeof(ortho_qr(A)))
-	ortho_qr(A) = Matrix(qr(A).Q)
-	σ = 0.4  # Our approximation to the eigenvalue of interest
-	shifted  = A - σ * I        # Shift the matrix
-	A_factorised = factorize(shifted)  # Factorise to obtain fast \ operation
-	(; λ, eigenvalues) = projected_subspace_iteration(A=A_factorised)
-end
+md"Size of the projected vector space: $k =$ $(@bind k PlutoUI.Slider(2:1:5, default=2, show_value=true))" 
 
 
 # ╔═╡ d720c05f-2999-4b0f-8319-bbe68e8b0945
 begin
+	
 	function projected_subspace_iteration(A; tol=1e-6, maxiter=100, verbose=true,
-	                                      X=randn(eltype(A), size(A, 2), 2),
+	                                      X=randn(eltype(A), size(A, 2), k),
 	                                      ortho=ortho_qr)
 		T = real(eltype(A))
 	
@@ -105,8 +104,6 @@ begin
 		λ = T[]
 		for i in 1:maxiter
 			X = ortho(X)
-			println(Dims(X))
-			println(Dims(A))
 			AX = A * X
 			λ, Y = eigen(X' * AX)  # Notice the change to subspace_iteration
 			                       # This is the Rayleigh-Ritz step
@@ -124,7 +121,80 @@ begin
 		
 		(; λ, X, eigenvalues, residual_norms)
 	end
+
+	ortho_qr(A) = Matrix(qr(A).Q)
+	σ = 1  # Our approximation to the eigenvalue of interest
+	shifted  = A - σ * I        # Shift the matrix
+	λ_shifted, eigenvalues_shifted = projected_subspace_iteration(shifted,verbose=false).λ,projected_subspace_iteration(shifted,verbose=false).eigenvalues
+	println(λ_shifted,eigenvalues_shifted)
+	
 end
+
+# ╔═╡ 78f068d2-17b8-4291-92b2-ef0723e38b8e
+let
+	#select the λ closest to 1:
+	λ_unshifted_list=[1/λi_shifted-σ for λi_shifted in eigenvalues_shifted[end]]
+	closest_λi=λ_unshifted_list[1]
+	for λi in λ_unshifted_list[2:end]
+		if abs(1-λi)<abs(1-closest_λi)
+			closest_λià=λi
+		end
+	end
+	
+
+	println("unshifted λ closest to 1:", closest_λi)
+end
+
+# ╔═╡ acd69a62-8884-42ff-9bfc-e3c45d8672ca
+md"""
+
+to compare different vector spaces, let’s create a loop of iterating on $k= 1,…,5$ 
+
+"""
+
+# ╔═╡ 40c8f486-2e88-4a86-8d26-e85c3d7df84a
+begin
+	closest_λi_list=[]
+	true_λ_list=[]
+	
+	for k  in 2:5
+		eigenvalues_shifted = projected_subspace_iteration(shifted,verbose=false).eigenvalues
+		#select the λ closest to 1:
+		λ_unshifted_list=[1/λi_shifted-σ for λi_shifted in eigenvalues_shifted[end]]
+		closest_λi=λ_unshifted_list[1]
+		for λi in λ_unshifted_list[2:end]
+			if abs(1-λi)<abs(1-closest_λi)
+				closest_λi=λi
+				true_λ=projected_subspace_iteration(shifted,verbose=false).λ
+			end
+		end
+		
+		println("unshifted λ closest to 1 with k=$k: ", closest_λi)
+		push!(closest_λi_list,closest_λi)
+		push!(true_λ_list,true_λ)
+		if k==5 
+			print("true closest λ to 1",true_λ)
+
+		end
+	end
+end
+
+# ╔═╡ d9338964-67ec-4b52-89a8-9b243444d470
+begin 
+	#test convergence with the norm
+	norm_r_list=[]
+	for (true_λ,iter) in (true_λ_list,range(length(true_λ_list)))
+		norm_r = norm(A*X - true_λ * X) 
+	plot!(norm_r,1:100)
+end
+
+# ╔═╡ d51a787b-0ac8-48de-849e-1b475572dc11
+B = matrixdepot("poisson", 10)
+
+# ╔═╡ d4df3a19-a04f-4b3c-b3ef-3bca92f5a8a7
+md"""
+which is a sparse matrix resulting from solving a Poisson equation in 2 dimensions as well as the subspace $\mathcal{S}$ spanned by the three vectors
+"""
 
 # ╔═╡ 5a00f6cc-e684-4db2-8376-e69d73cee8a8
 md"""
@@ -135,14 +205,6 @@ In this exercise we will discuss some error estimation strategies for orthogonal
 We follow the Rayleigh-Ritz procedure discussed in the lectures to estimate the eigenpairs of the Hermitian matrix $B \in \mathbb{C}^{N\times N}$ using an $m$-subspace $\mathcal{S}$. Solving the eigenproblem projected into this subspace yields the Ritz pairs $(\tilde{λ}_i, \tilde{y}_i) \in \mathbb{R} \times \mathbb{C}^\textcolor{red}{m}$, from which we can in turn compute the approximate eigenvectors $(\tilde{λ}_i, \tilde{x}_i) \in \mathbb{R} \times \mathbb{C}^\textcolor{red}{N}$.
 
 For the computational part of this exercise we will employ the matrix
-"""
-
-# ╔═╡ d51a787b-0ac8-48de-849e-1b475572dc11
-B = matrixdepot("poisson", 10)
-
-# ╔═╡ d4df3a19-a04f-4b3c-b3ef-3bca92f5a8a7
-md"""
-which is a sparse matrix resulting from solving a Poisson equation in 2 dimensions as well as the subspace $\mathcal{S}$ spanned by the three vectors
 """
 
 # ╔═╡ a8802b27-864d-4bf0-b2d0-4812f7f54f78
@@ -168,9 +230,28 @@ md"""
 **(e)** Run the LOBPCG algorithm on `B` starting from a random guess aiming for $4$ eigenvectors. Use the Bauer-Fike and Kato-Temple theorems to estimate the error in the first eigenvalue. Use the tightest estimate that is available to you. You may assume that the LOBPCG algorithm did not miss any eigenvalue, i.e. that you have indeed approximations for the first and second eigenpair at your disposal. Vary the tolerance between `1e-4` and `1e-10` and plot the relationships between tolerance, estimated error and true error.
 """
 
+# ╔═╡ 9d9d8970-a547-456e-8e7f-14686c204c12
+
+
+# ╔═╡ 42906202-7a85-4503-a816-e63fefea6799
+begin 
+	function Rayleigh_Ritz(A,V)
+		A_V = adjoint(V)*A*V
+		μ,y_i = eigen(A_V)
+		(;μ,y_i)
+	end
+	μ,y_i=Rayleigh_Ritz(B,V)
+	print("approximative eigenvectors:",μ, "approximative eigenvectors:",y_i)
+	
+end
+
+# ╔═╡ b1c6759c-a24b-4916-9faf-261d2bfe57f0
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+Arpack = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
 MatrixDepot = "b51810bb-c9f3-55da-ae3c-350fc1fbce05"
@@ -178,6 +259,7 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
+Arpack = "~0.5.4"
 LinearMaps = "~3.11.1"
 MatrixDepot = "~1.0.10"
 PlutoUI = "~0.7.52"
@@ -189,7 +271,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "9139bb6e1a53a21039e2e00336290884a7ea635b"
+project_hash = "0db55beb7ecd5310ef4d15063aa45300b270b53a"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -200,6 +282,18 @@ version = "1.2.0"
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 version = "1.1.1"
+
+[[deps.Arpack]]
+deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
+git-tree-sha1 = "9b9b347613394885fd1c8c7729bfc60528faa436"
+uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+version = "0.5.4"
+
+[[deps.Arpack_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "OpenBLAS_jll", "Pkg"]
+git-tree-sha1 = "5ba6c757e8feccf03a1554dfaf3e26b3cfc7fd5e"
+uuid = "68821587-b530-5797-8361-c406ea357684"
+version = "3.5.1+1"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -701,15 +795,23 @@ version = "17.4.0+0"
 # ╠═3ed9cf5a-cda2-4e96-b6f0-5e09f0ee87b1
 # ╠═f8fedbaf-ec6d-4d00-bf40-3b2759cbf45f
 # ╠═9b80b038-16a5-418a-8dd2-ee6a3a2f1f00
-# ╟─8fd23d56-ec08-4446-87ec-4fffa206cf20
+# ╠═8fd23d56-ec08-4446-87ec-4fffa206cf20
 # ╟─ba3c816e-b0d0-46f0-bcd4-e284af89e3ba
 # ╠═add79a1d-1c0e-44aa-a73d-84c5bddd2ecc
 # ╠═d720c05f-2999-4b0f-8319-bbe68e8b0945
+# ╠═1386c13f-8fbb-4ffa-a0a4-aa30f1a9c4ac
+# ╠═78f068d2-17b8-4291-92b2-ef0723e38b8e
 # ╠═6cb1101b-9a4c-4a1d-bf74-e84ea4aa36d3
-# ╟─5a00f6cc-e684-4db2-8376-e69d73cee8a8
+# ╠═acd69a62-8884-42ff-9bfc-e3c45d8672ca
+# ╠═40c8f486-2e88-4a86-8d26-e85c3d7df84a
+# ╠═d9338964-67ec-4b52-89a8-9b243444d470
 # ╠═d51a787b-0ac8-48de-849e-1b475572dc11
 # ╟─d4df3a19-a04f-4b3c-b3ef-3bca92f5a8a7
+# ╟─5a00f6cc-e684-4db2-8376-e69d73cee8a8
 # ╠═a8802b27-864d-4bf0-b2d0-4812f7f54f78
 # ╟─44974d4c-498f-4a93-8d33-0e78374b074f
+# ╠═9d9d8970-a547-456e-8e7f-14686c204c12
+# ╠═42906202-7a85-4503-a816-e63fefea6799
+# ╠═b1c6759c-a24b-4916-9faf-261d2bfe57f0
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
