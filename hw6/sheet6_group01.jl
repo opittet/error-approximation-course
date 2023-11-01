@@ -183,8 +183,9 @@ end
 begin 
 	#test convergence with the norm
 	norm_r_list=[]
-	for (true_λ,iter) in (true_λ_list,range(length(true_λ_list)))
-		norm_r = norm(A*X - true_λ * X) 
+	for (true_λ,iter) in (true_λ_list,1:length(true_λ_list))
+		norm_r = norm(A*X - true_λ * X)
+	end
 	plot!(norm_r,1:100)
 end
 
@@ -234,19 +235,110 @@ md"""
 
 
 # ╔═╡ 42906202-7a85-4503-a816-e63fefea6799
+#b
 begin 
 	function Rayleigh_Ritz(A,V)
 		A_V = adjoint(V)*A*V
 		μ,y_i = eigen(A_V)
 		(;μ,y_i)
 	end
-	μ,y_i=Rayleigh_Ritz(B,V)
-	print("approximative eigenvectors:",μ, "approximative eigenvectors:",y_i)
+	μ_list,y_i_list=Rayleigh_Ritz(B,V)
+	print("approximative eigenvectors:",μ_list, "approximative eigenvectors:",y_i_list)
 	
 end
 
 # ╔═╡ b1c6759c-a24b-4916-9faf-261d2bfe57f0
+#c 
+md"""
+Let's begin by restating the Bauer-Fike theorem:
 
+"""
+
+# ╔═╡ 0ff32e35-088f-44c3-95a9-786a42fa17aa
+begin
+	r_list=[]
+	println(y_i_list)
+	for element in 1:length(μ_list)
+		r=B * y_i_list - μ_list[element] * y_i_list
+		push!(r_list,r)
+	end
+	
+end
+
+# ╔═╡ 5800f5d9-aa3a-4690-aab8-48515370e405
+	#verify the theorem
+let
+	#compute exact eigenvalues 
+	println(typeof(B))
+	B_dense=convert(Matrix{Float64},B)
+	println(typeof(B_dense))
+	λ_B_list,V_B_list = eigen(B_dense)
+	for element in 1:length(μ_list)
+		if λ_B_list[element]-μ_list[element] ≤ norm(r_list[element])
+			println("The Bauer-Fike is respected is respected for eigenvalue $element")
+		end
+	end
+end
+
+# ╔═╡ c96da23c-c2c9-40ca-aba4-d38e84dfb121
+#d projected subspace already defined in ex1, LOBPCG
+
+function lobpcg(A; X=randn(eltype(A), size(A, 2), 2), ortho=ortho_qr,
+                   Pinv=I, tol=1e-6, maxiter=100, verbose=true)
+	T = real(eltype(A))
+	m = size(X, 2)  # block size
+
+	eigenvalues    = Vector{T}[]
+	residual_norms = Vector{T}[]
+	λ = NaN
+	P = nothing
+	R = nothing
+	
+	for i in 1:maxiter
+		if i > 1
+			Z = hcat(X, P, R)
+		else
+			Z = X
+		end
+		Z = ortho(Z)
+		
+		# Rayleigh-Ritz step to get smallest eigenvalues
+		AZ = A * Z
+		λ, Y = eigen(Hermitian(Z' * AZ))
+		λ = λ[1:m]
+		Y = Y[:, 1:m]
+		new_X = Z * Y
+
+		# Store results and residual
+		push!(eigenvalues, λ)
+		R = AZ * Y - new_X * Diagonal(λ)
+		norm_r = norm.(eachcol(R))
+		push!(residual_norms, norm_r)
+		verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] norm_r[end]
+		maximum(norm_r) < tol && break
+		
+		# Precondition residual, update X and P
+		R = Pinv * R
+		P = X - new_X
+		X = new_X
+	end
+
+	(; λ, X, eigenvalues, residual_norms)
+end
+
+
+# ╔═╡ 5fc73c30-4443-46f4-a008-9b4f24cc7464
+begin
+	# test different diagonalisation algorithms 
+	max_iter=10000
+	μ_lobpcg= lobpcg(B;X=V,maxiter=max_iter,verbose=false,tol=1e-6).λ
+	println(μ_lobpcg)
+	μ_proj_subspace= projected_subspace_iteration(B;X=V,maxiter=max_iter,verbose=false,tol=1e-6).λ
+	println(μ_proj_subspace)
+	
+	
+	
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -813,5 +905,9 @@ version = "17.4.0+0"
 # ╠═9d9d8970-a547-456e-8e7f-14686c204c12
 # ╠═42906202-7a85-4503-a816-e63fefea6799
 # ╠═b1c6759c-a24b-4916-9faf-261d2bfe57f0
+# ╠═0ff32e35-088f-44c3-95a9-786a42fa17aa
+# ╠═5800f5d9-aa3a-4690-aab8-48515370e405
+# ╠═c96da23c-c2c9-40ca-aba4-d38e84dfb121
+# ╠═5fc73c30-4443-46f4-a008-9b4f24cc7464
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
