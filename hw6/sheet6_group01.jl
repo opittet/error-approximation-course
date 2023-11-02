@@ -234,36 +234,12 @@ md"""
 # ╔═╡ 9d9d8970-a547-456e-8e7f-14686c204c12
 
 
-# ╔═╡ 42906202-7a85-4503-a816-e63fefea6799
-#b
-begin 
-	function Rayleigh_Ritz(A,V)
-		A_V = adjoint(V)*A*V
-		μ,y_i = eigen(A_V)
-		(;μ,y_i)
-	end
-	μ_list,y_i_list=Rayleigh_Ritz(B,V)
-	print("approximative eigenvectors:",μ_list, "approximative eigenvectors:",y_i_list)
-	
-end
-
 # ╔═╡ b1c6759c-a24b-4916-9faf-261d2bfe57f0
 #c 
 md"""
 Let's begin by restating the Bauer-Fike theorem:
 
 """
-
-# ╔═╡ 0ff32e35-088f-44c3-95a9-786a42fa17aa
-begin
-	r_list=[]
-	println(y_i_list)
-	for element in 1:length(μ_list)
-		r=B * y_i_list - μ_list[element] * y_i_list
-		push!(r_list,r)
-	end
-	
-end
 
 # ╔═╡ 5800f5d9-aa3a-4690-aab8-48515370e405
 	#verify the theorem
@@ -272,13 +248,15 @@ let
 	println(typeof(B))
 	B_dense=convert(Matrix{Float64},B)
 	println(typeof(B_dense))
+	
 	λ_B_list,V_B_list = eigen(B_dense)
-	for element in 1:length(μ_list)
-		if λ_B_list[element]-μ_list[element] ≤ norm(r_list[element])
-			println("The Bauer-Fike is respected is respected for eigenvalue $element")
-		end
-	end
+	println(λ_B_list)
 end
+	
+
+
+# ╔═╡ 376a6de4-fa0b-40eb-99dc-dee7f73ee017
+
 
 # ╔═╡ c96da23c-c2c9-40ca-aba4-d38e84dfb121
 #d projected subspace already defined in ex1, LOBPCG
@@ -338,6 +316,43 @@ begin
 	
 	
 	
+end
+
+# ╔═╡ b026f08f-d8af-4bfb-b78c-ff957d67af8b
+
+
+# ╔═╡ 5e401dd5-96ce-4452-a605-9b202fd6bc4b
+#e
+
+begin
+	lobpcg_k4=lobpcg(B;X=randn(eltype(A), size(A, 2), 4))
+end
+
+# ╔═╡ 42906202-7a85-4503-a816-e63fefea6799
+# ╠═╡ disabled = true
+#=╠═╡
+#b
+begin 
+	function Rayleigh_Ritz(A,V)
+		A_V = adjoint(V)*A*V
+		μ,y_i = eigen(A_V)
+		(;μ,y_i)
+	end
+	μ_list,y_i_list=Rayleigh_Ritz(B,V)
+	print("approximative eigenvectors:",μ_list, "approximative eigenvectors:",y_i_list)
+	
+end
+  ╠═╡ =#
+
+# ╔═╡ c52891d2-85d6-4c93-9aed-7f4310568188
+begin
+	μ_list,y_i_list,r=projected_subspace_iteration(B;X=V,maxiter=1).λ
+	y_i_list=projected_subspace_iteration(B;X=V,maxiter=1).X
+	r_norm_list=projected_subspace_iteration(B;X=V,maxiter=1).residual_norms
+	println(μ_list)
+	println(y_i_list)
+	println(r)
+
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -904,10 +919,13 @@ version = "17.4.0+0"
 # ╟─44974d4c-498f-4a93-8d33-0e78374b074f
 # ╠═9d9d8970-a547-456e-8e7f-14686c204c12
 # ╠═42906202-7a85-4503-a816-e63fefea6799
+# ╠═c52891d2-85d6-4c93-9aed-7f4310568188
 # ╠═b1c6759c-a24b-4916-9faf-261d2bfe57f0
-# ╠═0ff32e35-088f-44c3-95a9-786a42fa17aa
 # ╠═5800f5d9-aa3a-4690-aab8-48515370e405
+# ╠═376a6de4-fa0b-40eb-99dc-dee7f73ee017
 # ╠═c96da23c-c2c9-40ca-aba4-d38e84dfb121
 # ╠═5fc73c30-4443-46f4-a008-9b4f24cc7464
+# ╠═b026f08f-d8af-4bfb-b78c-ff957d67af8b
+# ╠═5e401dd5-96ce-4452-a605-9b202fd6bc4b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
