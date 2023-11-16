@@ -273,31 +273,29 @@ md"""
 """
 
 # ╔═╡ bdcae8ef-12f7-4539-ac16-24243cd6ef1b
-function fd_laplacian(N, a;T=Float64)
-h = 2a / (T(N-1))
-diagonal = -2ones(T, N) ./ h^2
-side_diagonal = ones(T, N-1) ./ h^2
-SymTridiagonal(diagonal, side_diagonal)
-end
-
-
 #fd_hamiltonian = fd_laplacian+fd_V
 
 function fd_hamiltonian(V, Nb, a; T=Float64)
-h = 2a / (T(Nb+2))
-diagonal_∇²= -2ones(T, N) ./ h^2
-side_diagonal_∇²= ones(T, N-1) ./ h^2
-V_fd
-diagonal = -2ones(T, N) ./ h^2
-side_diagonal = ones(T, N-1) ./ h^2
-SymTridiagonal(diagonal, side_diagonal)
+	h = 2a / (T(Nb+1))
+	diagonal_∇²= -2ones(T, Nb) ./ h^2
+	side_diagonal_∇²= ones(T, Nb) ./ h^2
+	grid_points_with_borders=range(-a, stop=a, length=(Nb+2))
+	grid_points= grid_points_with_borders[2:end-1]
+	println(typeof(grid_points))
+	
+	V_list = T.([V.(point) for point in grid_points])
+	
+	fd_V=diagm(V_list)
+	fd_laplacian = SymTridiagonal(diagonal_∇², side_diagonal_∇²)
+	
+	fd_H = fd_laplacian + fd_V
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
 let
 	res_fp64 = fd_hamiltonian(v_chain, 5, 1; T=Float64)
 	res_fp32 = fd_hamiltonian(v_chain, 5, 1; T=Float32)
-	ref = SymTridiagonal([3.88309, 2.8255, 0.808461, 2.8255, 3.88309], -2ones(4))
+	ref = SymTridiagonal([8.45798, 6.9536, 5.80846, 6.9536, 8.45798], -4.5ones(4))
 
 	if res_fp64 == Diagonal(ones(200))
 		warning_box(md"Replace `Diagonal(ones(200))` by your answer")
@@ -332,6 +330,14 @@ Perform the same benchmarks for the `\` (backslash operator, `H \ x`) with a ran
 # ╔═╡ ce856df3-29b8-4e95-89a5-86de6f29a14a
 md"""
 **(c)** In one of the later code boxes a copy of the `lobpcg` routine of the lectures is defined. Use this function to find the 3 smallest eigenpairs of the discretised Hamiltonian with `v_chain` as the potential. Use $a = 4$ and $N_b = 500$ and converge until `tol = 1e-6`. Try to experiment a bit with the preconditioners available to you. Take a look at the lecture on diagonalisation routines to get some inspiration. You should find that a good preconditioner is crucial to get this problem to converge within 20--30 iterations. Make sure that with your setup the convergence in 20--30 iterations is stable with respect to increasing $N_b$.
+"""
+
+# ╔═╡ bf432919-1f25-493b-8b2e-62f4a9071701
+md"""
+
+**Answer (c)**
+
+
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -2751,6 +2757,7 @@ version = "1.4.1+1"
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
+# ╠═bf432919-1f25-493b-8b2e-62f4a9071701
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
