@@ -273,8 +273,24 @@ md"""
 """
 
 # ╔═╡ bdcae8ef-12f7-4539-ac16-24243cd6ef1b
+function fd_laplacian(N, a;T=Float64)
+h = 2a / (T(N-1))
+diagonal = -2ones(T, N) ./ h^2
+side_diagonal = ones(T, N-1) ./ h^2
+SymTridiagonal(diagonal, side_diagonal)
+end
+
+
+#fd_hamiltonian = fd_laplacian+fd_V
+
 function fd_hamiltonian(V, Nb, a; T=Float64)
-	Diagonal(ones(200))
+h = 2a / (T(Nb+2))
+diagonal_∇²= -2ones(T, N) ./ h^2
+side_diagonal_∇²= ones(T, N-1) ./ h^2
+V_fd
+diagonal = -2ones(T, N) ./ h^2
+side_diagonal = ones(T, N-1) ./ h^2
+SymTridiagonal(diagonal, side_diagonal)
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
