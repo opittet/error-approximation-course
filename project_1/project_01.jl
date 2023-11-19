@@ -278,15 +278,16 @@ md"""
 function fd_hamiltonian(V, Nb, a; T=Float64)
 	h = 2a / (T(Nb+1))
 	diagonal_∇²= -2ones(T, Nb) ./ h^2
-	side_diagonal_∇²= ones(T, Nb) ./ h^2
+	side_diagonal_∇²= ones(T, Nb-1) ./ h^2
+	
+	fd_laplacian = SymTridiagonal(diagonal_∇², side_diagonal_∇²)
+	
 	grid_points_with_borders=range(-a, stop=a, length=(Nb+2))
 	grid_points= grid_points_with_borders[2:end-1]
-	println(typeof(grid_points))
-	
 	V_list = T.([V.(point) for point in grid_points])
 	
 	fd_V=diagm(V_list)
-	fd_laplacian = SymTridiagonal(diagonal_∇², side_diagonal_∇²)
+
 	
 	fd_H = fd_laplacian + fd_V
 end
