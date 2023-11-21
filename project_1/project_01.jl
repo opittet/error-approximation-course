@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ 0bed302a-6efa-4c23-863a-a56aa51bc73a
 begin
 	using BenchmarkTools
@@ -289,7 +299,7 @@ function fd_hamiltonian(V, Nb, a; T=Float64)
 	fd_V=diagm(V_list)
 
 	
-	fd_H = fd_laplacian + fd_V
+	fd_H = SymTridiagonal(T.(-0.5*fd_laplacian + fd_V))
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
@@ -314,12 +324,50 @@ md"""
 **(b)** The following code performs a benchmark of the matrix returned by `fd_hamiltonian` for $N_b = 500$:
 """
 
+# ╔═╡ e9d69580-9217-4f8f-9805-35fc2c6d97ff
+md"""
+###  @btime
+The @btime macro is part of the BenchmarkTools package and is used for benchmarking code. When you use  "dollar sign"a and "dollar sign"b inside the benchmarking expression, it ensures that the values of a and b are interpolated into the benchmarked expression, and the benchmark tool measures the actual runtime of the expression involving the variables a and b.
+
+Without the $ sign, the Julia compiler might optimize away the operation a + b during compilation if it determines that the result is constant and can be computed at compile time. By using "dollar sign"a and "dollar sign"b, you are essentially telling the compiler not to optimize away the specific values of a and b during benchmarking, allowing you to measure the actual runtime performance of the operation.
+
+This technique is particularly useful when benchmarking small, fast operations where the compiler might perform constant folding and eliminate the operation entirely during compilation. Using $ prevents this optimization, ensuring that the benchmark accurately reflects the runtime of the code you want to measure.
+
+"""
+
 # ╔═╡ d1d72977-f3fb-405e-aa2b-aac10980ada5
-let
+begin
 	H = fd_hamiltonian(v_chain, 500, 4);
 	x = randn(size(H, 2))
-	@btime $H * $x
+	hamil_mult=@btime $H * $x
+	hamil_div=@btime $H \ $x
+
+	H_rand = randn(500, 500)
+	rand_mult=@btime $H_rand * $x
+	rand_div=@btime $H_rand \ $x
+	println(rand_mult)
+
+
 end
+
+# ╔═╡ f6485f5d-f5f2-4ac2-952e-b499a10c867f
+begin
+	bar(["H Mult", "H Div", "H_rand Mult", "H_rand Div"], [hamil_mult.time[5], hamil_div.time[5], rand_mult.time[5], rand_div.time[5]], 
+    xlabel="Operation", ylabel="Time (s)", title="Matrix-Vector Operations Benchmark")
+end
+
+# ╔═╡ 8b2d8617-47e2-454e-81af-f28bc15c44a0
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	mult_list=(;hamil_mult,rand_mult)
+	div_list=hamil_div+rand_div
+	println(length(hamil_mult))
+	println(length(mult_list))
+	plot!(1:length(enumerate(mult_list)),mult_list)
+	plot!(1:length(mult_list),mult_list)
+end
+  ╠═╡ =#
 
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 md"""
@@ -338,6 +386,11 @@ md"""
 
 **Answer (c)**
 
+
+"""
+
+# ╔═╡ 4c8dd310-8486-4430-9134-2f4f6505fadf
+md"""- `logPrec_s`: **Preconditioner noise** level $(@bind logPrec_s PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
 
 """
 
@@ -387,10 +440,13 @@ const to = TimerOutput();  # Setup the timer to track timings
 			Z = X
 		end
 		@timeit to "Orthogonalisation" begin
+			
 			Z = ortho(Z)
 		end
 
 		@timeit to "Matrix-vector products" begin
+			println("len A",length(A))
+			println("len Z",length(Z))
 			AZ = A * Z
 		end
 
@@ -418,6 +474,29 @@ const to = TimerOutput();  # Setup the timer to track timings
 	end
 
 	(; λ, X, eigenvalues, residual_norms)
+end
+
+# ╔═╡ 0ded4108-ec78-41e3-925e-8033f07e7b62
+begin
+    H_2c = fd_hamiltonian(v_chain, 500, 4)
+    Pnoise_s = 10^logPrec_s * randn(size(H_2c, 1))
+	println(typeof(Pnoise_s))
+    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3))
+    p = plot(yaxis=:log, ylims=(1e-7, 10))
+    X = randn(eltype(H_2c), size(H_2c, 3))
+
+    # Perfect preconditioner: The inverse diagonal
+    Pinv = Diagonal(1 ./ diag(H_2c))
+    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
+    plot!(p, residual_norms; label = string(lobpcg) * " (perfect precon)", lw = 2, c, 	mark = :x)
+
+    # Preconditioner plus noise
+    Pinv = Diagonal(1 ./ diag(H_2c) .+ Pnoise_s)
+    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
+    plot!(p, residual_norms; label = string(lobpcg) * " (noisy precon)", lw = 2, c, 	ls = :dash, mark = :x)
+
+    default_lim = xlims(p)
+    xlims!(p, 0, min(default_lim[2], 100))
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -2755,10 +2834,15 @@ version = "1.4.1+1"
 # ╠═bdcae8ef-12f7-4539-ac16-24243cd6ef1b
 # ╟─a86db249-f84f-41d3-9dde-80d3f32a474e
 # ╟─1a0e7da6-ac7c-4b52-a4c9-dc4a514d3b98
+# ╠═e9d69580-9217-4f8f-9805-35fc2c6d97ff
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
+# ╠═f6485f5d-f5f2-4ac2-952e-b499a10c867f
+# ╠═8b2d8617-47e2-454e-81af-f28bc15c44a0
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
 # ╠═bf432919-1f25-493b-8b2e-62f4a9071701
+# ╠═4c8dd310-8486-4430-9134-2f4f6505fadf
+# ╠═0ded4108-ec78-41e3-925e-8033f07e7b62
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
