@@ -433,8 +433,8 @@ const to = TimerOutput();  # Setup the timer to track timings
 		end
 
 		@timeit to "Matrix-vector products" begin
-			println("len A",length(A))
-			println("len Z",length(Z))
+			#println("len A",length(A))
+			#println("len Z",length(Z))
 			AZ = A * Z
 		end
 
@@ -466,25 +466,41 @@ end
 
 # ╔═╡ 0ded4108-ec78-41e3-925e-8033f07e7b62
 begin
+	rng = 42
     H_2c = fd_hamiltonian(v_chain, 500, 4)
     Pnoise_s = 10^logPrec_s * randn(size(H_2c, 1))
-	println(typeof(Pnoise_s))
-    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3))
-    p = plot(yaxis=:log, ylims=(1e-7, 10))
-    X = randn(eltype(H_2c), size(H_2c, 3))
+
+    X = randn(eltype(H_2c), size(H_2c,2), 3)
+
+
+    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3),verbose=false)
+	
+	
+    p = plot(yaxis=:log,title="Different preconditioners",xlabel="number of iterations",ylabel="maximum residual norm")
+	
 
     # Perfect preconditioner: The inverse diagonal
     Pinv = Diagonal(1 ./ diag(H_2c))
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (perfect precon)", lw = 2, c, 	mark = :x)
-
+    inv_diag_residual_norms = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	max_residual_norm_perfect=[]
+	for residual_norms in inv_diag_residual_norms
+	    push!(max_residual_norm_perfect,maximum(residual_norms))
+	end
+    plot!(p, max_residual_norm_perfect; label = string(lobpcg) * " (perfect precon)", 	lw = 2,mark = :x)
+	
     # Preconditioner plus noise
     Pinv = Diagonal(1 ./ diag(H_2c) .+ Pnoise_s)
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (noisy precon)", lw = 2, c, 	ls = :dash, mark = :x)
+    noisy_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	max_residual_norm_noisy=[]
+	for residual_norms in noisy_res_norm
+	    push!(max_residual_norm_noisy,maximum(residual_norms))
+	end
+    plot!(p, max_residual_norm_noisy; label = string(lobpcg) * " (noisy precon)", lw 	= 2,  		ls = :dash, mark = :x)
 
-    default_lim = xlims(p)
-    xlims!(p, 0, min(default_lim[2], 100))
+	
+
+    #default_lim = xlims(p)
+    #xlims!(p, 0, min(default_lim[2], 100))
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
