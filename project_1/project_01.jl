@@ -339,35 +339,23 @@ This technique is particularly useful when benchmarking small, fast operations w
 begin
 	H = fd_hamiltonian(v_chain, 500, 4);
 	x = randn(size(H, 2))
-	hamil_mult=@btime $H * $x
-	hamil_div=@btime $H \ $x
+	
+	hamil_mult = @benchmark $H * $x
+	hamil_div=@benchmark $H \ $x
 
 	H_rand = randn(500, 500)
-	rand_mult=@btime $H_rand * $x
-	rand_div=@btime $H_rand \ $x
-	println(rand_mult)
+	rand_mult=@benchmark $H_rand * $x
+	rand_div=@benchmark $H_rand \ $x
 
 
+	
 end
 
 # ╔═╡ f6485f5d-f5f2-4ac2-952e-b499a10c867f
 begin
-	bar(["H Mult", "H Div", "H_rand Mult", "H_rand Div"], [hamil_mult.time[5], hamil_div.time[5], rand_mult.time[5], rand_div.time[5]], 
-    xlabel="Operation", ylabel="Time (s)", title="Matrix-Vector Operations Benchmark")
+	bar(["H Mult", "H Div", "H random Mult", "H random Div"], [Float64(median(hamil_mult).time),Float64(median(hamil_div).time), Float64(median(rand_mult).time),Float64(median(rand_div).time)], 
+    xlabel="Operation", ylabel="Time [ns])", yaxis=:log,labels="time",title="Matrix Vector operations median time benchmark")
 end
-
-# ╔═╡ 8b2d8617-47e2-454e-81af-f28bc15c44a0
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	mult_list=(;hamil_mult,rand_mult)
-	div_list=hamil_div+rand_div
-	println(length(hamil_mult))
-	println(length(mult_list))
-	plot!(1:length(enumerate(mult_list)),mult_list)
-	plot!(1:length(mult_list),mult_list)
-end
-  ╠═╡ =#
 
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 md"""
@@ -2837,7 +2825,6 @@ version = "1.4.1+1"
 # ╠═e9d69580-9217-4f8f-9805-35fc2c6d97ff
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
 # ╠═f6485f5d-f5f2-4ac2-952e-b499a10c867f
-# ╠═8b2d8617-47e2-454e-81af-f28bc15c44a0
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
 # ╠═bf432919-1f25-493b-8b2e-62f4a9071701
