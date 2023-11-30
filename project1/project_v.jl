@@ -111,11 +111,11 @@ i.e. they satisfy
 ```math
 \left(H^\text{chain} \psi^\text{chain}_i\right)(x) = - \frac12 \frac{\partial^2}{\partial x^2} \psi^\text{chain}_i(x) + v^\text{chain}(x) \psi^\text{chain}_i(x) = ε^\text{chain}_i \psi^\text{chain}_i(x).
 ```
-**Show** that the energy eigenvalue of $\mathcal{H}$ corresponding to $\Psi$ is the sum
+Show that the energy eigenvalue of $\mathcal{H}$ corresponding to $\Psi$ is the sum
 ```math
 E = \sum_{i=1}^N ε_i^\text{chain}.
 ```
-Based on this result **show** that the ground state $\Psi_1$ is just
+Based on this result show that the ground state $\Psi_1$ is just
 ```math
 \Psi_1(x_1, x_2, \ldots, x_N) = \prod_{i=1}^N \psi^\text{chain}_1(x_i),
 ```
@@ -129,61 +129,45 @@ with correspondingly energy $E_1 = N ε^\text{chain}_1$.
 -------
 """
 
-# ╔═╡ d652301b-26b0-4d15-9ea9-8700040d975a
+# ╔═╡ 9414343d-25d2-4502-ab1f-e66e7ef98357
 md"""
+**Solution:**
 
-**(Task 1 answer)**
-
-As defined above, we have:
+Taking into account that
+```math
+\mathcal{H} = -\frac12 \sum_{i=1}^N \frac{\partial^2}{\partial x_i^2} + V(x_1, \ldots, x_N) = \sum_{i=1}^N H_i^\text{chain},
+```
+we can derive the following:
 
 ```math
-\mathcal{H} \Psi = E \Psi 
+\begin{align}
+\mathcal{H} \Psi (x_1, x_2, \ldots, x_N) &= \sum_{i=1}^N H_i^\text{chain} \prod_{j=1}^N  \psi_j^\text{chain}(x) \\ 
+	&=  \sum_{i=1}^N H_i^\text{chain} \psi_i^\text{chain} \prod_{j\neq i}   \psi_j^\text{chain}(x)\\ 
+	&= \sum_{i=1}^N ε^\text{chain}_i \psi^\text{chain}_i \prod_{j\neq i}   \psi_j^\text{chain}(x)\\ 
+	&= \sum_{i=1}^N ε^\text{chain}_i \prod_{j=1}^N  \psi_j^\text{chain}(x) = \sum_{i=1}^N ε^\text{chain}_i \Psi (x_1, x_2, \ldots, x_N).
+\end{align}
 ```
- Taking $i$ as the atom index and $j$ as the level of energy index, the expectation value yields: 
-
-```math
-\langle E \rangle = \frac{\langle \Psi|H|\Psi \rangle}{\langle\Psi|\Psi\rangle} = \frac{\langle \Psi|\sum_{i,j} \epsilon_{i,j}|\Psi \rangle}{\langle\Psi|\Psi\rangle}
-
-
-```
-Thus by taking the sum outside the braket, we can cancel the $\Psi$'s (that are unitary in our case) under the fraction, thus yielding:
-```math
-E= \sum \epsilon_i
-```
-The $j$ index being already integrated in the averaged value for each $i^{th}$ atom. Now for the second assertion we fix $j=1$: 
-
-
-```math
-\mathcal{H} \Psi_1 = E_1 \Psi_1.
-```
-
-We get: 
-
-```math
-\frac{\langle \Psi_1|\sum_{i} \epsilon_{i,1}|\Psi_1 \rangle}{\langle\Psi_1|\Psi_1\rangle}
-```
-For it to be true, one can check that the integral form works:
-
-```math
-|\Psi_1\rangle = \int \int \int \ldots \psi_{1,1}(x_1) \psi_{2,1} (x_2) \psi_{3,1}(x_3) \ldots dx_1 dx_2 dx_3 \ldots 
-```
-As by assumption each atom is independant of others, we can rewrite as a multiplication of many integrals:
-
-```math
-|\Psi_1\rangle =\int \psi_{1,1} dx_1 \int \psi_{2,1} dx_2 \int \psi_{3,1} dx_3 \ldots = \prod_{i=1}^N \int \psi_{i,1} dx_i
-```
-
-Which is equivalent as saying that :
-
-```math
-\Psi_1=\prod_{i=1}^N  \psi_{i,1}
-```
-
-
 """
 
-# ╔═╡ bb003660-1d90-48a2-bece-af4aed651f6c
+# ╔═╡ 51f20534-ff70-4eb8-b075-480b7ca34aab
+md"""
+Using the result above, let's consider the ground state $\Psi_1$. We have:
 
+```math
+\mathcal{H} \Psi_1 = E_1 \Psi_1,
+```
+where $E_1$ corresponds to the smallest eigenvalue and at the same time $E_1 = \sum_{i=1}^N ε^\text{chain}_i$. 
+
+Considering the default ordering of eigenvalues from smallest to largest, the ground state of $H^\text{chain}$ is denoted as $\psi_1^\text{chain}(x)$ with corresponding the lowest eigenvalue denoted as $ε_1^\text{chain}$. 
+
+Therefore, the ground state energy is defined as follows:
+
+$E_1 = \sum_{i=1}^N ε^\text{chain}_1 = N ε^\text{chain}_1.$
+
+This is true if the ground state $\Psi_1$ is the following:
+
+$\Psi_1(x_1, x_2, \ldots, x_N) = \prod_{i=1}^N \psi^\text{chain}_1(x_i).$
+"""
 
 # ╔═╡ 36992fa1-49dc-4ab8-98d3-2b1aed333852
 md"""
@@ -282,24 +266,22 @@ md"""
 **(a)** Code up a function `fd_hamiltonian(V, Nb, a; T=Float64)`, which returns the finite-difference discretised Hamiltonian corresponding to a potential $V$ using $(N_b+2)$-point finite differences (i.e. where the domain $(-a, a)$ is split into $N_b$ equispaced interior points for the FD scheme). Make sure your function is type-stable with respect to the floating-point type `T`: if `T=Float32`, for example, all computation should be done in `Float32`. 
 """
 
+# ╔═╡ 70b9c6da-60c6-40cd-822f-a122cb37b311
+md"""
+**Solution:**
+"""
+
 # ╔═╡ bdcae8ef-12f7-4539-ac16-24243cd6ef1b
-#fd_hamiltonian = fd_laplacian+fd_V
-
 function fd_hamiltonian(V, Nb, a; T=Float64)
-	h = 2a / (T(Nb+1))
-	diagonal_∇²= -2ones(T, Nb) ./ h^2
-	side_diagonal_∇²= ones(T, Nb-1) ./ h^2
-	
-	fd_laplacian = SymTridiagonal(diagonal_∇², side_diagonal_∇²)
-	
-	grid_points_with_borders=range(-a, stop=a, length=(Nb+2))
-	grid_points= grid_points_with_borders[2:end-1]
-	V_list = T.([V.(point) for point in grid_points])
-	
-	fd_V=diagm(V_list)
+	grid_points = range(-a, stop=a, length=(Nb+2))[2:end-1]
+	h = 2a / T(Nb+1)
 
-	
-	fd_H = SymTridiagonal(T.(-0.5*fd_laplacian + fd_V))
+	diag = - 2ones(T, Nb) ./ h^2
+	side_diag = ones(T, Nb-1) ./ h^2
+	fd_laplacian = SymTridiagonal(diag, side_diag)
+
+	Vm = Diagonal(vec(T.([V(point) for point in grid_points])))
+	fd_Hm = - T(0.5) * fd_laplacian + Vm
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
@@ -324,36 +306,11 @@ md"""
 **(b)** The following code performs a benchmark of the matrix returned by `fd_hamiltonian` for $N_b = 500$:
 """
 
-# ╔═╡ e9d69580-9217-4f8f-9805-35fc2c6d97ff
-md"""
-###  @btime
-The @btime macro is part of the BenchmarkTools package and is used for benchmarking code. When you use  "dollar sign"a and "dollar sign"b inside the benchmarking expression, it ensures that the values of a and b are interpolated into the benchmarked expression, and the benchmark tool measures the actual runtime of the expression involving the variables a and b.
-
-Without the $ sign, the Julia compiler might optimize away the operation a + b during compilation if it determines that the result is constant and can be computed at compile time. By using "dollar sign"a and "dollar sign"b, you are essentially telling the compiler not to optimize away the specific values of a and b during benchmarking, allowing you to measure the actual runtime performance of the operation.
-
-This technique is particularly useful when benchmarking small, fast operations where the compiler might perform constant folding and eliminate the operation entirely during compilation. Using $ prevents this optimization, ensuring that the benchmark accurately reflects the runtime of the code you want to measure.
-
-"""
-
 # ╔═╡ d1d72977-f3fb-405e-aa2b-aac10980ada5
-begin
+let
 	H = fd_hamiltonian(v_chain, 500, 4);
 	x = randn(size(H, 2))
-	hamil_mult=@btime $H * $x
-	hamil_div=@btime $H \ $x
-
-	H_rand = randn(500, 500)
-	rand_mult=@btime $H_rand * $x
-	rand_div=@btime $H_rand \ $x
-	println(rand_mult)
-
-
-end
-
-# ╔═╡ f6485f5d-f5f2-4ac2-952e-b499a10c867f
-begin
-	bar(["H Mult", "H Div", "H_rand Mult", "H_rand Div"], [hamil_mult.time[5], hamil_div.time[5], rand_mult.time[5], rand_div.time[5]], 
-    xlabel="Operation", ylabel="Time (s)", title="Matrix-Vector Operations Benchmark")
+	@btime $H * $x
 end
 
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
@@ -363,22 +320,69 @@ Perform the same benchmarks for the `\` (backslash operator, `H \ x`) with a ran
 *Hint:* It might be helpful to read up on `@btime` and `@benchmark` to understand the syntax of `@btime`, especially the implications of the `$`.
 """
 
+# ╔═╡ 73863ff6-818f-4e3a-8bdf-b8251a5e3a2e
+md"""
+**Solution:**
+"""
+
+# ╔═╡ 16aa3488-59f9-44c7-a4b1-b6a8544b9b13
+begin
+	H = fd_hamiltonian(v_chain, 500, 4);
+	x = randn(size(H, 2));
+	H_factorized = factorize(H);
+
+	@btime $H * $x
+	@btime $H \ $x
+	@btime $H_factorized \ $x
+end
+
+# ╔═╡ ce4a4e31-9a65-4528-bf11-e90ba885a4c3
+begin
+	H_dense = randn(500, 500);
+	H_dense_factorized = factorize(H_dense);
+
+	@btime $H_dense * $x
+	@btime $H_dense \ $x
+	@btime $H_dense_factorized \ $x 
+end
+
+# ╔═╡ b1f15f78-ba57-45b7-80c9-8214a446b199
+md"""
+Observations:
+- We can see that for both the specially structured matrix returned by `fd_hamiltonian` and a randomly generated dense matrix matrix-vector multiplication (`*`) is faster than the backslash operator (`\`).
+- Using `SymTridiagonal` for the specific structure of the discretized Hamiltonian reduces storage needs and makes calculations more efficient. It also enables faster matrix-vector multiplications through optimized algorithms.
+- The factorized form of the Hamiltonian (`factorize(H)`) speeds up the backslash operator in both cases: applied to structured matrix H and a randomly generated dense matrix.
+"""
+
+# ╔═╡ 6e4a24c5-f699-4c8d-b6b2-89fbec78662e
+begin
+	H_mult = @benchmark $H * $x
+	H_div=@benchmark $H \ $x
+
+	H_dense_mult=@benchmark $H_dense * $x
+	H_dense_div=@benchmark $H_dense \ $x
+end
+
+# ╔═╡ 3feee600-5458-4e2c-98f0-dfe7e4332708
+begin
+	bar(["H * x", "H backslash x", "H_dense * x", "H_dense backslash x"], 
+		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns])", 
+		yaxis=:log, labels="time", 
+		title="Matrix Vector operations median time benchmark")
+end
+
 # ╔═╡ ce856df3-29b8-4e95-89a5-86de6f29a14a
 md"""
 **(c)** In one of the later code boxes a copy of the `lobpcg` routine of the lectures is defined. Use this function to find the 3 smallest eigenpairs of the discretised Hamiltonian with `v_chain` as the potential. Use $a = 4$ and $N_b = 500$ and converge until `tol = 1e-6`. Try to experiment a bit with the preconditioners available to you. Take a look at the lecture on diagonalisation routines to get some inspiration. You should find that a good preconditioner is crucial to get this problem to converge within 20--30 iterations. Make sure that with your setup the convergence in 20--30 iterations is stable with respect to increasing $N_b$.
 """
 
-# ╔═╡ bf432919-1f25-493b-8b2e-62f4a9071701
+# ╔═╡ 972f791a-f9d2-4d70-a81c-0bc536d3bdc0
 md"""
-
-**Answer (c)**
-
-
+**Solution:**
 """
 
-# ╔═╡ 4c8dd310-8486-4430-9134-2f4f6505fadf
-md"""- `logPrec_s`: **Preconditioner noise** level $(@bind logPrec_s PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
-
+# ╔═╡ 4db84a39-89f2-449e-a340-4a8012a71017
+md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -400,7 +404,7 @@ ortho_qr(X) = Matrix(qr(X).Q)
 
 # ╔═╡ d9f48fc4-f2a0-4a8f-aa84-3c7eef772957
 md"""
-The idea here was that QR factorisation $X = Q R$ produces an orthogonal matrix $Q$ and a upper-triangular matrix $R$, such that we may just drop the $R$ and return the $Q$ itelf.
+The idea here was that QR factorisation $X = Q R$ produces an orthogonal matrix $Q$ and a upper-triangular matrix $R$, such that we may just drop the $R$ and return the $Q$ itself.
 
 Based on this approach we repeat an LOBPCG implementation here, along with timers to track the time the algorithm spends in key parts:
 """
@@ -427,13 +431,10 @@ const to = TimerOutput();  # Setup the timer to track timings
 			Z = X
 		end
 		@timeit to "Orthogonalisation" begin
-			
 			Z = ortho(Z)
 		end
 
 		@timeit to "Matrix-vector products" begin
-			println("len A",length(A))
-			println("len Z",length(Z))
 			AZ = A * Z
 		end
 
@@ -463,27 +464,48 @@ const to = TimerOutput();  # Setup the timer to track timings
 	(; λ, X, eigenvalues, residual_norms)
 end
 
-# ╔═╡ 0ded4108-ec78-41e3-925e-8033f07e7b62
+# ╔═╡ 2cd96b11-41e9-4f37-a509-1c9f80e68159
 begin
-    H_2c = fd_hamiltonian(v_chain, 500, 4)
-    Pnoise_s = 10^logPrec_s * randn(size(H_2c, 1))
-	println(typeof(Pnoise_s))
-    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3))
-    p = plot(yaxis=:log, ylims=(1e-7, 10))
-    X = randn(eltype(H_2c), size(H_2c, 3))
+	a = 4
+	Nb = 500
+	tol = 1e-6
+	H_fd = fd_hamiltonian(v_chain, Nb, a)
+	
+	n = 3 
+	X0 = randn(size(H_fd, 2), n)
+	
+	# Perfect preconditioner
+	precond = diagm(1.0 ./ diag(H_fd))
+	eigenvalues, eigenvectors = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond)
 
-    # Perfect preconditioner: The inverse diagonal
-    Pinv = Diagonal(1 ./ diag(H_2c))
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (perfect precon)", lw = 2, c, 	mark = :x)
+	println("Eigenvalues: ", eigenvalues)
+	println("Eigenvectors: ", eigenvectors)
+end
 
-    # Preconditioner plus noise
-    Pinv = Diagonal(1 ./ diag(H_2c) .+ Pnoise_s)
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (noisy precon)", lw = 2, c, 	ls = :dash, mark = :x)
+# ╔═╡ e28a9c9c-9efd-473a-9ef5-9ec37273ce36
+begin
+	p = plot(yaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm")
 
-    default_lim = xlims(p)
-    xlims!(p, 0, min(default_lim[2], 100))
+	# Perfect preconditioner
+	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond).residual_norms
+	max_rnorm_perfect=[maximum(r_norms) for r_norms in inv_diag_residual_norms] 
+	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2,mark = :x)
+
+	# Preconditioner plus noise
+	prec_noise = 10 ^ log_prec_noise * randn(size(H_fd, 1))
+	noisy_precond = Diagonal(1 ./ diag(H_fd) .+ prec_noise)
+	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = noisy_precond).residual_norms
+	max_rnorm_noisy=[maximum(r_norms) for r_norms in noisy_rnorms]
+
+	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash, mark = :x)
+
+	# Apgd preconditioner
+	Alopcg = Diagonal(abs.(randn(Nb)).^0.1);
+	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
+	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv).residual_norms
+	max_rnorm_apgd=[maximum(r_norms) for r_norms in apgd_rnorms]
+
+    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash, mark = :x)
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -693,12 +715,6 @@ In each run use the *the same* initial guess for each floating-point precision `
 
 From your experiments: Roughly at which residual norm is it advisable to switch from one precision to the other in order to avoid impacting the rate of convergence ?
 """
-
-# ╔═╡ cdfc841e-d294-4e07-a71a-788f1a1338ba
-
-
-# ╔═╡ 11ce6be7-40ca-4f69-8485-026de5c5c96a
-
 
 # ╔═╡ 2e02d881-40df-4559-82a9-f6a11239f337
 md"""
@@ -2809,8 +2825,8 @@ version = "1.4.1+1"
 # ╠═b398b4ca-c0f9-4291-afb4-30a9644bbdb5
 # ╟─3465e45d-344d-4473-83e6-da157e01a31c
 # ╟─198f0276-f01b-4e8a-9225-4df74bcc2a46
-# ╟─d652301b-26b0-4d15-9ea9-8700040d975a
-# ╠═bb003660-1d90-48a2-bece-af4aed651f6c
+# ╟─9414343d-25d2-4502-ab1f-e66e7ef98357
+# ╟─51f20534-ff70-4eb8-b075-480b7ca34aab
 # ╟─36992fa1-49dc-4ab8-98d3-2b1aed333852
 # ╟─fd442026-e333-46af-a454-2e2b630a74f0
 # ╟─2ccd435c-fbe7-4367-962d-da1ccb50a81e
@@ -2818,18 +2834,23 @@ version = "1.4.1+1"
 # ╠═b7d9dacb-1f72-4c25-8bd5-998b87a4d24c
 # ╠═c2fdb263-d796-4554-8e03-f529e8a2e549
 # ╟─0cd28278-6146-4115-a690-f379e5f7ac30
+# ╟─70b9c6da-60c6-40cd-822f-a122cb37b311
 # ╠═bdcae8ef-12f7-4539-ac16-24243cd6ef1b
 # ╟─a86db249-f84f-41d3-9dde-80d3f32a474e
 # ╟─1a0e7da6-ac7c-4b52-a4c9-dc4a514d3b98
-# ╠═e9d69580-9217-4f8f-9805-35fc2c6d97ff
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
-# ╠═f6485f5d-f5f2-4ac2-952e-b499a10c867f
-# ╠═8b2d8617-47e2-454e-81af-f28bc15c44a0
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
+# ╟─73863ff6-818f-4e3a-8bdf-b8251a5e3a2e
+# ╠═16aa3488-59f9-44c7-a4b1-b6a8544b9b13
+# ╠═ce4a4e31-9a65-4528-bf11-e90ba885a4c3
+# ╟─b1f15f78-ba57-45b7-80c9-8214a446b199
+# ╠═6e4a24c5-f699-4c8d-b6b2-89fbec78662e
+# ╠═3feee600-5458-4e2c-98f0-dfe7e4332708
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
-# ╠═bf432919-1f25-493b-8b2e-62f4a9071701
-# ╠═4c8dd310-8486-4430-9134-2f4f6505fadf
-# ╠═0ded4108-ec78-41e3-925e-8033f07e7b62
+# ╟─972f791a-f9d2-4d70-a81c-0bc536d3bdc0
+# ╠═2cd96b11-41e9-4f37-a509-1c9f80e68159
+# ╟─4db84a39-89f2-449e-a340-4a8012a71017
+# ╠═e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
@@ -2874,8 +2895,6 @@ version = "1.4.1+1"
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
-# ╠═cdfc841e-d294-4e07-a71a-788f1a1338ba
-# ╠═11ce6be7-40ca-4f69-8485-026de5c5c96a
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78

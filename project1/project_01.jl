@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.31
+# v0.19.27
 
 using Markdown
 using InteractiveUtils
@@ -119,6 +119,46 @@ with correspondingly energy $E_1 = N ε^\text{chain}_1$.
 -------
 """
 
+# ╔═╡ 20f1ffbf-4996-45e4-bef7-9ec5eedf6cc9
+md"""
+**Solution:**
+
+Taking into account that
+```math
+\mathcal{H} = -\frac12 \sum_{i=1}^N \frac{\partial^2}{\partial x_i^2} + V(x_1, \ldots, x_N) = \sum_{i=1}^N H_i^\text{chain},
+```
+we can derive the following:
+
+```math
+\begin{align}
+\mathcal{H} \Psi (x_1, x_2, \ldots, x_N) &= \sum_{i=1}^N H_i^\text{chain} \prod_{j=1}^N  \psi_j^\text{chain}(x) \\ 
+	&=  \sum_{i=1}^N H_i^\text{chain} \psi_i^\text{chain} \prod_{j\neq i}   \psi_j^\text{chain}(x)\\ 
+	&= \sum_{i=1}^N ε^\text{chain}_i \psi^\text{chain}_i \prod_{j\neq i}   \psi_j^\text{chain}(x)\\ 
+	&= \sum_{i=1}^N ε^\text{chain}_i \prod_{j=1}^N  \psi_j^\text{chain}(x) = \sum_{i=1}^N ε^\text{chain}_i \Psi (x_1, x_2, \ldots, x_N).
+\end{align}
+```
+"""
+
+# ╔═╡ aba937de-1697-45b7-a3c1-31fd4fb58839
+md"""
+Using the result above, let's consider the ground state $\Psi_1$. We have:
+
+```math
+\mathcal{H} \Psi_1 = E_1 \Psi_1,
+```
+where $E_1$ corresponds to the smallest eigenvalue and at the same time $E_1 = \sum_{i=1}^N ε^\text{chain}_i$. 
+
+Considering the default ordering of eigenvalues from smallest to largest, the ground state of $H^\text{chain}$ is denoted as $\psi_1^\text{chain}(x)$ with corresponding the lowest eigenvalue denoted as $ε_1^\text{chain}$. 
+
+Therefore, the ground state energy is defined as follows:
+
+$E_1 = \sum_{i=1}^N ε^\text{chain}_1 = N ε^\text{chain}_1.$
+
+This is true if the ground state $\Psi_1$ is the following:
+
+$\Psi_1(x_1, x_2, \ldots, x_N) = \prod_{i=1}^N \psi^\text{chain}_1(x_i).$
+"""
+
 # ╔═╡ 36992fa1-49dc-4ab8-98d3-2b1aed333852
 md"""
 Next we consider the setting **without quantum tunnelling**. In this case the behaviour of the bosonic particles with respect to the crossing of the barriers between the potential wells is classical, that is to say that they can only cross, if their kinetic energy on the high point of the barrier (i.e. at $x=0$ in the second above plot) is non-zero. Since we are seeking the overall ground state of the system, i.e. where the energy is minimal, we argue that particles thus cannot traverse between the wells in the classical picture (otherwise their total energy is too large to be in the ground state).
@@ -218,7 +258,16 @@ md"""
 
 # ╔═╡ bdcae8ef-12f7-4539-ac16-24243cd6ef1b
 function fd_hamiltonian(V, Nb, a; T=Float64)
-	Diagonal(ones(200))
+	grid_points = range(-a, stop=a, length=(Nb+2))[2:end-1]
+	h = 2a / T(Nb+1)
+
+	diag = - 2ones(T, Nb) ./ h^2
+	side_diag = ones(T, Nb-1) ./ h^2
+	fd_laplacian = SymTridiagonal(diag, side_diag)
+
+	Vm = Diagonal(V.(grid_points))
+	fd_Hm = SymTridiagonal( - 0.5 * fd_laplacian + Vm)
+
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
@@ -248,6 +297,15 @@ let
 	H = fd_hamiltonian(v_chain, 500, 4);
 	x = randn(size(H, 2))
 	@btime $H * $x
+end
+
+# ╔═╡ d1405c82-00a8-4a6b-a1d5-eeb8296fce4e
+begin
+	H_dense = randn(500, 500);
+
+	@btime $H_dense * $x
+	@btime $H_dense \ $x
+	@btime $factorize(H_dense) \ $x # what about *
 end
 
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
@@ -339,6 +397,19 @@ const to = TimerOutput();  # Setup the timer to track timings
 	end
 
 	(; λ, X, eigenvalues, residual_norms)
+end
+
+# ╔═╡ 2d76525c-7d3e-40e4-976e-2e90093ca47f
+begin
+	H = fd_hamiltonian(v_chain, 500, 4);
+	X = randn(eltype(H), size(H, 2), 3)
+	lobpcg(H, X=X)
+end
+
+# ╔═╡ e2fb74bd-c544-4a5b-b00c-cde2ca4edde1
+begin
+	@btime $H \ $x
+	@btime $factorize(H) \ $x # what about *
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -2658,6 +2729,8 @@ version = "1.4.1+1"
 # ╠═b398b4ca-c0f9-4291-afb4-30a9644bbdb5
 # ╟─3465e45d-344d-4473-83e6-da157e01a31c
 # ╟─198f0276-f01b-4e8a-9225-4df74bcc2a46
+# ╟─20f1ffbf-4996-45e4-bef7-9ec5eedf6cc9
+# ╟─aba937de-1697-45b7-a3c1-31fd4fb58839
 # ╟─36992fa1-49dc-4ab8-98d3-2b1aed333852
 # ╟─fd442026-e333-46af-a454-2e2b630a74f0
 # ╟─2ccd435c-fbe7-4367-962d-da1ccb50a81e
@@ -2669,8 +2742,11 @@ version = "1.4.1+1"
 # ╟─a86db249-f84f-41d3-9dde-80d3f32a474e
 # ╟─1a0e7da6-ac7c-4b52-a4c9-dc4a514d3b98
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
+# ╠═e2fb74bd-c544-4a5b-b00c-cde2ca4edde1
+# ╠═d1405c82-00a8-4a6b-a1d5-eeb8296fce4e
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
+# ╠═2d76525c-7d3e-40e4-976e-2e90093ca47f
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
