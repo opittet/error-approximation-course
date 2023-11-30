@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ 0bed302a-6efa-4c23-863a-a56aa51bc73a
 begin
 	using BenchmarkTools
@@ -119,7 +129,7 @@ with correspondingly energy $E_1 = N ε^\text{chain}_1$.
 -------
 """
 
-# ╔═╡ 20f1ffbf-4996-45e4-bef7-9ec5eedf6cc9
+# ╔═╡ 9414343d-25d2-4502-ab1f-e66e7ef98357
 md"""
 **Solution:**
 
@@ -139,7 +149,7 @@ we can derive the following:
 ```
 """
 
-# ╔═╡ aba937de-1697-45b7-a3c1-31fd4fb58839
+# ╔═╡ 51f20534-ff70-4eb8-b075-480b7ca34aab
 md"""
 Using the result above, let's consider the ground state $\Psi_1$. We have:
 
@@ -256,6 +266,11 @@ md"""
 **(a)** Code up a function `fd_hamiltonian(V, Nb, a; T=Float64)`, which returns the finite-difference discretised Hamiltonian corresponding to a potential $V$ using $(N_b+2)$-point finite differences (i.e. where the domain $(-a, a)$ is split into $N_b$ equispaced interior points for the FD scheme). Make sure your function is type-stable with respect to the floating-point type `T`: if `T=Float32`, for example, all computation should be done in `Float32`. 
 """
 
+# ╔═╡ 70b9c6da-60c6-40cd-822f-a122cb37b311
+md"""
+**Solution:**
+"""
+
 # ╔═╡ bdcae8ef-12f7-4539-ac16-24243cd6ef1b
 function fd_hamiltonian(V, Nb, a; T=Float64)
 	grid_points = range(-a, stop=a, length=(Nb+2))[2:end-1]
@@ -265,16 +280,15 @@ function fd_hamiltonian(V, Nb, a; T=Float64)
 	side_diag = ones(T, Nb-1) ./ h^2
 	fd_laplacian = SymTridiagonal(diag, side_diag)
 
-	Vm = Diagonal(V.(grid_points))
-	fd_Hm = SymTridiagonal( - 0.5 * fd_laplacian + Vm)
-
+	Vm = Diagonal(vec(T.([V(point) for point in grid_points])))
+	fd_Hm = - T(0.5) * fd_laplacian + Vm
 end
 
 # ╔═╡ a86db249-f84f-41d3-9dde-80d3f32a474e
 let
 	res_fp64 = fd_hamiltonian(v_chain, 5, 1; T=Float64)
 	res_fp32 = fd_hamiltonian(v_chain, 5, 1; T=Float32)
-	ref = SymTridiagonal([3.88309, 2.8255, 0.808461, 2.8255, 3.88309], -2ones(4))
+	ref = SymTridiagonal([8.45798, 6.9536, 5.80846, 6.9536, 8.45798], -4.5ones(4))
 
 	if res_fp64 == Diagonal(ones(200))
 		warning_box(md"Replace `Diagonal(ones(200))` by your answer")
@@ -299,15 +313,6 @@ let
 	@btime $H * $x
 end
 
-# ╔═╡ d1405c82-00a8-4a6b-a1d5-eeb8296fce4e
-begin
-	H_dense = randn(500, 500);
-
-	@btime $H_dense * $x
-	@btime $H_dense \ $x
-	@btime $factorize(H_dense) \ $x # what about *
-end
-
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 md"""
 Perform the same benchmarks for the `\` (backslash operator, `H \ x`) with a random vector. Repeat with a factorised form of the Hamiltonian (`factorize(H)`). Also repeat all three benchmarks when you take `H` to be a random dense matrix (`H = randn(500, 500)`) instead of the matrix returned by `fd_hamiltonian`. What do you observe? Comment on the balance of timings between `*` and `\` (in both factorised and unfactorised form). Can you describe why it is helpful to employ `SymTridiagonal` to exploit the special structure of our discretised Hamiltonian ?
@@ -315,9 +320,69 @@ Perform the same benchmarks for the `\` (backslash operator, `H \ x`) with a ran
 *Hint:* It might be helpful to read up on `@btime` and `@benchmark` to understand the syntax of `@btime`, especially the implications of the `$`.
 """
 
+# ╔═╡ 73863ff6-818f-4e3a-8bdf-b8251a5e3a2e
+md"""
+**Solution:**
+"""
+
+# ╔═╡ 16aa3488-59f9-44c7-a4b1-b6a8544b9b13
+begin
+	H = fd_hamiltonian(v_chain, 500, 4);
+	x = randn(size(H, 2));
+	H_factorized = factorize(H);
+
+	@btime $H * $x
+	@btime $H \ $x
+	@btime $H_factorized \ $x
+end
+
+# ╔═╡ ce4a4e31-9a65-4528-bf11-e90ba885a4c3
+begin
+	H_dense = randn(500, 500);
+	H_dense_factorized = factorize(H_dense);
+
+	@btime $H_dense * $x
+	@btime $H_dense \ $x
+	@btime $H_dense_factorized \ $x 
+end
+
+# ╔═╡ b1f15f78-ba57-45b7-80c9-8214a446b199
+md"""
+Observations:
+- We can see that for both the specially structured matrix returned by `fd_hamiltonian` and a randomly generated dense matrix matrix-vector multiplication (`*`) is faster than the backslash operator (`\`).
+- Using `SymTridiagonal` for the specific structure of the discretized Hamiltonian reduces storage needs and makes calculations more efficient. It also enables faster matrix-vector multiplications through optimized algorithms.
+- The factorized form of the Hamiltonian (`factorize(H)`) speeds up the backslash operator in both cases: applied to structured matrix H and a randomly generated dense matrix.
+"""
+
+# ╔═╡ 6e4a24c5-f699-4c8d-b6b2-89fbec78662e
+begin
+	H_mult = @benchmark $H * $x
+	H_div=@benchmark $H \ $x
+
+	H_dense_mult=@benchmark $H_dense * $x
+	H_dense_div=@benchmark $H_dense \ $x
+end
+
+# ╔═╡ 3feee600-5458-4e2c-98f0-dfe7e4332708
+begin
+	bar(["H * x", "H backslash x", "H_dense * x", "H_dense backslash x"], 
+		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns])", 
+		yaxis=:log, labels="time", 
+		title="Matrix Vector operations median time benchmark")
+end
+
 # ╔═╡ ce856df3-29b8-4e95-89a5-86de6f29a14a
 md"""
 **(c)** In one of the later code boxes a copy of the `lobpcg` routine of the lectures is defined. Use this function to find the 3 smallest eigenpairs of the discretised Hamiltonian with `v_chain` as the potential. Use $a = 4$ and $N_b = 500$ and converge until `tol = 1e-6`. Try to experiment a bit with the preconditioners available to you. Take a look at the lecture on diagonalisation routines to get some inspiration. You should find that a good preconditioner is crucial to get this problem to converge within 20--30 iterations. Make sure that with your setup the convergence in 20--30 iterations is stable with respect to increasing $N_b$.
+"""
+
+# ╔═╡ 972f791a-f9d2-4d70-a81c-0bc536d3bdc0
+md"""
+**Solution:**
+"""
+
+# ╔═╡ 4db84a39-89f2-449e-a340-4a8012a71017
+md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -339,7 +404,7 @@ ortho_qr(X) = Matrix(qr(X).Q)
 
 # ╔═╡ d9f48fc4-f2a0-4a8f-aa84-3c7eef772957
 md"""
-The idea here was that QR factorisation $X = Q R$ produces an orthogonal matrix $Q$ and a upper-triangular matrix $R$, such that we may just drop the $R$ and return the $Q$ itelf.
+The idea here was that QR factorisation $X = Q R$ produces an orthogonal matrix $Q$ and a upper-triangular matrix $R$, such that we may just drop the $R$ and return the $Q$ itself.
 
 Based on this approach we repeat an LOBPCG implementation here, along with timers to track the time the algorithm spends in key parts:
 """
@@ -399,17 +464,48 @@ const to = TimerOutput();  # Setup the timer to track timings
 	(; λ, X, eigenvalues, residual_norms)
 end
 
-# ╔═╡ 2d76525c-7d3e-40e4-976e-2e90093ca47f
+# ╔═╡ 2cd96b11-41e9-4f37-a509-1c9f80e68159
 begin
-	H = fd_hamiltonian(v_chain, 500, 4);
-	X = randn(eltype(H), size(H, 2), 3)
-	lobpcg(H, X=X)
+	a = 4
+	Nb = 500
+	tol = 1e-6
+	H_fd = fd_hamiltonian(v_chain, Nb, a)
+	
+	n = 3 
+	X0 = randn(size(H_fd, 2), n)
+	
+	# Perfect preconditioner
+	precond = diagm(1.0 ./ diag(H_fd))
+	eigenvalues, eigenvectors = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond)
+
+	println("Eigenvalues: ", eigenvalues)
+	println("Eigenvectors: ", eigenvectors)
 end
 
-# ╔═╡ e2fb74bd-c544-4a5b-b00c-cde2ca4edde1
+# ╔═╡ e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 begin
-	@btime $H \ $x
-	@btime $factorize(H) \ $x # what about *
+	p = plot(yaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm")
+
+	# Perfect preconditioner
+	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond).residual_norms
+	max_rnorm_perfect=[maximum(r_norms) for r_norms in inv_diag_residual_norms] 
+	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2,mark = :x)
+
+	# Preconditioner plus noise
+	prec_noise = 10 ^ log_prec_noise * randn(size(H_fd, 1))
+	noisy_precond = Diagonal(1 ./ diag(H_fd) .+ prec_noise)
+	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = noisy_precond).residual_norms
+	max_rnorm_noisy=[maximum(r_norms) for r_norms in noisy_rnorms]
+
+	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash, mark = :x)
+
+	# Apgd preconditioner
+	Alopcg = Diagonal(abs.(randn(Nb)).^0.1);
+	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
+	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv).residual_norms
+	max_rnorm_apgd=[maximum(r_norms) for r_norms in apgd_rnorms]
+
+    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash, mark = :x)
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -2729,8 +2825,8 @@ version = "1.4.1+1"
 # ╠═b398b4ca-c0f9-4291-afb4-30a9644bbdb5
 # ╟─3465e45d-344d-4473-83e6-da157e01a31c
 # ╟─198f0276-f01b-4e8a-9225-4df74bcc2a46
-# ╟─20f1ffbf-4996-45e4-bef7-9ec5eedf6cc9
-# ╟─aba937de-1697-45b7-a3c1-31fd4fb58839
+# ╟─9414343d-25d2-4502-ab1f-e66e7ef98357
+# ╟─51f20534-ff70-4eb8-b075-480b7ca34aab
 # ╟─36992fa1-49dc-4ab8-98d3-2b1aed333852
 # ╟─fd442026-e333-46af-a454-2e2b630a74f0
 # ╟─2ccd435c-fbe7-4367-962d-da1ccb50a81e
@@ -2738,15 +2834,23 @@ version = "1.4.1+1"
 # ╠═b7d9dacb-1f72-4c25-8bd5-998b87a4d24c
 # ╠═c2fdb263-d796-4554-8e03-f529e8a2e549
 # ╟─0cd28278-6146-4115-a690-f379e5f7ac30
+# ╟─70b9c6da-60c6-40cd-822f-a122cb37b311
 # ╠═bdcae8ef-12f7-4539-ac16-24243cd6ef1b
 # ╟─a86db249-f84f-41d3-9dde-80d3f32a474e
 # ╟─1a0e7da6-ac7c-4b52-a4c9-dc4a514d3b98
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
-# ╠═e2fb74bd-c544-4a5b-b00c-cde2ca4edde1
-# ╠═d1405c82-00a8-4a6b-a1d5-eeb8296fce4e
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
+# ╟─73863ff6-818f-4e3a-8bdf-b8251a5e3a2e
+# ╠═16aa3488-59f9-44c7-a4b1-b6a8544b9b13
+# ╠═ce4a4e31-9a65-4528-bf11-e90ba885a4c3
+# ╟─b1f15f78-ba57-45b7-80c9-8214a446b199
+# ╠═6e4a24c5-f699-4c8d-b6b2-89fbec78662e
+# ╠═3feee600-5458-4e2c-98f0-dfe7e4332708
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
-# ╠═2d76525c-7d3e-40e4-976e-2e90093ca47f
+# ╟─972f791a-f9d2-4d70-a81c-0bc536d3bdc0
+# ╠═2cd96b11-41e9-4f37-a509-1c9f80e68159
+# ╟─4db84a39-89f2-449e-a340-4a8012a71017
+# ╠═e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
