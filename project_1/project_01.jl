@@ -339,21 +339,22 @@ This technique is particularly useful when benchmarking small, fast operations w
 begin
 	H = fd_hamiltonian(v_chain, 500, 4);
 	x = randn(size(H, 2))
-	hamil_mult=@btime $H * $x
-	hamil_div=@btime $H \ $x
+	
+	hamil_mult = @benchmark $H * $x
+	hamil_div=@benchmark $H \ $x
 
 	H_rand = randn(500, 500)
-	rand_mult=@btime $H_rand * $x
-	rand_div=@btime $H_rand \ $x
-	println(rand_mult)
+	rand_mult=@benchmark $H_rand * $x
+	rand_div=@benchmark $H_rand \ $x
 
 
+	
 end
 
 # ╔═╡ f6485f5d-f5f2-4ac2-952e-b499a10c867f
 begin
-	bar(["H Mult", "H Div", "H_rand Mult", "H_rand Div"], [hamil_mult.time[5], hamil_div.time[5], rand_mult.time[5], rand_div.time[5]], 
-    xlabel="Operation", ylabel="Time (s)", title="Matrix-Vector Operations Benchmark")
+	bar(["H Mult", "H Div", "H random Mult", "H random Div"], [Float64(median(hamil_mult).time),Float64(median(hamil_div).time), Float64(median(rand_mult).time),Float64(median(rand_div).time)], 
+    xlabel="Operation", ylabel="Time [ns])", yaxis=:log,labels="time",title="Matrix Vector operations median time benchmark")
 end
 
 # ╔═╡ 896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
@@ -380,6 +381,12 @@ md"""
 md"""- `logPrec_s`: **Preconditioner noise** level $(@bind logPrec_s PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
 
 """
+
+# ╔═╡ a0385d3b-18de-475a-ad44-7d12e392fd8b
+
+
+# ╔═╡ a93ee74e-caeb-4d4b-828c-f111b197285f
+
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
 md"""
@@ -432,8 +439,8 @@ const to = TimerOutput();  # Setup the timer to track timings
 		end
 
 		@timeit to "Matrix-vector products" begin
-			println("len A",length(A))
-			println("len Z",length(Z))
+			#println("len A",length(A))
+			#println("len Z",length(Z))
 			AZ = A * Z
 		end
 
@@ -467,23 +474,38 @@ end
 begin
     H_2c = fd_hamiltonian(v_chain, 500, 4)
     Pnoise_s = 10^logPrec_s * randn(size(H_2c, 1))
-	println(typeof(Pnoise_s))
-    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3))
-    p = plot(yaxis=:log, ylims=(1e-7, 10))
-    X = randn(eltype(H_2c), size(H_2c, 3))
+
+    X = randn(eltype(H_2c), size(H_2c,2), 3)
+
+    lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3),verbose=false)
+	
+    p = plot(yaxis=:log,title="Different preconditioners",xlabel="number of iterations",ylabel="maximum residual norm")
+
 
     # Perfect preconditioner: The inverse diagonal
     Pinv = Diagonal(1 ./ diag(H_2c))
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (perfect precon)", lw = 2, c, 	mark = :x)
+    inv_diag_residual_norms = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in inv_diag_residual_norms] 
 
+    plot!(p, max_residual_norm_perfect; label = string(lobpcg) * " (perfect precon)", 	lw = 2,mark = :x)
+	
     # Preconditioner plus noise
     Pinv = Diagonal(1 ./ diag(H_2c) .+ Pnoise_s)
-    (; residual_norms) = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv)
-    plot!(p, residual_norms; label = string(lobpcg) * " (noisy precon)", lw = 2, c, 	ls = :dash, mark = :x)
+    noisy_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	max_residual_norm_noisy=[maximum(residual_norms) for residual_norms in noisy_res_norm]
 
-    default_lim = xlims(p)
-    xlims!(p, 0, min(default_lim[2], 100))
+    plot!(p, max_residual_norm_noisy; label = string(lobpcg) * " (noisy precon)", lw 	= 2,  		ls = :dash, mark = :x)
+
+	
+		
+
+    # Preconditioner plus noise
+	Alopcg = Diagonal(abs.(randn(500)).^0.1);
+	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
+	apgd_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	max_residual_norm_apgd=[maximum(residual_norms) for residual_norms in apgd_res_norm]
+
+    plot!(p, max_residual_norm_apgd; label = string(lobpcg) * " (apgd precon)", lw 	= 2,  		ls = :dash, mark = :x)	
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -659,6 +681,79 @@ md"""
 **(a)** 
 Code up such an orthogonalisation routine `ortho_svd` based on Julia's `svd` funciton. Look up its documentation to get more details. Benchmark `ortho_svd` on  `X = randn(1000, 10)` and add this function to  your plot of Task 3 (d).
 """
+
+# ╔═╡ 17675f91-8fb6-47a8-a291-37ef0a0dd781
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	n,m=3,4
+	A = rand(n,m)
+	#println(A)
+	julia_svd= svd(A)
+	#println(julia_svd.U)
+	
+	#get symmetric square matrix for U and V 
+	println(size(A,1))
+	AᵀA=transpose(A)*A # n x n
+	AAᵀ=A*transpose(A) # m x m
+	
+	#get the eigenvalue decomposition
+	
+	(λ_U,ortho_U)=eigen(AᵀA)
+
+	(λ_V,ortho_V)=eigen(AAᵀ)
+
+
+	#get the singular values and sort them by descending order
+	
+	sing_value=[λth^(0.5) for λth in λ_U]
+	sorted_sing_values= sort!(sing_value,rev=true)
+	println(sorted_sing_values)
+	
+	while length(sorted_sing_values)<min(size(A,1),size(A,2))
+		push!(sorted_sing_values,0)
+	end
+	
+	#ortho_U=[sorted_sing_values[i]^(-1).*A*v_U[:,i] for i in 1:size(A,1)] 
+	#ortho_V= [sorted_sing_values[i]^(-1).*transpose(A)*v_V[:,i] for i in 1:size(A,2)]
+
+	
+	ortho_Σ=Diagonal(sorted_sing_values)
+
+	#sanity check
+	
+	println(size(julia_svd.U,2))
+	#println(size(ortho,2))
+	println(size(ortho_U,2))
+	
+	julia_svd.U ≈ ortho_U 
+	julia_svd.V ≈ ortho_V
+	julia_svd.U ≈ ortho_U 
+	
+	
+	
+	#ortho_svd 
+end
+  ╠═╡ =#
+
+# ╔═╡ 826c5f0f-a210-4920-90d7-21b99da9230d
+begin
+	
+	X_5a=rand(1000,10)
+	X_SVD_trial = @benchmark $svd(X_5a)
+	X_SVD = svd(X_5a)
+	U = X_SVD.U
+	V = X_SVD.V
+	S= X_SVD.S
+
+	U_ortho_trial = @benchmark $ortho_gs(U)
+	V_ortho_trial = @benchmark $ortho_gs(V)
+	S_ortho_trial = @benchmark $ortho_gs(S)
+
+	total_average_time_ortho_svd = Float64(median(X_SVD_trial).time)+Float64(median(U_ortho_trial).time)+Float64(median(V_ortho_trial).time)+Float64(median(S_ortho_trial).time)
+
+	println(total_average_time_ortho_svd)
+end 
 
 # ╔═╡ 49f347c3-0e77-4a1f-9bef-08a7e15b9149
 md"""
@@ -2824,12 +2919,13 @@ version = "1.4.1+1"
 # ╠═e9d69580-9217-4f8f-9805-35fc2c6d97ff
 # ╠═d1d72977-f3fb-405e-aa2b-aac10980ada5
 # ╠═f6485f5d-f5f2-4ac2-952e-b499a10c867f
-# ╠═8b2d8617-47e2-454e-81af-f28bc15c44a0
 # ╟─896f53c6-4ea1-4e2b-8c6b-e0fa99123cc6
 # ╟─ce856df3-29b8-4e95-89a5-86de6f29a14a
 # ╠═bf432919-1f25-493b-8b2e-62f4a9071701
 # ╠═4c8dd310-8486-4430-9134-2f4f6505fadf
 # ╠═0ded4108-ec78-41e3-925e-8033f07e7b62
+# ╠═a0385d3b-18de-475a-ad44-7d12e392fd8b
+# ╠═a93ee74e-caeb-4d4b-828c-f111b197285f
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
@@ -2869,6 +2965,8 @@ version = "1.4.1+1"
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
+# ╠═17675f91-8fb6-47a8-a291-37ef0a0dd781
+# ╠═826c5f0f-a210-4920-90d7-21b99da9230d
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
