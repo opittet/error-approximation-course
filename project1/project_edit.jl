@@ -751,31 +751,6 @@ begin
 	plot!(rnorm_mgs, label="Modified Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
 end
 
-# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
-begin
-	error_gs = Float64[]
-	error_mgs = Float64[]
-	error_qr = Float64[]
-
-	mrange = 10.0 .^ range(-16, stop=0, length=100)
-	
-	for m in mrange
-	    X = testmatrix(m)
-	    gs_result = ortho_gs(X)
-	    qr_result = ortho_qr(X)
-		mgs_result = ortho_mgs(X)
-	    
-	    push!(error_gs, orthonormality_error(gs_result))
-	    push!(error_qr, orthonormality_error(qr_result))
-		push!(error_mgs, orthonormality_error(mgs_result))
-	end
-	
-	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
-	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
-end
-
-
 # ╔═╡ 17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
 md"""
 Analyzing the plots above, we can see that the modified Gram-Schmidt procedure doesn't give high orthonormality errors and on the tested examples is as good as QR method. On the other hand, MGS doesn't show a big improvement within our lobpcg algorithm.
@@ -831,9 +806,6 @@ and
 which means that $X \left(L^H\right)^{-1}$ is indeed orthogonal.
 """
 
-# ╔═╡ cb9d5564-6c68-4a6d-be6f-ad64a46da045
-
-
 # ╔═╡ 50e2baea-317d-43d5-82a2-df63936ddefd
 md"""
 **(b)** Look up how the `cholesky` function works in Julia and use it to code up an `ortho_cholesky(X)`, which orthonormalises the columns of the passed matrix `X`. Benchmark `ortho_cholesky` on a `X = randn(1000, 10)` testmatrix and compare the timings to `ortho_qr` and `ortho_gs_matrix`. Can you explain the appealing feature of this method?
@@ -844,15 +816,77 @@ md"""
 **Answer:**
 """
 
+# ╔═╡ d2049d09-c25a-4531-9c1d-fea56287ab5b
+function ortho_cholesky(X)
+    L = cholesky(X' * X).L
+    Xnew = X / L'
+	return Xnew
+end
+
+# ╔═╡ 47151505-4564-4f24-a6a4-3102386c06b7
+begin
+	Xmatrix = randn(1000, 10)
+	
+	ch_res = @benchmark ortho_cholesky($Xmatrix)
+	qr_res = @benchmark ortho_qr($Xmatrix)
+	gs_res = @benchmark ortho_gs_matrix($Xmatrix)
+
+	println("Orthogonal GS Time: ", mean(gs_res).time)
+	println("Ortho Cholesky Time: ", mean(ch_res).time)
+	println("Ortho QR Time: ", mean(qr_res).time)
+end
+
+# ╔═╡ 5370f280-530f-490d-b625-e001d5592eb7
+md"""
+The Cholesky factorization method is computationally efficient since matrix $L$ is lower triangular and can be more stable because it doesn't accumulate errors across iterations but computes all vectors simultaneously.
+"""
+
 # ╔═╡ 3c1849b8-6345-4cdf-875a-a32ba455516b
 md"""
-**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method to fail for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
+**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method fails for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
+"""
+
+# ╔═╡ bbf0ee35-8793-4565-9237-6dac36f9fe00
+md"""
+**Answer:**
+"""
+
+# ╔═╡ f0e13305-d26d-49d0-9cc7-f1b509bf8b71
+ortho_cholesky(testmatrix(10^(-7)))
+
+# ╔═╡ 8fe22329-09f1-49d8-bea8-6fd7d78ced67
+let
+	testm = testmatrix(10^(-5))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ fb96d065-43a6-4e70-a20b-ac962fa38249
+let
+	testm = testmatrix(10^(-8))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ 275aabe3-f065-4fd0-ad44-8a992951caff
+md"""
+We can see that as $m$ gets too small a part of eigenvalues approaches numerical zero. In comparison with other methods, it shows the same performance as `orth_gs` before m gets too small resulting in an ill-conditioned or nearly singular matrix 
+$X^H X$ so that `orth_cholesky` fails.
 """
 
 # ╔═╡ eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
 md"""
 **(d)** To avoid the breakdown of cholesky-based orthogonalisation approaches, a typical trick is to apply the cholesky factorisation to $X^H X + β * I$ instead of $X^H X$, where $β > 0$ is a small constant. With the $L L^H$ factorisation at hand one then forms $\tilde{X} = X \left(L^H)^{-1}\right)$ as usual. $\tilde{X}$ is now not yet orthogonal, but its closer than $X$ is. A second application of (unshifted) `ortho_cholesky` to $\tilde{X}$ is then performed to finally obtain a matrix with orthonormal columns. Code up this procedure for $β=1$ as the function `ortho_shift_cholesky` and add it to the plot in Task 3 (d). You should again need to truncate the range of $m$ to avoid a `PosDefException`, but much smaller values for $m$ should be feasible. 
 """
+
+# ╔═╡ 1378a594-7106-490e-9175-e5532f3599fd
+function ortho_shift_cholesky(X; β=1.0)
+    L = cholesky(X' * X + β * I).L
+    X_tilde = X / L'
+    L_tilde = cholesky(X_tilde' * X_tilde).L
+    return X_tilde / L_tilde'
+end
+
+# ╔═╡ 3588e8e1-3966-4779-9ebc-dfcedc21bea0
+ortho_shift_cholesky(testmatrix(10^(-10)))
 
 # ╔═╡ baa15be1-4aaf-4789-95d6-c08c918cb245
 md"""
@@ -861,6 +895,59 @@ md"""
 
 # ╔═╡ 5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 ortho_dftk(X) = DFTK.ortho!(copy(X)).X
+
+# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
+begin
+	error_gs = Float64[]
+	error_mgs = Float64[]
+	error_qr = Float64[]
+	error_ch = Float64[]
+	error_s_ch = Float64[]
+	error_dftk = Float64[]
+
+	mrange = 10.0 .^ range(-16, stop=0, length=100)
+	
+	for m in mrange
+	    X = testmatrix(m)
+	    gs_result = ortho_gs(X)
+	    qr_result = ortho_qr(X)
+		mgs_result = ortho_mgs(X)
+		dftk_result = ortho_dftk(X)
+		
+		if m > 0.5 * 10. ^ (-7)
+			ch_result = ortho_cholesky(X)
+        	push!(error_ch, orthonormality_error(ch_result))
+		else
+			push!(error_ch, NaN)
+		end
+
+		if m > 0.5 * 10. ^ (-10)
+			s_ch_result = ortho_shift_cholesky(X)
+        	push!(error_s_ch, orthonormality_error(s_ch_result))
+		else
+			push!(error_s_ch, NaN)
+		end
+	    
+	    push!(error_gs, orthonormality_error(gs_result))
+	    push!(error_qr, orthonormality_error(qr_result))
+		push!(error_mgs, orthonormality_error(mgs_result))
+		push!(error_dftk, orthonormality_error(dftk_result))
+	end
+	
+	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
+	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
+	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
+	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
+	scatter!(mrange, error_dftk, label="error_dftk", markeralpha=0.2, markersize=2)
+end
+
+
+# ╔═╡ 4569f866-05e4-474d-899a-c68e000b656b
+begin
+	dftk_res = @benchmark ortho_dftk($Xmatrix)
+	println("DFTK.ortho! Time: ", mean(dftk_res).time)
+end
 
 # ╔═╡ 512200e7-9230-4469-b5f4-4855c7754c95
 md"""
@@ -3099,13 +3186,23 @@ version = "1.4.1+1"
 # ╟─dfd18ddd-a9e4-460a-97c4-07afbb83f4f2
 # ╟─a6f782cb-27b3-45a3-8b0e-23681406abef
 # ╟─110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
-# ╠═cb9d5564-6c68-4a6d-be6f-ad64a46da045
 # ╟─50e2baea-317d-43d5-82a2-df63936ddefd
-# ╠═97dce896-28bd-4e74-8ba9-cc9ff3b181c2
+# ╟─97dce896-28bd-4e74-8ba9-cc9ff3b181c2
+# ╠═d2049d09-c25a-4531-9c1d-fea56287ab5b
+# ╠═47151505-4564-4f24-a6a4-3102386c06b7
+# ╟─5370f280-530f-490d-b625-e001d5592eb7
 # ╟─3c1849b8-6345-4cdf-875a-a32ba455516b
+# ╟─bbf0ee35-8793-4565-9237-6dac36f9fe00
+# ╠═f0e13305-d26d-49d0-9cc7-f1b509bf8b71
+# ╠═8fe22329-09f1-49d8-bea8-6fd7d78ced67
+# ╠═fb96d065-43a6-4e70-a20b-ac962fa38249
+# ╟─275aabe3-f065-4fd0-ad44-8a992951caff
 # ╟─eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
+# ╠═1378a594-7106-490e-9175-e5532f3599fd
+# ╠═3588e8e1-3966-4779-9ebc-dfcedc21bea0
 # ╟─baa15be1-4aaf-4789-95d6-c08c918cb245
 # ╠═5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
+# ╠═4569f866-05e4-474d-899a-c68e000b656b
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
