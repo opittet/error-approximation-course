@@ -382,8 +382,17 @@ md"""- `logPrec_s`: **Preconditioner noise** level $(@bind logPrec_s PlutoUI.Sli
 
 """
 
-# ╔═╡ a0385d3b-18de-475a-ad44-7d12e392fd8b
+# ╔═╡ f42ad5fa-4b2b-4183-b755-d848e298e53d
+begin
+	b=6/3
+	println(b)
+end
 
+
+# ╔═╡ a0385d3b-18de-475a-ad44-7d12e392fd8b
+begin
+
+end
 
 # ╔═╡ a93ee74e-caeb-4d4b-828c-f111b197285f
 
@@ -473,25 +482,31 @@ end
 # ╔═╡ 0ded4108-ec78-41e3-925e-8033f07e7b62
 begin
     H_2c = fd_hamiltonian(v_chain, 500, 4)
+	H_2c_factorized=factorize(H_2c)
+	println(H_2c_factorized)
     Pnoise_s = 10^logPrec_s * randn(size(H_2c, 1))
 
     X = randn(eltype(H_2c), size(H_2c,2), 3)
+	(λ,v) = eigen(H_2c)
 
     lobpcg_2c = lobpcg(H_2c; X = randn(eltype(H_2c), size(H_2c, 2), 3),verbose=false)
 	
-    p = plot(yaxis=:log,title="Different preconditioners",xlabel="number of iterations",ylabel="maximum residual norm")
+    p = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="Different preconditioners",xlabel="number of iterations",ylabel="maximum residual norm")
 
 
     # Perfect preconditioner: The inverse diagonal
     Pinv = Diagonal(1 ./ diag(H_2c))
-    inv_diag_residual_norms = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	Pinv= H_2c_factorized \I
+    inv_diag_residual_norms = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv,maxiter=1000).residual_norms
+	println(inv_diag_residual_norms)
 	max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in inv_diag_residual_norms] 
 
     plot!(p, max_residual_norm_perfect; label = string(lobpcg) * " (perfect precon)", 	lw = 2,mark = :x)
-	
+
+
     # Preconditioner plus noise
-    Pinv = Diagonal(1 ./ diag(H_2c) .+ Pnoise_s)
-    noisy_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	Pinv = Diagonal(1 ./(H_2c.+Pnoise_s))
+    noisy_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv,maxiter=1000).residual_norms
 	max_residual_norm_noisy=[maximum(residual_norms) for residual_norms in noisy_res_norm]
 
     plot!(p, max_residual_norm_noisy; label = string(lobpcg) * " (noisy precon)", lw 	= 2,  		ls = :dash, mark = :x)
@@ -502,10 +517,74 @@ begin
     # Preconditioner plus noise
 	Alopcg = Diagonal(abs.(randn(500)).^0.1);
 	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
-	apgd_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	apgd_res_norm = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv,maxiter=1000).residual_norms
 	max_residual_norm_apgd=[maximum(residual_norms) for residual_norms in apgd_res_norm]
 
     plot!(p, max_residual_norm_apgd; label = string(lobpcg) * " (apgd precon)", lw 	= 2,  		ls = :dash, mark = :x)	
+
+
+		#without Pinv
+	Pinv= H_2c_factorized \I
+    inv_diag_residual_norms = lobpcg(H_2c; X = X, verbose = false, tol = 1e-6, Pinv).residual_norms
+	println(inv_diag_residual_norms)
+	factorized_max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in inv_diag_residual_norms] 
+
+    plot!(p, factorized_max_residual_norm_perfect; label = string(lobpcg) * " (factorized perfect precon)", 	lw = 2,mark = :x)
+end
+
+# ╔═╡ 9f1c103b-d615-4fb8-bd33-9d23dfbd355d
+function lobpcg_factorized(A; X=randn(eltype(A), size(A, 2), 2), ortho=ortho_qr,
+                              P_not_inv=I, tol=1e-6, maxiter=100, verbose=true)
+	T = real(eltype(A))
+	m = size(X, 2)  # block size
+
+	eigenvalues    = Vector{T}[]
+	residual_norms = Vector{T}[]
+	λ = NaN
+	P = nothing
+	R = nothing
+	
+	for i in 1:maxiter	
+		if i > 1
+			Z = hcat(X, P, R)
+		else
+			Z = X
+		end
+		@timeit to "Orthogonalisation" begin
+			
+			Z = ortho(Z)
+		end
+
+		@timeit to "Matrix-vector products" begin
+			#println("len A",length(A))
+			#println("len Z",length(Z))
+			AZ = A * Z
+		end
+
+		@timeit to "Rayleigh-Ritz step" begin
+			λ, Y = eigen(Hermitian(Z' * AZ))
+		end	
+		λ = λ[1:m]
+		Y = Y[:, 1:m]
+		new_X = Z * Y
+
+		@timeit to "Residual computation" begin
+			R = AZ * Y - new_X * Diagonal(λ)
+			norm_r = norm.(eachcol(R))
+		end
+		push!(eigenvalues, λ)
+		push!(residual_norms, norm_r)
+		verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] norm_r[end]
+		maximum(norm_r) < tol && break
+
+		@timeit to "Preconditioning" begin
+			R = Matrix(P_not_inv\R)
+		end
+		P = X - new_X
+		X = new_X
+	end
+
+	(; λ, X, eigenvalues, residual_norms)
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -761,6 +840,9 @@ md"""
 With this in mind try to explain the recent popularity of cholesky-based approaches like `ortho_dftk` for othogonalising vectors. If no cholesky-based approach should be chosen (i.e. `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk` are out), which other approach provides in your opinion the best compromise between runtime and accuracy and why?
 """
 
+# ╔═╡ 65b1a605-425e-4715-8f80-988cb81c4c71
+TODO
+
 # ╔═╡ 14faf0a3-d7da-485c-b5e6-cee1f24592ac
 md"""
 In the following we will only employ `ortho_dftk` in combination with `lobpcg` as our main diagonalisation routine.
@@ -790,7 +872,24 @@ From your experiments: Roughly at which residual norm is it advisable to switch 
 """
 
 # ╔═╡ cdfc841e-d294-4e07-a71a-788f1a1338ba
+begin
+	
+	
+	
+	Type_list=[Float32,Float64,Double64]
+	X_6a=rand(1,4000)
+#	ortho_dftk(X) = DFTK.ortho!(copy(X)).X
+	
+	for T in Type_list
+		Htest_6a = fd_hamiltonian(v_chain, 4000, 4; T)
+		X_ortho=ortho_dftk(X_6a)
+		T_lobpcg = lobpcg(Htest_6a;X=T.(X_ortho),Pinv=factorize(Htest_6a),verbose=false)
 
+		max_residual_norm=[maximum(residual_norms) for residual_norms in T_lobpcg.residual_norms] 
+		plot!(p, max_residual_norm_noisy; label = string(T) , lw 	= 2,ls = :dash, mark = :x)
+	end
+		
+end
 
 # ╔═╡ 11ce6be7-40ca-4f69-8485-026de5c5c96a
 
@@ -2924,6 +3023,7 @@ version = "1.4.1+1"
 # ╠═bf432919-1f25-493b-8b2e-62f4a9071701
 # ╠═4c8dd310-8486-4430-9134-2f4f6505fadf
 # ╠═0ded4108-ec78-41e3-925e-8033f07e7b62
+# ╠═f42ad5fa-4b2b-4183-b755-d848e298e53d
 # ╠═a0385d3b-18de-475a-ad44-7d12e392fd8b
 # ╠═a93ee74e-caeb-4d4b-828c-f111b197285f
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
@@ -2932,6 +3032,7 @@ version = "1.4.1+1"
 # ╟─d9f48fc4-f2a0-4a8f-aa84-3c7eef772957
 # ╠═970d53ef-012e-4218-ba52-a89f6929f909
 # ╠═b9483d16-0d06-4ae4-9e51-0b86c26489f6
+# ╠═9f1c103b-d615-4fb8-bd33-9d23dfbd355d
 # ╟─a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
 # ╠═d8cda517-503a-404f-95a5-ae2ce20142f4
 # ╟─382e10a8-cf84-4e1e-839e-b99bc1026de2
@@ -2968,6 +3069,7 @@ version = "1.4.1+1"
 # ╠═17675f91-8fb6-47a8-a291-37ef0a0dd781
 # ╠═826c5f0f-a210-4920-90d7-21b99da9230d
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
+# ╠═65b1a605-425e-4715-8f80-988cb81c4c71
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
