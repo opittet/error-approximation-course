@@ -683,30 +683,30 @@ Code up such an orthogonalisation routine `ortho_svd` based on Julia's `svd` fun
 """
 
 # ╔═╡ 17675f91-8fb6-47a8-a291-37ef0a0dd781
+# ╠═╡ disabled = true
+#=╠═╡
 begin
-	A = rand(4,3)
+	n,m=3,4
+	A = rand(n,m)
 	#println(A)
 	julia_svd= svd(A)
 	#println(julia_svd.U)
 	
 	#get symmetric square matrix for U and V 
-	
-	AᵀA=transpose(A)*A
-	AAᵀ=A*transpose(A)
+	println(size(A,1))
+	AᵀA=transpose(A)*A # n x n
+	AAᵀ=A*transpose(A) # m x m
 	
 	#get the eigenvalue decomposition
 	
-	(λ_U,v_U)=eigen(AᵀA)
-	(λ_V,v_V)=eigen(AAᵀ)
-	
-	#println(size(v,2))
+	(λ_U,ortho_U)=eigen(AᵀA)
 
-	println(v)
-	println(v[:,1])
+	(λ_V,ortho_V)=eigen(AAᵀ)
+
 
 	#get the singular values and sort them by descending order
 	
-	sing_value=[λi^(0.5) for λi in λ]
+	sing_value=[λth^(0.5) for λth in λ_U]
 	sorted_sing_values= sort!(sing_value,rev=true)
 	println(sorted_sing_values)
 	
@@ -714,8 +714,8 @@ begin
 		push!(sorted_sing_values,0)
 	end
 	
-	ortho_U=[sorted_sing_values[i]^(-1).*A*v[:,i] for i in 1:size(A,1)]
-	ortho_V= [sorted_sing_values[i]^(-1).*transpose(A)*v[:,i] for i in 1:size(A,2)]
+	#ortho_U=[sorted_sing_values[i]^(-1).*A*v_U[:,i] for i in 1:size(A,1)] 
+	#ortho_V= [sorted_sing_values[i]^(-1).*transpose(A)*v_V[:,i] for i in 1:size(A,2)]
 
 	
 	ortho_Σ=Diagonal(sorted_sing_values)
@@ -723,7 +723,7 @@ begin
 	#sanity check
 	
 	println(size(julia_svd.U,2))
-	println(size(v,2))
+	#println(size(ortho,2))
 	println(size(ortho_U,2))
 	
 	julia_svd.U ≈ ortho_U 
@@ -734,6 +734,26 @@ begin
 	
 	#ortho_svd 
 end
+  ╠═╡ =#
+
+# ╔═╡ 826c5f0f-a210-4920-90d7-21b99da9230d
+begin
+	
+	X_5a=rand(1000,10)
+	X_SVD_trial = @benchmark $svd(X_5a)
+	X_SVD = svd(X_5a)
+	U = X_SVD.U
+	V = X_SVD.V
+	S= X_SVD.S
+
+	U_ortho_trial = @benchmark $ortho_gs(U)
+	V_ortho_trial = @benchmark $ortho_gs(V)
+	S_ortho_trial = @benchmark $ortho_gs(S)
+
+	total_average_time_ortho_svd = Float64(median(X_SVD_trial).time)+Float64(median(U_ortho_trial).time)+Float64(median(V_ortho_trial).time)+Float64(median(S_ortho_trial).time)
+
+	println(total_average_time_ortho_svd)
+end 
 
 # ╔═╡ 49f347c3-0e77-4a1f-9bef-08a7e15b9149
 md"""
@@ -2946,6 +2966,7 @@ version = "1.4.1+1"
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
 # ╠═17675f91-8fb6-47a8-a291-37ef0a0dd781
+# ╠═826c5f0f-a210-4920-90d7-21b99da9230d
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
