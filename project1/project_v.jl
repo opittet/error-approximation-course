@@ -366,7 +366,7 @@ end
 # ╔═╡ 3feee600-5458-4e2c-98f0-dfe7e4332708
 begin
 	bar(["H * x", "H backslash x", "H_dense * x", "H_dense backslash x"], 
-		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns])", 
+		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns]", 
 		yaxis=:log, labels="time", 
 		title="Matrix Vector operations median time benchmark")
 end
@@ -723,6 +723,12 @@ In your implementation replace `tol32=XXX` by a sensible default value for `tol3
 
 Explain why you have to recompute the Hamiltonian with `T=Float64` instead of simply converting the `Float32` Hamiltonian. Is there a way to avoid computing the Hamiltonian twice ?
 """
+
+# ╔═╡ 0722bcc9-2dde-4289-8c7b-c6e3816281ff
+
+
+# ╔═╡ 49b6eed8-da2f-48cf-952a-7bdbd46e6469
+
 
 # ╔═╡ 32263be1-05bc-441e-b220-fa2f2aa8c052
 md"""
@@ -2896,6 +2902,8 @@ version = "1.4.1+1"
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
+# ╠═0722bcc9-2dde-4289-8c7b-c6e3816281ff
+# ╠═49b6eed8-da2f-48cf-952a-7bdbd46e6469
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
