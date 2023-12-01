@@ -1221,19 +1221,6 @@ function get_upper_bound(result, residual_norms)
 	err_KT_λ1 = residual_norms[1].hi .^2 ./ δ1
 end
 
-# ╔═╡ 5dd700f4-1c64-451e-871e-63194c7532a4
-guaranteed_upper_bound = [interval(result.λ[i]).hi for i in 1:3]
-
-# ╔═╡ 7891d095-4fe9-4a67-ba39-ab53b54f9eab
-alg_arith_ub = get_upper_bound(result, residual_norms)
-
-# ╔═╡ 8a08e6d1-09e0-45ef-b023-befd5df7851b
-# estimate for the arithmetic error in the first eigenvalue
-arithm_upper_bound = residual_norms[1].hi - residual_norms[1].lo
-
-# ╔═╡ c9d7693b-6b15-4bb0-8869-f5d2037a0914
-alg_upper_bound = alg_arith_ub - arithm_upper_bound
-
 # ╔═╡ b73829c8-c833-45a4-b168-d68e9b54547f
 md"""
 ## Computing the effect of tunnelling
@@ -1261,65 +1248,6 @@ md"""
 *Hint:* A good strategy is to first select a reasonable value for $N_b$, then keep $h = \frac{2a}{N_b - 1}$ fixed and converged wrt. $a$, then use that value for $a$ to converge wrt. $N_b$ (by decreasing $h$), then repeat until the desired tolerance is found.
 """
 
-# ╔═╡ 643efc2b-d5a4-4064-a666-e0e41f2c4e84
-begin
-	min_ϵ = 10
-	found_a = 0
-	h_fixed = 0.1
-	
-	for a in collect(1:0.1:10)
-		Nb = round(Int, 2a / h_fixed + 1)
-		ε_CL = solve_discretised(v_chain, Nb, Float64(a); n_ep=3).λ[1]
-		ε_QM = solve_discretised(v_atom, Nb, Float64(a); n_ep=3).λ[1]
-	
-		Δε = ε_CL - ε_QM
-		if abs(Δε) < min_ϵ
-			min_ϵ = Δε
-			found_a = a
-		end
-	end
-	final_min_ϵ1 = min_ϵ
-end
-
-# ╔═╡ e66ed648-39d5-4467-b35d-32b2c2c4ba65
-final_min_ϵ1
-
-# ╔═╡ 74a3baa4-a5cc-4748-92df-ec1c04db7110
-found_a
-
-# ╔═╡ 0808549e-6d20-4e51-b957-3eefba244f0c
-round(Int, 2found_a / h_fixed + 1)
-
-# ╔═╡ 430f4e3d-04a5-4be5-9f06-6d4d2a1d9fa8
-begin
-	final_min_ϵ2 = final_min_ϵ1
-	found_Nb = round(Int, 2found_a / h_fixed + 1)
-	for N in collect(found_Nb:5:1000)
-		ε_CL = solve_discretised(v_chain, N, found_a; n_ep=3).λ[1]
-		ε_QM = solve_discretised(v_atom, N, found_a; n_ep=3).λ[1]
-	
-		Δε = ε_CL - ε_QM
-		if abs(Δε) < final_min_ϵ2
-			final_min_ϵ2 = Δε
-			found_Nb = N
-		end
-	end
-end
-
-# ╔═╡ da16aa71-76fa-4bcb-8643-4ac2336ad480
-found_Nb
-
-# ╔═╡ 5f1597e6-d9b9-4c31-a0e2-bd25f598b973
-final_min_ϵ2
-
-# ╔═╡ 0ec4f9d0-f76b-4a5f-9f6a-4ad8e93fb4ce
-begin
-	ε_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3).λ[1]
-	ε_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3).λ[1]
-	println(ε_CL - ε_QM)
-	
-end
-
 # ╔═╡ a18370bd-e054-4fe5-840a-1638ad4fbca2
 md"""
 **(b)** Employ the Kato-Temple bound employed in Task 7 (c) to verify that the combined algorithm and arithmetic error of $Δε$ is less than the $3$ digits of convergence, i.e. that the algorithm and arithmetic error can be neglected.
@@ -1338,9 +1266,6 @@ begin
 	residual_norms_QM = residual_norms_interval(v_atom, result_QM.λ, result_QM.X, found_Nb, found_a)
 	upper_bound_QM = get_upper_bound(result_QM, residual_norms_QM)
 end
-
-# ╔═╡ 5dd6e1fd-17c6-4745-8c58-241c9e3a1967
-result_CL.λ[1] - result_QM.λ[1]
 
 # ╔═╡ e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 md"""
