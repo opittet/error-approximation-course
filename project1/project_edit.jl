@@ -1240,7 +1240,7 @@ md"""
 begin
 	min_ϵ = 10
 	found_a = 0
-	h_fixed = 0.1
+	h_fixed = 0.001
 	
 	for a in collect(0.5:0.2:10)
 		Nb = round(Int, 2a / h_fixed + 1)
@@ -1289,8 +1289,8 @@ final_min_ϵ2
 
 # ╔═╡ 0b09a9f1-1bc0-4d24-94b5-92775313142e
 begin
-	ε_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3).λ[1]
-	ε_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3).λ[1]
+	ε_CL = solve_discretised(v_chain, 800, found_a; n_ep=3).λ[1]
+	ε_QM = solve_discretised(v_atom, 800, found_a; n_ep=3).λ[1]
 	println(ε_CL - ε_QM)
 	
 end
@@ -3496,7 +3496,7 @@ version = "1.4.1+1"
 # ╠═8d6daaad-3c5a-400c-a680-53ce149d9a49
 # ╠═9985e9f4-eaa7-4bec-9976-1327f3dedbd0
 # ╠═2ac303fd-9db3-4718-acfd-197f304c742a
-# ╟─8619e0da-e9ce-4661-8a5e-369ec49645b2
+# ╠═8619e0da-e9ce-4661-8a5e-369ec49645b2
 # ╟─46578541-6513-4236-bcdc-2eba4b821ca0
 # ╠═232061e4-da8c-42d6-9801-23e724d7502c
 # ╟─df7d3c42-4956-4b36-a9bc-e8fb0f0ce2f1
@@ -3507,7 +3507,7 @@ version = "1.4.1+1"
 # ╠═16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
 # ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
 # ╠═8c07227d-4dcc-414c-b542-b2de090e87ae
-# ╟─ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
+# ╠═ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
 # ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1

@@ -677,6 +677,13 @@ md"""
 **Answer:**
 """
 
+# ╔═╡ 44131ba5-19e7-4182-8435-7e6f78df6639
+begin
+	Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+	X1 = randn(eltype(Htest()), size(Htest(), 2), 4)
+	precond_inv = InverseMap(factorize(Htest()))
+end
+
 # ╔═╡ 35a8746f-ee32-4ced-9b42-28b4212a738d
 md"""
 Analyzing the plots we can see that while Gram-Schmidt is faster computationally, it may have numerical stability issues compared to QR orthogonalization. 
@@ -1290,19 +1297,6 @@ It was interesting to work with Anna because she has a lot more experience so I 
 
 
 """
-
-# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
-# ╠═╡ disabled = true
-#=╠═╡
-Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
-  ╠═╡ =#
-
-# ╔═╡ 44131ba5-19e7-4182-8435-7e6f78df6639
-begin
-	Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
-	X1 = randn(eltype(Htest()), size(Htest(), 2), 4)
-	precond_inv = InverseMap(factorize(Htest()))
-end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
