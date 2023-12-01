@@ -1207,11 +1207,14 @@ md"""
 ----------------------
 """
 
-# ╔═╡ 49dc420d-0144-4c99-9753-aa7849619442
-residual_norms
+# ╔═╡ 157a3634-c42e-4bf4-a183-dd9d79d63c45
+function get_upper_bound(result, residual_norms)
 
-# ╔═╡ 1b359590-0ca5-47be-ba68-8d90ca2e482b
-result.λ
+	δ1 = max(0, abs(result.λ[1] - result.λ[2]) - residual_norms[2].hi)
+	
+	# upper bound for the combined algorithm and arithmetic error 
+	err_KT_λ1 = residual_norms[1].hi .^2 ./ δ1
+end
 
 # ╔═╡ 67ccedd4-5e13-4e33-86af-31c09d85b67c
 begin
@@ -1222,29 +1225,8 @@ begin
 	g_upper_bound
 end
 
-# ╔═╡ b0f7d197-32db-404a-9f98-2afaeef33d38
-begin
-	δ_list = [0. for i in 1:3]
-	δ_list[1] = abs(result.λ[1] - result.λ[2]) - g_upper_bound[2]
-	δ_list[3] = abs(result.λ[3] - result.λ[2]) - g_upper_bound[2]
-	
-	δ_left = abs(result.λ[2] - result.λ[1]) - g_upper_bound[1]
-	δ_right = abs(result.λ[2] - result.λ[3]) - g_upper_bound[3]
-	δ_list[2] = min(δ_left, δ_right)
-	
-	δ = [max(0, i) for i in δ_list]
-end
-
-# ╔═╡ 3a12fa98-9a85-4836-9915-70189f0e6ceb
-residual_norms[2]
-
-# ╔═╡ b1bc0285-9007-4930-ae27-b08c10e6030a
-begin
-	δ1 = abs(result.λ[1] - result.λ[2]) - residual_norms[2].hi
-	
-	# upper bound for the combined algorithm and arithmetic error 
-	err_KT_λ1 = g_upper_bound .^2 ./ δ1
-end
+# ╔═╡ 16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
+get_upper_bound(result, residual_norms)
 
 # ╔═╡ dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
 begin
@@ -1253,12 +1235,9 @@ begin
 	arithm_upper_bound = radius(λ_interval)
 end
 
-# ╔═╡ dc691698-4c64-48c4-9ebb-c796113dc469
-residuals[1]
-
 # ╔═╡ 0c803ce1-efcc-44e8-bcb1-a417a55cc604
 # width of the residual interval as an estimate for the arithmetic error in the first eigenvalue
-res_width = residuals[1].hi - residuals[1].lo
+res_width = residual_norms[1].hi - residual_norms[1].lo
 
 # ╔═╡ bf20ba12-b1fb-471d-83f6-48c014eac8f9
 alg_upper_bound = g_upper_bound[1] - arithm_upper_bound
@@ -3467,14 +3446,10 @@ version = "1.4.1+1"
 # ╟─df7d3c42-4956-4b36-a9bc-e8fb0f0ce2f1
 # ╠═bf63a030-eba0-420e-9209-e05016f3eca3
 # ╟─e0e06f34-9d43-442a-82ca-fe0f7501511f
-# ╠═49dc420d-0144-4c99-9753-aa7849619442
-# ╠═1b359590-0ca5-47be-ba68-8d90ca2e482b
+# ╠═157a3634-c42e-4bf4-a183-dd9d79d63c45
 # ╠═67ccedd4-5e13-4e33-86af-31c09d85b67c
-# ╠═b0f7d197-32db-404a-9f98-2afaeef33d38
-# ╠═3a12fa98-9a85-4836-9915-70189f0e6ceb
-# ╠═b1bc0285-9007-4930-ae27-b08c10e6030a
+# ╠═16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
 # ╠═dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
-# ╠═dc691698-4c64-48c4-9ebb-c796113dc469
 # ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
 # ╠═bf20ba12-b1fb-471d-83f6-48c014eac8f9
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
