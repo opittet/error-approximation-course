@@ -389,12 +389,12 @@ md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise P
 md"""
 As can be seen on the plot above,the factorization plays a crucial role to reduce the number of iteration steps required.
 
-Let’s now see if the algorithm is stable if we increase the number of discretisation points $Nb$:
+On the plot below we can assess the stability of the algorithm with increased number of discretization points $N_b$. 
 """
 
 # ╔═╡ cb360789-42b1-451c-a89e-4fcdd21d964c
 md"""
-It appears that the algorithm does not suffer from unstability.
+It appears that the algorithm does not suffer from unstability even for very thin discretizations.
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -532,7 +532,7 @@ end
 
 # ╔═╡ ae1e777a-fe2b-4ea6-9ecb-240698e54608
 begin
-	    k = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="stability of high number of discretization points",xlabel="number of iterations",ylabel="maximum residual norm")
+	    k = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="Stability with high number of discretization points",xlabel="number of iterations",ylabel="maximum residual norm")
 	for Nb in 2500:2500:20000
 		H_nb=fd_hamiltonian(v_chain, Nb, 4)
 	    X = randn(eltype(H_nb), size(H_nb,2), 3)
@@ -627,17 +627,59 @@ md"""
 This is not bad, but this can still be improved. One idea is to remove the inner loop over `j`. This can be achieved by using matrix-matrix products instead of vector-only operations. Since matrix-matrix operations are generally faster, this gives a speedup. Rewrite `ortho_gs` by using to a larger extend matrix-matrix operations. Call the new function `ortho_gs_matrix`. Benchmark this second function as well. Compare the runtime of both functions to `ortho_qr`. How much faster is Gram-Schmidt compared to QR?
 """
 
+# ╔═╡ 5eca2aaa-ff33-4dce-bd12-f3dfae42191a
+@views function ortho_gs_matrix(X)
+    Xnew = copy(X)
+    n, m = size(Xnew)
+
+	Xnew[:, 1] ./= norm(Xnew[:, 1])
+
+    for i in 2:m
+		projections = Xnew[:, 1:(i-1)]' * Xnew[:, i]
+		Xnew[:, i] .-= Xnew[:, 1:(i-1)] * projections
+        Xnew[:, i] ./= norm(Xnew[:, i])
+    end
+    Xnew
+end
+
+# ╔═╡ 53d14a45-8347-4a22-8b24-161a9e8d46b7
+begin
+	X = randn(1000, 10);
+	result_gs = @benchmark ortho_gs($X)
+	result_gs_matrix = @benchmark ortho_gs_matrix($X)
+	result_qr = @benchmark ortho_qr($X)
+
+	println("Orthogonal GS Time: ", mean(result_gs).time)
+	println("Ortho GS Matrix Time: ", mean(result_gs_matrix).time)
+	println("Ortho QR Time: ", mean(result_qr).time)
+end
+
+# ╔═╡ 78d980de-68d6-46c8-a262-f235084963dc
+mean(result_qr).time / mean(result_gs_matrix).time
+
+# ╔═╡ def6770d-3b93-4023-afaf-ecffbd11ff51
+md"""
+We can see that Gram-Schmidt is approximately 3 times faster compared to QR.
+"""
+
 # ╔═╡ d1b1ee12-479c-4b46-b008-30be3f3edfec
 md"""
 **(b)** Motivated by the speedup of Gram-Schmidt methods we want to employ `ortho_gs` and `ortho_gs_matrix` within our `lobpcg`. This can be achieved by setting the `ortho` keyword argument appropriately (e.g. `lobpcg(...; ortho=ortho_gs)`). Focus on computing the $4$ smallest eigenpairs of the testproblem `Htest()` to `tol=1e-8` --- using again its factorised form as a preconditioner.
 """
 
-# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
-Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
-
 # ╔═╡ 2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 md"""
 What do you notice with the Gram-Schmidt-based orthogonalisation? Do we win something using this faster technique? Plot the convergence history of the largest eigenpair when using `ortho_qr` and `ortho_gs`. Try to find an explanaition for the observed behaviour. *Hint:* Part (c) might be helpful.
+"""
+
+# ╔═╡ 2ed26679-3bfd-41b8-a447-89447d8a3186
+md"""
+**Answer:**
+"""
+
+# ╔═╡ 35a8746f-ee32-4ced-9b42-28b4212a738d
+md"""
+Analyzing the plots we can see that while Gram-Schmidt is faster computationally, it may have numerical stability issues compared to QR orthogonalization. 
 """
 
 # ╔═╡ 92f4c1fe-010b-429c-a83f-23bf21daae2b
@@ -651,14 +693,90 @@ testmatrix(m; T=Float64, N=1000, M=10) = abs.(randn(T, N, M)) .^ T(m)
 # ╔═╡ ff592eef-e31b-4865-bfb0-19a283de20c4
 md"""
 is a good way of generating challenging benchmark matrices for orthogonalisation routines. *Hint:* Plot the numerical range using the `extrema` function for values $m \in (0, 1)$. 
+"""
 
+# ╔═╡ 478f93fc-f4ac-499b-948b-32ba735e933f
+begin
+	msteps = 0:0.01:1
+	ranges = [extrema(testmatrix(m)) for m in msteps]
+
+	lower_bounds = [r[1] for r in ranges]
+	upper_bounds = [r[2] for r in ranges]
+	
+	means = [mean(r) for r in ranges]
+	
+	# Create the plot with means, lower bounds, and upper bounds
+	plot(msteps, means, ribbon=(abs.(lower_bounds .- means), abs.(upper_bounds .- means)), fillalpha=0.2, alpha=0., xlabel="m", ylabel="Numerical Range", label="Numerical Range")
+	plot!(msteps, lower_bounds, label="Lower bounds")
+	plot!(msteps, upper_bounds, label="Upper bounds")
+end
+
+# ╔═╡ 81c442fd-1153-43d4-a19e-551d7240ddb5
+md"""
+If the vectors are very similar, especially when their entries are within the same numerical range, numerical errors may accumulate, leading to loss of orthogonality or other stability issues. In such cases, using Gram-Schmidt orthogonalization methods might be problematic due to the ill-conditioning of the vectors.
+
+The `testmatrix` function is useful for creating matrices that test orthogonalization routines, helping to find numerical stability problems and assess the strength of the implemented algorithms.
+"""
+
+# ╔═╡ b41e3340-19b7-44f2-896f-72f5d8436b2c
+md"""
 **(d)** Test `ortho_gs` and `ortho_qr` for various values of $m$, i.e. check the orthonormality error `maximum(abs, X'*X - I)` after having orthogonalised test matrices with various values of $m$. Plot this error for both methods versus $m$ in the range $10^{-16}$ to $1$. What do you notice in particular for the challenging cases ?
+"""
+
+# ╔═╡ 44302ad1-bac9-46dc-b0f0-3759014a7d25
+md"""
+**Answer:**
+"""
+
+# ╔═╡ d785d381-21fd-4794-ac06-0381db035b77
+orthonormality_error(X) = maximum(abs, X' * X - I)
+
+# ╔═╡ a26da64e-054f-4740-afec-ecf049a5fa48
+md"""
+In challenging cases, we can observe higher orthonormality errors that indicate the difficulty of maintaining orthonormality using Gram-Schmidt procedure when the entries of the vectors are within the same small numerical range.
 """
 
 # ╔═╡ affd0b8f-2b57-40d9-87e1-43de738c0778
 md"""
 **(e)** The observed behaviour is a well-known flaw of the standard Gram-Schmidt procedure. A simple and common modification improves the situaton notably. This is known as the *modified Gram-Schmidt procedure* (MGS), which is described for example [on wikipedia](https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process). Code up an MGS and call the function `ortho_mgs`. Add `ortho_mgs` to your plots in **(b)** and **(d)**. You should observe that the overall behaviour improves.
 *Hint:* Compared to `ortho_gs` you don't have to change much.
+"""
+
+# ╔═╡ 08434ed2-9761-43df-a9d3-b9ffc14ec284
+md"""
+**Answer:**
+"""
+
+# ╔═╡ 1043482c-3471-44bf-8839-88bec51e1f71
+@views function ortho_mgs(X)
+	Xnew = copy(X)
+	for i in 1:size(X, 2)
+		for j in 1:(i-1)
+			Xnew[:, i] .-= dot(Xnew[:, i], Xnew[:, j]) * Xnew[:, j]
+		end
+		Xnew[:, i] ./= norm(Xnew[:, i])
+	end
+	Xnew
+end
+
+# ╔═╡ 70257d18-8494-46e7-b5cf-56b42a1b2f0d
+begin
+	res_qr = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_qr, tol=1e-8, maxiter = 30, verbose=false)
+	res_gs = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_gs, tol=1e-8, maxiter = 30, verbose=false)
+	res_mgs = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_mgs, tol=1e-8, maxiter = 30, verbose=false)
+	
+	rnorm_qr=[norms[1] for norms in res_qr.residual_norms]
+	rnorm_gs=[norms[1] for norms in res_gs.residual_norms]
+	rnorm_mgs=[norms[1] for norms in res_mgs.residual_norms]
+
+	plot(rnorm_qr, label="QR Orthogonalization", yaxis=:log, xlabel="Iterations", ylabel="Residual Norm", lw=2)
+	plot!(rnorm_gs, label="Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
+	plot!(rnorm_mgs, label="Modified Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
+end
+
+# ╔═╡ b56193b9-ecae-4bb2-be34-c3a9c9c08419
+md"""
+Analyzing the plots above, we can see that the modified Gram-Schmidt procedure doesn't give high orthonormality errors and on the tested examples is as good as QR method. On the other hand, MGS doesn't show a big improvement within our lobpcg algorithm.
 """
 
 # ╔═╡ 6d49ed54-f809-470f-83c9-65e40871db51
@@ -680,9 +798,70 @@ md"""
 Given an arbitrary $X \in \mathbb{R}^{n \times p}$ and Cholesky factors $L$ such that $X^H X = L L^H$, prove that $X \left(L^H)^{-1}\right) \in \mathbb{R}^{n \times p}$ is indeed orthogonal.
 """
 
+# ╔═╡ 6d611640-f656-426c-8256-5095effa60d7
+md"""
+**Proof:**
+
+Let $M = \left(L^H\right)^{-1}$ and consider the product:
+
+```math
+\left( X M \right)^H X M = M^H (X^H X) M = M^H (L L^H) M = \left(\left(L^H\right)^{-1}\right)^H L L^H \left(L^H\right)^{-1} = I,
+```
+On the other hand,
+
+```math
+\begin{align}
+X M \left( X M \right)^H  &= X M M^H X^H = X \left(L^H\right)^{-1} L^{-1} X^H \\
+	&= X \left(L L^H\right)^{-1} X^H = X \left(X^H X \right)^{-1} X^H  \\
+	&= X X^{-1} (X^H)^{-1} X^H= I.
+\end{align}
+```
+
+As a result, we have:
+```math
+\left( X \left(L^H\right)^{-1} \right)^H X \left(L^H\right)^{-1} = I
+```
+and 
+```math
+ X \left(L^H\right)^{-1} \left(X \left(L^H\right)^{-1} \right)^H= I,
+```
+
+which means that $X \left(L^H\right)^{-1}$ is indeed orthogonal.
+"""
+
 # ╔═╡ 50e2baea-317d-43d5-82a2-df63936ddefd
 md"""
 **(b)** Look up how the `cholesky` function works in Julia and use it to code up an `ortho_cholesky(X)`, which orthonormalises the columns of the passed matrix `X`. Benchmark `ortho_cholesky` on a `X = randn(1000, 10)` testmatrix and compare the timings to `ortho_qr` and `ortho_gs_matrix`. Can you explain the appealing feature of this method?
+"""
+
+# ╔═╡ 6e4af0c2-596c-47a1-9c7d-87a5a403950e
+md"""
+**Answer:**
+"""
+
+# ╔═╡ 9af91883-6930-4567-8f4a-dbd3c82d478b
+function ortho_cholesky(X)
+    L = cholesky(X' * X).L
+    Xnew = X / L'
+	return Xnew
+end
+
+# ╔═╡ 984f04a3-7112-4d0d-ba5b-647f66c6ae2e
+begin
+	Xmatrix = randn(1000, 10)
+	
+	ch_res = @benchmark ortho_cholesky($Xmatrix)
+	qr_res = @benchmark ortho_qr($Xmatrix)
+	gs_res = @benchmark ortho_gs_matrix($Xmatrix)
+
+	println("Orthogonal GS Time: ", mean(gs_res).time)
+	println("Ortho Cholesky Time: ", mean(ch_res).time)
+	println("Ortho QR Time: ", mean(qr_res).time)
+end
+
+# ╔═╡ 2bb7d04c-15e5-4c52-822d-a98b8dd25443
+md"""
+The Cholesky factorization method is computationally efficient since matrix $L$ is lower triangular and can be more stable because it doesn't accumulate errors across iterations but computes all vectors simultaneously.
 """
 
 # ╔═╡ 3c1849b8-6345-4cdf-875a-a32ba455516b
@@ -690,10 +869,47 @@ md"""
 **(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method to fail for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
 """
 
+# ╔═╡ 200a0a73-eda6-4939-93fe-9a0c34ec50a1
+md"""
+**Answer:**
+"""
+
+# ╔═╡ 19eb7840-08fe-4e38-b97c-e6d4540c4719
+ortho_cholesky(testmatrix(10^(-7)))
+
+# ╔═╡ be69ba3d-55b8-4e59-8ddb-e5621b773fa1
+let
+	testm = testmatrix(10^(-5))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ dca0a26d-723d-47e5-a8ab-5555d872a048
+let
+	testm = testmatrix(10^(-8))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ f797e23a-f607-4722-a2a6-3a5956f7a2b8
+md"""
+We can see that as $m$ gets too small a part of eigenvalues approaches numerical zero. In comparison with other methods, it shows the same performance as `orth_gs` before m gets too small resulting in an ill-conditioned or nearly singular matrix 
+$X^H X$ so that `orth_cholesky` fails.
+"""
+
 # ╔═╡ eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
 md"""
 **(d)** To avoid the breakdown of cholesky-based orthogonalisation approaches, a typical trick is to apply the cholesky factorisation to $X^H X + β * I$ instead of $X^H X$, where $β > 0$ is a small constant. With the $L L^H$ factorisation at hand one then forms $\tilde{X} = X \left(L^H)^{-1}\right)$ as usual. $\tilde{X}$ is now not yet orthogonal, but its closer than $X$ is. A second application of (unshifted) `ortho_cholesky` to $\tilde{X}$ is then performed to finally obtain a matrix with orthonormal columns. Code up this procedure for $β=1$ as the function `ortho_shift_cholesky` and add it to the plot in Task 3 (d). You should again need to truncate the range of $m$ to avoid a `PosDefException`, but much smaller values for $m$ should be feasible. 
 """
+
+# ╔═╡ f409efe3-5577-407e-a99f-3e76ce44f86a
+function ortho_shift_cholesky(X; β=1.0)
+    L = cholesky(X' * X + β * I).L
+    X_tilde = X / L'
+    L_tilde = cholesky(X_tilde' * X_tilde).L
+    return X_tilde / L_tilde'
+end
+
+# ╔═╡ 380ef886-a6e6-407b-8a16-784567770c8e
+ortho_shift_cholesky(testmatrix(10^(-10)))
 
 # ╔═╡ baa15be1-4aaf-4789-95d6-c08c918cb245
 md"""
@@ -702,6 +918,12 @@ md"""
 
 # ╔═╡ 5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 ortho_dftk(X) = DFTK.ortho!(copy(X)).X
+
+# ╔═╡ 96046951-beb7-4f03-a696-3c881bf9d080
+begin
+	dftk_res = @benchmark ortho_dftk($Xmatrix)
+	println("DFTK.ortho! Time: ", mean(dftk_res).time)
+end
 
 # ╔═╡ 512200e7-9230-4469-b5f4-4855c7754c95
 md"""
@@ -721,10 +943,80 @@ md"""
 Code up such an orthogonalisation routine `ortho_svd` based on Julia's `svd` funciton. Look up its documentation to get more details. Benchmark `ortho_svd` on  `X = randn(1000, 10)` and add this function to  your plot of Task 3 (d).
 """
 
+# ╔═╡ 927c2ac2-09dd-466a-9878-868654b66e99
+function ortho_svd(X)
+    U, _, _ = svd(X)
+    return U
+end
+
+# ╔═╡ 95d9ea88-361d-4c77-9e04-cc82f4da9dc9
+begin
+	error_gs = Float64[]
+	error_mgs = Float64[]
+	error_qr = Float64[]
+	error_ch = Float64[]
+	error_s_ch = Float64[]
+	error_dftk = Float64[]
+	error_svd = Float64[]
+
+	mrange = 10.0 .^ range(-16, stop=0, length=100)
+	
+	for m in mrange
+	    X = testmatrix(m)
+	    gs_result = ortho_gs(X)
+	    qr_result = ortho_qr(X)
+		mgs_result = ortho_mgs(X)
+		dftk_result = ortho_dftk(X)
+		svd_result = ortho_svd(X)
+		
+		if m > 0.5 * 10. ^ (-7)
+			ch_result = ortho_cholesky(X)
+        	push!(error_ch, orthonormality_error(ch_result))
+		else
+			push!(error_ch, NaN)
+		end
+
+		if m > 0.5 * 10. ^ (-10)
+			s_ch_result = ortho_shift_cholesky(X)
+        	push!(error_s_ch, orthonormality_error(s_ch_result))
+		else
+			push!(error_s_ch, NaN)
+		end
+	    
+	    push!(error_gs, orthonormality_error(gs_result))
+	    push!(error_qr, orthonormality_error(qr_result))
+		push!(error_mgs, orthonormality_error(mgs_result))
+		push!(error_dftk, orthonormality_error(dftk_result))
+		push!(error_svd, orthonormality_error(svd_result))
+	end
+	
+	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10,yaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
+	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
+	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
+	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
+	plot!(mrange, error_dftk, label="error_dftk")
+	plot!(mrange, error_svd, label="error_svd")
+end
+
+
+# ╔═╡ d04fa4f3-96df-4e8a-8d38-4c651a655a2b
+begin
+	svd_res = @benchmark ortho_svd($Xmatrix)
+	println("SVD Time [ns]: ", mean(svd_res).time)
+end
+
 # ╔═╡ 49f347c3-0e77-4a1f-9bef-08a7e15b9149
 md"""
 **(b)** You should now have a good overview of the runtimes and qualities of the orthogonalisation algorithms `ortho_gs_matrix`, `ortho_mgs`, `ortho_qr`, `ortho_svd`, `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk`.
 With this in mind try to explain the recent popularity of cholesky-based approaches like `ortho_dftk` for othogonalising vectors. If no cholesky-based approach should be chosen (i.e. `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk` are out), which other approach provides in your opinion the best compromise between runtime and accuracy and why?
+"""
+
+# ╔═╡ 25ccfadc-d81c-4e77-b67d-11540e3f34b7
+md"""
+**(Answer)**
+
+In general, Cholesky-based approach in comparison with other methods is computationally efficient as we can see by comparing the running times. It is also numerically stable for positive definite matrices as we observe from the plots above. However, when Cholesky-based approaches are not available, `ortho_qr` often provides a good compromise between runtime and accuracy among the other approaches. 
 """
 
 # ╔═╡ 14faf0a3-d7da-485c-b5e6-cee1f24592ac
@@ -755,30 +1047,38 @@ In each run use the *the same* initial guess for each floating-point precision `
 From your experiments: Roughly at which residual norm is it advisable to switch from one precision to the other in order to avoid impacting the rate of convergence ?
 """
 
-# ╔═╡ 90ce0032-ef4b-4ec9-930d-3f1f70ab3018
+# ╔═╡ f87e69fa-f235-4122-b11d-4d0d8ce90fff
 begin
-	
-	
-	
-	Type_list=[Float32,Float64,Double64]
-	X_6a=Float64.(randn(size(4000),3))
-#		x = randn(size(H, 2));
-	
-	#X0 = randn(size(H_fd, 2), n)
+	H_f32 = Htest(Float32)
+	X_init = randn(size(H_f32, 2), 3)
 
-	println(X_6a)
-#	ortho_dftk(X) = DFTK.ortho!(copy(X)).X
-	
-	for T in Type_list
-		Htest_6a = fd_hamiltonian(v_chain, 4000, 4; T)
-		X_ortho=ortho_dftk(X_6a)
-		T_lobpcg = lobpcg(Htest_6a;X=T.(X_ortho),Pinv=factorize(Htest_6a),verbose=false)
+	H_f64 = Htest(Float64)
+	H_d64 = Htest(Double64)
 
-		max_residual_norm=[maximum(residual_norms) for residual_norms in T_lobpcg.residual_norms] 
-		plot!(p, max_residual_norm_noisy; label = string(T) , lw 	= 2,ls = :dash, mark = :x)
-	end
-		
 end
+
+# ╔═╡ 90ce0032-ef4b-4ec9-930d-3f1f70ab3018
+r_norms32 = last.( lobpcg(H_f32; X=Float32.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f32)), tol=1e-6, maxiter=100).residual_norms)
+
+# ╔═╡ b1801336-e0ea-46d3-9520-967ef7d7b48e
+r_norms64 = last.(lobpcg(H_f64; X=Float64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-12, maxiter=100).residual_norms)
+
+# ╔═╡ b9320a33-246b-43f7-a86e-6b2944ca49b9
+r_normsd64 = last.(lobpcg(H_d64; X=Double64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-25, maxiter=100).residual_norms)
+
+# ╔═╡ 4c9d10ab-dd8e-44e3-8354-20c0281390cd
+begin
+	plot(r_norms32, label="Float32", yaxis=:log, ylabel="Residual Norm")
+	plot!(r_norms64, label="Float64", yticks=10.0 .^ (-27:2:2))
+	plot!(r_normsd64, label="Float64", xlabel="Number of iterations")
+end
+
+# ╔═╡ ecf25610-4385-4ede-812c-106d18ba73ba
+md"""
+As we can see from the plot, a good strategy would be to switch from one precision to the other at the moment when the residual norm stops decreasing significantly. In our case it would be:
+- from `Float32` to `Float64`: 1e-2;
+- from `Float64` to `Double64`: 1e-11.
+"""
 
 # ╔═╡ 2e02d881-40df-4559-82a9-f6a11239f337
 md"""
@@ -789,27 +1089,26 @@ Explain why you have to recompute the Hamiltonian with `T=Float64` instead of si
 """
 
 # ╔═╡ 0722bcc9-2dde-4289-8c7b-c6e3816281ff
-function solve_discretised(V,Nb,a; n_ep=3,tol32=XXX,tol=1e-6,maxiter=100)
-	
-	fd_hamiltonian32 = fd_hamiltonian(V, Nb, a; T=Float32)
-	fd_hamiltonian64 = fd_hamiltonian(V, Nb, a; T=Float64)
+function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100)
+    H_float32 = fd_hamiltonian(V, Nb, a; T=Float32)
+    X_32 = randn(Float32, size(H_float32, 2), n_ep)
 
-	X=randn(eltype(Float64), size(fd_hamiltonian32, 2),n_ep)
+    lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose = false, maxiter=maxiter, Pinv=diagm(1.0 ./ diag(H_float32)));
 	
-	factorized_lobpcg32= lobpcg(fd_hamiltonian32; X = Float32.(X), verbose = false, tol = XXX, Pinv=factorized(fd_hamiltonian32)\I)
+    H_float64 = fd_hamiltonian(V, Nb, a; T=Float64)
+    X_64 = Float64.(lobpcg_result_float32.X)
 
-	factorized_lobpcg64= lobpcg(fd_hamiltonian64; X = Float64.(factorized_lobpcg64.X), verbose = false, tol = 1e-6, Pinv=factorized(fd_hamiltonian64)\I)
-return 	factorized_lobpcg64
+    lobpcg_result_float64 = lobpcg(H_float64; X=X_64, tol=tol, maxiter=maxiter, verbose = false, Pinv=diagm(1.0 ./ diag(H_float64)))
+
+    return lobpcg_result_float64
 end
 
+# ╔═╡ 6ae5e7c3-3aea-4c59-97ae-76b25dfe611b
+lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100)
 
 # ╔═╡ 49b6eed8-da2f-48cf-952a-7bdbd46e6469
 md"""
-**Answer (b)**
-
-There is no point in _upcasting_ a Float32 into a Float64, as the computer will simply fill the remaining bits with 0’s. This _a posteriori_ change does not enhance the precision of the calculation.
-
-One alternative to calculating twice the hamiltonian is to _downcast_ it from Float64 to Float32.
+Converting a matrix from `Float32` to `Float64`change the precision of individual elements but because all computation should be done in a specific format we need to recompute the Hamiltonian once again using `T=Float64`. A way could be to first, compute the Hamiltonian with `T=Float64` and then convert it to the Float32 Hamiltonian. 
 """
 
 # ╔═╡ 32263be1-05bc-441e-b220-fa2f2aa8c052
@@ -959,6 +1258,19 @@ Some questions you should address:
 - Where could your specific expertise and background from your prior studies contribute most to the project and the exercises we did earlier in the semester?
 - Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?
 """
+
+# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
+# ╠═╡ disabled = true
+#=╠═╡
+Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+  ╠═╡ =#
+
+# ╔═╡ 44131ba5-19e7-4182-8435-7e6f78df6639
+begin
+	Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+	X1 = randn(eltype(Htest()), size(Htest(), 2), 4)
+	precond_inv = InverseMap(factorize(Htest()))
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2963,33 +3275,73 @@ version = "1.4.1+1"
 # ╟─3246102a-29c2-47a8-8cb6-2215447c655e
 # ╠═468e1424-9204-4ea7-996d-c18747d6ed59
 # ╟─9532eabd-8888-4054-be04-136916bfb2ec
+# ╠═5eca2aaa-ff33-4dce-bd12-f3dfae42191a
+# ╠═53d14a45-8347-4a22-8b24-161a9e8d46b7
+# ╠═78d980de-68d6-46c8-a262-f235084963dc
+# ╠═def6770d-3b93-4023-afaf-ecffbd11ff51
 # ╟─d1b1ee12-479c-4b46-b008-30be3f3edfec
 # ╠═f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╟─2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
+# ╠═2ed26679-3bfd-41b8-a447-89447d8a3186
+# ╠═44131ba5-19e7-4182-8435-7e6f78df6639
+# ╠═70257d18-8494-46e7-b5cf-56b42a1b2f0d
+# ╠═35a8746f-ee32-4ced-9b42-28b4212a738d
 # ╟─92f4c1fe-010b-429c-a83f-23bf21daae2b
 # ╠═92cf9a34-51ac-4767-94d2-f5013b6f1a94
-# ╟─ff592eef-e31b-4865-bfb0-19a283de20c4
+# ╠═ff592eef-e31b-4865-bfb0-19a283de20c4
+# ╠═478f93fc-f4ac-499b-948b-32ba735e933f
+# ╠═81c442fd-1153-43d4-a19e-551d7240ddb5
+# ╠═b41e3340-19b7-44f2-896f-72f5d8436b2c
+# ╠═44302ad1-bac9-46dc-b0f0-3759014a7d25
+# ╠═d785d381-21fd-4794-ac06-0381db035b77
+# ╠═95d9ea88-361d-4c77-9e04-cc82f4da9dc9
+# ╟─a26da64e-054f-4740-afec-ecf049a5fa48
 # ╟─affd0b8f-2b57-40d9-87e1-43de738c0778
+# ╟─08434ed2-9761-43df-a9d3-b9ffc14ec284
+# ╠═1043482c-3471-44bf-8839-88bec51e1f71
+# ╟─b56193b9-ecae-4bb2-be34-c3a9c9c08419
 # ╟─6d49ed54-f809-470f-83c9-65e40871db51
 # ╟─dfd18ddd-a9e4-460a-97c4-07afbb83f4f2
 # ╟─a6f782cb-27b3-45a3-8b0e-23681406abef
+# ╠═6d611640-f656-426c-8256-5095effa60d7
 # ╟─50e2baea-317d-43d5-82a2-df63936ddefd
+# ╠═6e4af0c2-596c-47a1-9c7d-87a5a403950e
+# ╠═9af91883-6930-4567-8f4a-dbd3c82d478b
+# ╠═984f04a3-7112-4d0d-ba5b-647f66c6ae2e
+# ╠═2bb7d04c-15e5-4c52-822d-a98b8dd25443
 # ╟─3c1849b8-6345-4cdf-875a-a32ba455516b
+# ╠═200a0a73-eda6-4939-93fe-9a0c34ec50a1
+# ╠═19eb7840-08fe-4e38-b97c-e6d4540c4719
+# ╠═be69ba3d-55b8-4e59-8ddb-e5621b773fa1
+# ╠═dca0a26d-723d-47e5-a8ab-5555d872a048
+# ╟─f797e23a-f607-4722-a2a6-3a5956f7a2b8
 # ╟─eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
+# ╠═f409efe3-5577-407e-a99f-3e76ce44f86a
+# ╠═380ef886-a6e6-407b-8a16-784567770c8e
+# ╠═96046951-beb7-4f03-a696-3c881bf9d080
 # ╟─baa15be1-4aaf-4789-95d6-c08c918cb245
 # ╠═5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
+# ╠═927c2ac2-09dd-466a-9878-868654b66e99
+# ╠═d04fa4f3-96df-4e8a-8d38-4c651a655a2b
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
+# ╠═25ccfadc-d81c-4e77-b67d-11540e3f34b7
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
+# ╠═f87e69fa-f235-4122-b11d-4d0d8ce90fff
 # ╠═90ce0032-ef4b-4ec9-930d-3f1f70ab3018
+# ╠═b1801336-e0ea-46d3-9520-967ef7d7b48e
+# ╠═b9320a33-246b-43f7-a86e-6b2944ca49b9
+# ╠═4c9d10ab-dd8e-44e3-8354-20c0281390cd
+# ╠═ecf25610-4385-4ede-812c-106d18ba73ba
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
 # ╠═0722bcc9-2dde-4289-8c7b-c6e3816281ff
-# ╠═49b6eed8-da2f-48cf-952a-7bdbd46e6469
+# ╠═6ae5e7c3-3aea-4c59-97ae-76b25dfe611b
+# ╟─49b6eed8-da2f-48cf-952a-7bdbd46e6469
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
