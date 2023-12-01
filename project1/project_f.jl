@@ -366,7 +366,7 @@ end
 # ╔═╡ 3feee600-5458-4e2c-98f0-dfe7e4332708
 begin
 	bar(["H * x", "H backslash x", "H_dense * x", "H_dense backslash x"], 
-		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns])", 
+		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns]", 
 		yaxis=:log, labels="time", 
 		title="Matrix Vector operations median time benchmark")
 end
@@ -383,6 +383,18 @@ md"""
 
 # ╔═╡ 4db84a39-89f2-449e-a340-4a8012a71017
 md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
+"""
+
+# ╔═╡ b7673185-8f01-4332-b8d4-abde2ad62700
+md"""
+As can be seen on the plot above,the factorization plays a crucial role to reduce the number of iteration steps required.
+
+On the plot below we can assess the stability of the algorithm with increased number of discretization points $N_b$. 
+"""
+
+# ╔═╡ cb360789-42b1-451c-a89e-4fcdd21d964c
+md"""
+It appears that the algorithm does not suffer from unstability even for very thin discretizations.
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -474,6 +486,7 @@ begin
 	n = 3 
 	X0 = randn(size(H_fd, 2), n)
 	
+	
 	# Perfect preconditioner
 	precond = diagm(1.0 ./ diag(H_fd))
 	eigenvalues, eigenvectors = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond)
@@ -484,28 +497,54 @@ end
 
 # ╔═╡ e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 begin
-	p = plot(yaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm")
+	p = plot(yaxis=:log,xaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm",ylims=(1e-6, 1e7))
 
 	# Perfect preconditioner
-	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond).residual_norms
+	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = precond).residual_norms
 	max_rnorm_perfect=[maximum(r_norms) for r_norms in inv_diag_residual_norms] 
-	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2,mark = :x)
+	
+	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2)
 
 	# Preconditioner plus noise
 	prec_noise = 10 ^ log_prec_noise * randn(size(H_fd, 1))
 	noisy_precond = Diagonal(1 ./ diag(H_fd) .+ prec_noise)
-	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = noisy_precond).residual_norms
+	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = noisy_precond).residual_norms
 	max_rnorm_noisy=[maximum(r_norms) for r_norms in noisy_rnorms]
 
-	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash, mark = :x)
+	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash)
 
 	# Apgd preconditioner
 	Alopcg = Diagonal(abs.(randn(Nb)).^0.1);
 	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
-	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv).residual_norms
+	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv).residual_norms
 	max_rnorm_apgd=[maximum(r_norms) for r_norms in apgd_rnorms]
+	
+    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash)
 
-    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash, mark = :x)
+	#perfect preconditionner using factorization
+	Pinv= H_fd\I
+    factorized_inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, Pinv).residual_norms
+	max_rnorms_factorized= [maximum(r_norms) for r_norms in factorized_inv_diag_residual_norms] 
+
+    plot(p, max_rnorms_factorized; label = string(lobpcg) * " (factorized perfect preconditionner)", 	lw = 2,mark = :x)
+	plot!()
+end
+
+# ╔═╡ ae1e777a-fe2b-4ea6-9ecb-240698e54608
+begin
+	    k = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="Stability with high number of discretization points",xlabel="number of iterations",ylabel="maximum residual norm")
+	for Nb in 2500:2500:20000
+		H_nb=fd_hamiltonian(v_chain, Nb, 4)
+	    X = randn(eltype(H_nb), size(H_nb,2), 3)
+
+		Pinv_nb= factorize(H_nb) \I
+
+	    nb_inv_diag_residual_norms = lobpcg(H_nb; X = X, verbose = false, tol = 1e-6, Pinv=Pinv_nb,maxiter=30).residual_norms
+		nb_factorized_max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in nb_inv_diag_residual_norms] 
+
+    	plot!(k,nb_factorized_max_residual_norm_perfect; label = string(Nb) * "  points", 	lw = 2,mark = :x)
+	end
+	plot!()
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -588,7 +627,7 @@ md"""
 This is not bad, but this can still be improved. One idea is to remove the inner loop over `j`. This can be achieved by using matrix-matrix products instead of vector-only operations. Since matrix-matrix operations are generally faster, this gives a speedup. Rewrite `ortho_gs` by using to a larger extend matrix-matrix operations. Call the new function `ortho_gs_matrix`. Benchmark this second function as well. Compare the runtime of both functions to `ortho_qr`. How much faster is Gram-Schmidt compared to QR?
 """
 
-# ╔═╡ c4517741-dd2f-4cbc-a0b1-75f3b9cd7060
+# ╔═╡ 5eca2aaa-ff33-4dce-bd12-f3dfae42191a
 @views function ortho_gs_matrix(X)
     Xnew = copy(X)
     n, m = size(Xnew)
@@ -603,7 +642,7 @@ This is not bad, but this can still be improved. One idea is to remove the inner
     Xnew
 end
 
-# ╔═╡ 9b66f88c-667f-45bc-9d54-8c97966edd01
+# ╔═╡ 53d14a45-8347-4a22-8b24-161a9e8d46b7
 begin
 	X = randn(1000, 10);
 	result_gs = @benchmark ortho_gs($X)
@@ -615,10 +654,10 @@ begin
 	println("Ortho QR Time: ", mean(result_qr).time)
 end
 
-# ╔═╡ 2c682b30-f257-4094-a75e-81c1737b81dd
+# ╔═╡ 78d980de-68d6-46c8-a262-f235084963dc
 mean(result_qr).time / mean(result_gs_matrix).time
 
-# ╔═╡ 8bcc2985-c1cc-4790-8303-406c61f1cead
+# ╔═╡ def6770d-3b93-4023-afaf-ecffbd11ff51
 md"""
 We can see that Gram-Schmidt is approximately 3 times faster compared to QR.
 """
@@ -628,30 +667,33 @@ md"""
 **(b)** Motivated by the speedup of Gram-Schmidt methods we want to employ `ortho_gs` and `ortho_gs_matrix` within our `lobpcg`. This can be achieved by setting the `ortho` keyword argument appropriately (e.g. `lobpcg(...; ortho=ortho_gs)`). Focus on computing the $4$ smallest eigenpairs of the testproblem `Htest()` to `tol=1e-8` --- using again its factorised form as a preconditioner.
 """
 
+# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
+# ╠═╡ disabled = true
+#=╠═╡
+Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+  ╠═╡ =#
+
 # ╔═╡ 2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 md"""
 What do you notice with the Gram-Schmidt-based orthogonalisation? Do we win something using this faster technique? Plot the convergence history of the largest eigenpair when using `ortho_qr` and `ortho_gs`. Try to find an explanaition for the observed behaviour. *Hint:* Part (c) might be helpful.
 """
 
-# ╔═╡ 9c55be21-4168-49bd-bfc0-bfeb241d1dde
+# ╔═╡ 2ed26679-3bfd-41b8-a447-89447d8a3186
 md"""
 **Answer:**
 """
 
-# ╔═╡ 272b2df8-a19f-4be8-979d-68a4224816fe
+# ╔═╡ 44131ba5-19e7-4182-8435-7e6f78df6639
 begin
 	Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
 	X1 = randn(eltype(Htest()), size(Htest(), 2), 4)
 	precond_inv = InverseMap(factorize(Htest()))
 end
 
-# ╔═╡ 244679dc-2ae6-4dee-b4e9-05bdec67b202
+# ╔═╡ 35a8746f-ee32-4ced-9b42-28b4212a738d
 md"""
 Analyzing the plots we can see that while Gram-Schmidt is faster computationally, it may have numerical stability issues compared to QR orthogonalization. 
 """
-
-# ╔═╡ a7955af9-0c88-4bcd-94e2-903e7dc0027c
-
 
 # ╔═╡ 92f4c1fe-010b-429c-a83f-23bf21daae2b
 md"""
@@ -661,14 +703,12 @@ md"""
 # ╔═╡ 92cf9a34-51ac-4767-94d2-f5013b6f1a94
 testmatrix(m; T=Float64, N=1000, M=10) = abs.(randn(T, N, M)) .^ T(m)
 
-# ╔═╡ 8c35343c-546c-4d30-b59b-4d66ae67fe61
+# ╔═╡ ff592eef-e31b-4865-bfb0-19a283de20c4
 md"""
 is a good way of generating challenging benchmark matrices for orthogonalisation routines. *Hint:* Plot the numerical range using the `extrema` function for values $m \in (0, 1)$. 
-
-**Answer:**
 """
 
-# ╔═╡ ff837238-03cd-4fdb-bd57-24cf0d60643b
+# ╔═╡ 478f93fc-f4ac-499b-948b-32ba735e933f
 begin
 	msteps = 0:0.01:1
 	ranges = [extrema(testmatrix(m)) for m in msteps]
@@ -684,31 +724,27 @@ begin
 	plot!(msteps, upper_bounds, label="Upper bounds")
 end
 
-# ╔═╡ b3fb67b3-ac8f-4836-b795-252d08bb39ec
+# ╔═╡ 81c442fd-1153-43d4-a19e-551d7240ddb5
 md"""
-If vectors are very similar, especially when their entries are within the same numerical range, numerical errors may accumulate, leading to loss of orthogonality or other stability issues. In such cases, using Gram-Schmidt orthogonalization methods might be problematic due to the ill-conditioning of the vectors.
+If the vectors are very similar, especially when their entries are within the same numerical range, numerical errors may accumulate, leading to loss of orthogonality or other stability issues. In such cases, using Gram-Schmidt orthogonalization methods might be problematic due to the ill-conditioning of the vectors.
 
 The `testmatrix` function is useful for creating matrices that test orthogonalization routines, helping to find numerical stability problems and assess the strength of the implemented algorithms.
-
-
-
-
 """
 
-# ╔═╡ ff592eef-e31b-4865-bfb0-19a283de20c4
+# ╔═╡ b41e3340-19b7-44f2-896f-72f5d8436b2c
 md"""
 **(d)** Test `ortho_gs` and `ortho_qr` for various values of $m$, i.e. check the orthonormality error `maximum(abs, X'*X - I)` after having orthogonalised test matrices with various values of $m$. Plot this error for both methods versus $m$ in the range $10^{-16}$ to $1$. What do you notice in particular for the challenging cases ?
 """
 
-# ╔═╡ f57a5576-345e-4012-aa96-fd84f9bf4e7f
+# ╔═╡ 44302ad1-bac9-46dc-b0f0-3759014a7d25
 md"""
 **Answer:**
 """
 
-# ╔═╡ 3ffe6928-30e2-4142-8a34-e7874999c147
+# ╔═╡ d785d381-21fd-4794-ac06-0381db035b77
 orthonormality_error(X) = maximum(abs, X' * X - I)
 
-# ╔═╡ e8619c00-0ee9-4af3-bb4b-5458cdba0f31
+# ╔═╡ a26da64e-054f-4740-afec-ecf049a5fa48
 md"""
 In challenging cases, we can observe higher orthonormality errors that indicate the difficulty of maintaining orthonormality using Gram-Schmidt procedure when the entries of the vectors are within the same small numerical range.
 """
@@ -719,12 +755,12 @@ md"""
 *Hint:* Compared to `ortho_gs` you don't have to change much.
 """
 
-# ╔═╡ 9895d1a2-5019-405e-966b-105dce803aa1
+# ╔═╡ 08434ed2-9761-43df-a9d3-b9ffc14ec284
 md"""
 **Answer:**
 """
 
-# ╔═╡ d7259bc9-8b9a-47a6-85af-dfa06eb94849
+# ╔═╡ 1043482c-3471-44bf-8839-88bec51e1f71
 @views function ortho_mgs(X)
 	Xnew = copy(X)
 	for i in 1:size(X, 2)
@@ -736,7 +772,7 @@ md"""
 	Xnew
 end
 
-# ╔═╡ b0853a92-4975-4295-ba5e-692086b0993f
+# ╔═╡ 70257d18-8494-46e7-b5cf-56b42a1b2f0d
 begin
 	res_qr = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_qr, tol=1e-8, maxiter = 30, verbose=false)
 	res_gs = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_gs, tol=1e-8, maxiter = 30, verbose=false)
@@ -751,7 +787,7 @@ begin
 	plot!(rnorm_mgs, label="Modified Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
 end
 
-# ╔═╡ 17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
+# ╔═╡ b56193b9-ecae-4bb2-be34-c3a9c9c08419
 md"""
 Analyzing the plots above, we can see that the modified Gram-Schmidt procedure doesn't give high orthonormality errors and on the tested examples is as good as QR method. On the other hand, MGS doesn't show a big improvement within our lobpcg algorithm.
 """
@@ -775,7 +811,7 @@ md"""
 Given an arbitrary $X \in \mathbb{R}^{n \times p}$ and Cholesky factors $L$ such that $X^H X = L L^H$, prove that $X \left(L^H)^{-1}\right) \in \mathbb{R}^{n \times p}$ is indeed orthogonal.
 """
 
-# ╔═╡ 110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
+# ╔═╡ 6d611640-f656-426c-8256-5095effa60d7
 md"""
 **Proof:**
 
@@ -811,19 +847,19 @@ md"""
 **(b)** Look up how the `cholesky` function works in Julia and use it to code up an `ortho_cholesky(X)`, which orthonormalises the columns of the passed matrix `X`. Benchmark `ortho_cholesky` on a `X = randn(1000, 10)` testmatrix and compare the timings to `ortho_qr` and `ortho_gs_matrix`. Can you explain the appealing feature of this method?
 """
 
-# ╔═╡ 97dce896-28bd-4e74-8ba9-cc9ff3b181c2
+# ╔═╡ 6e4af0c2-596c-47a1-9c7d-87a5a403950e
 md"""
 **Answer:**
 """
 
-# ╔═╡ d2049d09-c25a-4531-9c1d-fea56287ab5b
+# ╔═╡ 9af91883-6930-4567-8f4a-dbd3c82d478b
 function ortho_cholesky(X)
     L = cholesky(X' * X).L
     Xnew = X / L'
 	return Xnew
 end
 
-# ╔═╡ 47151505-4564-4f24-a6a4-3102386c06b7
+# ╔═╡ 984f04a3-7112-4d0d-ba5b-647f66c6ae2e
 begin
 	Xmatrix = randn(1000, 10)
 	
@@ -836,37 +872,37 @@ begin
 	println("Ortho QR Time: ", mean(qr_res).time)
 end
 
-# ╔═╡ 5370f280-530f-490d-b625-e001d5592eb7
+# ╔═╡ 2bb7d04c-15e5-4c52-822d-a98b8dd25443
 md"""
 The Cholesky factorization method is computationally efficient since matrix $L$ is lower triangular and can be more stable because it doesn't accumulate errors across iterations but computes all vectors simultaneously.
 """
 
 # ╔═╡ 3c1849b8-6345-4cdf-875a-a32ba455516b
 md"""
-**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method fails for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
+**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method to fail for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
 """
 
-# ╔═╡ bbf0ee35-8793-4565-9237-6dac36f9fe00
+# ╔═╡ 200a0a73-eda6-4939-93fe-9a0c34ec50a1
 md"""
 **Answer:**
 """
 
-# ╔═╡ f0e13305-d26d-49d0-9cc7-f1b509bf8b71
+# ╔═╡ 19eb7840-08fe-4e38-b97c-e6d4540c4719
 ortho_cholesky(testmatrix(10^(-7)))
 
-# ╔═╡ 8fe22329-09f1-49d8-bea8-6fd7d78ced67
+# ╔═╡ be69ba3d-55b8-4e59-8ddb-e5621b773fa1
 let
 	testm = testmatrix(10^(-5))
 	eigvals(testm' * testm)
 end
 
-# ╔═╡ fb96d065-43a6-4e70-a20b-ac962fa38249
+# ╔═╡ dca0a26d-723d-47e5-a8ab-5555d872a048
 let
 	testm = testmatrix(10^(-8))
 	eigvals(testm' * testm)
 end
 
-# ╔═╡ 275aabe3-f065-4fd0-ad44-8a992951caff
+# ╔═╡ f797e23a-f607-4722-a2a6-3a5956f7a2b8
 md"""
 We can see that as $m$ gets too small a part of eigenvalues approaches numerical zero. In comparison with other methods, it shows the same performance as `orth_gs` before m gets too small resulting in an ill-conditioned or nearly singular matrix 
 $X^H X$ so that `orth_cholesky` fails.
@@ -877,7 +913,7 @@ md"""
 **(d)** To avoid the breakdown of cholesky-based orthogonalisation approaches, a typical trick is to apply the cholesky factorisation to $X^H X + β * I$ instead of $X^H X$, where $β > 0$ is a small constant. With the $L L^H$ factorisation at hand one then forms $\tilde{X} = X \left(L^H)^{-1}\right)$ as usual. $\tilde{X}$ is now not yet orthogonal, but its closer than $X$ is. A second application of (unshifted) `ortho_cholesky` to $\tilde{X}$ is then performed to finally obtain a matrix with orthonormal columns. Code up this procedure for $β=1$ as the function `ortho_shift_cholesky` and add it to the plot in Task 3 (d). You should again need to truncate the range of $m$ to avoid a `PosDefException`, but much smaller values for $m$ should be feasible. 
 """
 
-# ╔═╡ 1378a594-7106-490e-9175-e5532f3599fd
+# ╔═╡ f409efe3-5577-407e-a99f-3e76ce44f86a
 function ortho_shift_cholesky(X; β=1.0)
     L = cholesky(X' * X + β * I).L
     X_tilde = X / L'
@@ -885,7 +921,7 @@ function ortho_shift_cholesky(X; β=1.0)
     return X_tilde / L_tilde'
 end
 
-# ╔═╡ 3588e8e1-3966-4779-9ebc-dfcedc21bea0
+# ╔═╡ 380ef886-a6e6-407b-8a16-784567770c8e
 ortho_shift_cholesky(testmatrix(10^(-10)))
 
 # ╔═╡ baa15be1-4aaf-4789-95d6-c08c918cb245
@@ -896,7 +932,7 @@ md"""
 # ╔═╡ 5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 ortho_dftk(X) = DFTK.ortho!(copy(X)).X
 
-# ╔═╡ 4569f866-05e4-474d-899a-c68e000b656b
+# ╔═╡ 96046951-beb7-4f03-a696-3c881bf9d080
 begin
 	dftk_res = @benchmark ortho_dftk($Xmatrix)
 	println("DFTK.ortho! Time: ", mean(dftk_res).time)
@@ -920,13 +956,13 @@ md"""
 Code up such an orthogonalisation routine `ortho_svd` based on Julia's `svd` funciton. Look up its documentation to get more details. Benchmark `ortho_svd` on  `X = randn(1000, 10)` and add this function to  your plot of Task 3 (d).
 """
 
-# ╔═╡ c457eefe-7bd5-41d3-951d-3c0aa52b83b6
+# ╔═╡ 927c2ac2-09dd-466a-9878-868654b66e99
 function ortho_svd(X)
     U, _, _ = svd(X)
     return U
 end
 
-# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
+# ╔═╡ 95d9ea88-361d-4c77-9e04-cc82f4da9dc9
 begin
 	error_gs = Float64[]
 	error_mgs = Float64[]
@@ -967,7 +1003,7 @@ begin
 		push!(error_svd, orthonormality_error(svd_result))
 	end
 	
-	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
+	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10,yaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
 	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
 	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
 	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
@@ -977,10 +1013,10 @@ begin
 end
 
 
-# ╔═╡ d2fdffee-ab75-41e9-8723-8a9ce90b4331
+# ╔═╡ d04fa4f3-96df-4e8a-8d38-4c651a655a2b
 begin
 	svd_res = @benchmark ortho_svd($Xmatrix)
-	println("SVD Time: ", mean(svd_res).time)
+	println("SVD Time [ns]: ", mean(svd_res).time)
 end
 
 # ╔═╡ 49f347c3-0e77-4a1f-9bef-08a7e15b9149
@@ -989,8 +1025,10 @@ md"""
 With this in mind try to explain the recent popularity of cholesky-based approaches like `ortho_dftk` for othogonalising vectors. If no cholesky-based approach should be chosen (i.e. `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk` are out), which other approach provides in your opinion the best compromise between runtime and accuracy and why?
 """
 
-# ╔═╡ f88e8e6d-7734-44b3-affa-68179a721aa2
+# ╔═╡ 25ccfadc-d81c-4e77-b67d-11540e3f34b7
 md"""
+**Answer:**
+
 In general, Cholesky-based approach in comparison with other methods is computationally efficient as we can see by comparing the running times. It is also numerically stable for positive definite matrices as we observe from the plots above. However, when Cholesky-based approaches are not available, `ortho_qr` often provides a good compromise between runtime and accuracy among the other approaches. 
 """
 
@@ -1022,7 +1060,7 @@ In each run use the *the same* initial guess for each floating-point precision `
 From your experiments: Roughly at which residual norm is it advisable to switch from one precision to the other in order to avoid impacting the rate of convergence ?
 """
 
-# ╔═╡ b0c2622d-78b0-4fa9-887c-42455bacdda3
+# ╔═╡ f87e69fa-f235-4122-b11d-4d0d8ce90fff
 begin
 	H_f32 = Htest(Float32)
 	X_init = randn(size(H_f32, 2), 3)
@@ -1032,23 +1070,23 @@ begin
 
 end
 
-# ╔═╡ 50eda9d8-b120-46f0-86a2-cd5f1e4f2aa4
+# ╔═╡ 90ce0032-ef4b-4ec9-930d-3f1f70ab3018
 r_norms32 = last.( lobpcg(H_f32; X=Float32.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f32)), tol=1e-6, maxiter=100).residual_norms)
 
-# ╔═╡ 181c19fc-4e5b-4d95-b438-eea546f2ad1d
+# ╔═╡ b1801336-e0ea-46d3-9520-967ef7d7b48e
 r_norms64 = last.(lobpcg(H_f64; X=Float64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-12, maxiter=100).residual_norms)
 
-# ╔═╡ 7a098bcc-5f27-45d0-b2f4-9c7ec14c0d94
+# ╔═╡ b9320a33-246b-43f7-a86e-6b2944ca49b9
 r_normsd64 = last.(lobpcg(H_d64; X=Double64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-25, maxiter=100).residual_norms)
 
-# ╔═╡ a613f981-2ec7-422c-a461-473464bb5574
+# ╔═╡ 4c9d10ab-dd8e-44e3-8354-20c0281390cd
 begin
 	plot(r_norms32, label="Float32", yaxis=:log, ylabel="Residual Norm")
 	plot!(r_norms64, label="Float64", yticks=10.0 .^ (-27:2:2))
 	plot!(r_normsd64, label="Float64", xlabel="Number of iterations")
 end
 
-# ╔═╡ 667d77be-a743-4fdf-b99c-18845c37946d
+# ╔═╡ ecf25610-4385-4ede-812c-106d18ba73ba
 md"""
 As we can see from the plot, a good strategy would be to switch from one precision to the other at the moment when the residual norm stops decreasing significantly. In our case it would be:
 - from `Float32` to `Float64`: 1e-2;
@@ -1063,8 +1101,8 @@ In your implementation replace `tol32=XXX` by a sensible default value for `tol3
 Explain why you have to recompute the Hamiltonian with `T=Float64` instead of simply converting the `Float32` Hamiltonian. Is there a way to avoid computing the Hamiltonian twice ?
 """
 
-# ╔═╡ bd5a7a95-e45e-4d88-94bd-62339078ceef
-function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100, verbose=false)
+# ╔═╡ 0722bcc9-2dde-4289-8c7b-c6e3816281ff
+function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100, verbose=false)
     H_float32 = fd_hamiltonian(V, Nb, a; T=Float32)
     X_32 = randn(Float32, size(H_float32, 2), n_ep)
 
@@ -1078,10 +1116,10 @@ function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100, 
     return lobpcg_result_float64
 end
 
-# ╔═╡ edf470bf-809e-40cd-b032-a1bd55d295f1
-lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100,verbose=true)
+# ╔═╡ 6ae5e7c3-3aea-4c59-97ae-76b25dfe611b
+lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100)
 
-# ╔═╡ 2a51aaa4-e89a-4066-bf46-1b82176a11cf
+# ╔═╡ 49b6eed8-da2f-48cf-952a-7bdbd46e6469
 md"""
 Converting a matrix from `Float32` to `Float64`change the precision of individual elements but because all computation should be done in a specific format we need to recompute the Hamiltonian once again using `T=Float64`. A way could be to first, compute the Hamiltonian with `T=Float64` and then convert it to the Float32 Hamiltonian. 
 """
@@ -1112,7 +1150,7 @@ let
 	interval.(Float64, values)
 end
 
-# ╔═╡ 8dde28af-f1d5-4252-bbd1-22936a6a794e
+# ╔═╡ 0c9d5496-8e9a-4477-85d8-cb8dd490e509
 function fd_hamiltonian_interval(V, Nb, a)
     H_bfloat = fd_hamiltonian(V, Nb, a; T=BigFloat)
     
@@ -1128,7 +1166,7 @@ which gets the solution eigenpairs `λ` and `X` in `Float64`
 as returned in the named tuple of `solve_discretised` and computes their residual norms using interval arithmetic. The return value should be a vector of $n$ intervals if $n$ eigenpairs are passed to the function. Test your function on the result of `solve_discretised` for `v_chain`, `Nb = 1000`, `a = 4` and `n_ep=3`. You should obtain narrow intervals with upper and lower bounds around the value chosen for `tol`.
 """
 
-# ╔═╡ 8d6daaad-3c5a-400c-a680-53ce149d9a49
+# ╔═╡ 2603bd07-1ec5-4e26-bd8e-42a4f3856ee6
 function residual_norms_interval(V, λ, X, Nb, a)
     H_interval = fd_hamiltonian_interval(V, Nb, a)
 	residual_norms =  norm.(eachcol(H_interval * X - X * Diagonal(λ)))
@@ -1136,16 +1174,13 @@ function residual_norms_interval(V, λ, X, Nb, a)
     return residual_norms
 end
 
-# ╔═╡ 9985e9f4-eaa7-4bec-9976-1327f3dedbd0
-# H_interval = fd_hamiltonian_interval(v_chain, 1000, 4)
-
-# ╔═╡ 2ac303fd-9db3-4718-acfd-197f304c742a
+# ╔═╡ 5f55dc28-4d87-4096-ad18-b51903759abe
 begin
 	result = solve_discretised(v_chain, 1000, 4; n_ep=3)
 	residual_norms = residual_norms_interval(v_chain, result.λ, result.X, 1000, 4)
 end
 
-# ╔═╡ 8619e0da-e9ce-4661-8a5e-369ec49645b2
+# ╔═╡ 2467467f-568c-4355-bbfe-87212f76a975
 md"""
 As we can see, this gives us narrow intervals around the value chosen for tol.
 """
@@ -1182,7 +1217,7 @@ md"""
 ----------------------
 """
 
-# ╔═╡ 157a3634-c42e-4bf4-a183-dd9d79d63c45
+# ╔═╡ 01ac5df4-9be7-4728-942e-642a15ca7f32
 function get_upper_bound(result, residual_norms)
 
 	δ1 = max(0, abs(result.λ[1] - result.λ[2]) - residual_norms[2].hi)
@@ -1191,20 +1226,20 @@ function get_upper_bound(result, residual_norms)
 	err_KT_λ1 = residual_norms[1].hi .^2 ./ δ1
 end
 
-# ╔═╡ e470bd9b-566b-40e4-b5aa-dd3a42817dc8
+# ╔═╡ eb5cfa7b-589e-4ac8-ad45-268eb2d9c590
 guaranteed_upper_bound = [interval(result.λ[i]).hi for i in 1:3]
 
-# ╔═╡ 16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
+# ╔═╡ 71a45639-50df-4810-9808-0e46f3684614
 alg_arith_ub = get_upper_bound(result, residual_norms)
 
-# ╔═╡ 0c803ce1-efcc-44e8-bcb1-a417a55cc604
+# ╔═╡ 486fe36e-bfab-44e2-86af-dce3e3becf69
 # estimate for the arithmetic error in the first eigenvalue
 arithm_upper_bound = residual_norms[1].hi - residual_norms[1].lo
 
-# ╔═╡ 8c07227d-4dcc-414c-b542-b2de090e87ae
+# ╔═╡ 2572eb08-8baa-41e6-9a2b-db3d4ad05ea2
 alg_upper_bound = alg_arith_ub - arithm_upper_bound
 
-# ╔═╡ ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
+# ╔═╡ 3d9223bd-7f1a-48f8-9363-6adea3582f54
 md"""
 From comparing arithmatic and algorithmic errors it's hard to say clearly which of them dominates. In some examples, we noticed that they both contribute more or less equally.
 """
@@ -1236,91 +1271,82 @@ md"""
 *Hint:* A good strategy is to first select a reasonable value for $N_b$, then keep $h = \frac{2a}{N_b - 1}$ fixed and converged wrt. $a$, then use that value for $a$ to converge wrt. $N_b$ (by decreasing $h$), then repeat until the desired tolerance is found.
 """
 
-# ╔═╡ e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
+# ╔═╡ 3e4239a6-3a2c-4e2d-b81f-6459eaa86b67
 begin
-	min_ϵ = 10
-	found_a = 0
-	h_fixed = 0.001
-	
-	for a in collect(0.5:0.2:10)
-		Nb = round(Int, 2a / h_fixed + 1)
-		ε_CL = solve_discretised(v_chain, Nb, Float64(a); n_ep=3).λ[1]
-		ε_QM = solve_discretised(v_atom, Nb, Float64(a); n_ep=3).λ[1]
+	fixed_a = 4
+	found_Nb = 0
+	prev = 1
+	for Nb in collect(500:200:2600)
+		ε_CL = solve_discretised(v_chain, Nb, fixed_a; n_ep=3).λ[1]
+		ε_QM = solve_discretised(v_atom, Nb, fixed_a; n_ep=3).λ[1]
 	
 		Δε = ε_CL - ε_QM
-		if abs(Δε) < min_ϵ
-			min_ϵ = Δε
-			found_a = a
+		println(Δε)
+		if abs(Δε - prev) < 1e-6
+			found_Nb = Nb
+			break
+		else
+			prev = Δε
 		end
-	end
-	final_min_ϵ1 = min_ϵ
-end
-
-# ╔═╡ 2999f76b-8c6c-4cf0-abbe-7cc876c20b87
-final_min_ϵ1
-
-# ╔═╡ 662db386-54bf-476e-ae35-d44e3a02638d
-found_a
-
-# ╔═╡ 7a05482e-618d-4f5b-b67e-b8b6c590ec0b
-round(Int, 2found_a / h_fixed + 1)
-
-# ╔═╡ c46f0b42-0095-4549-922d-9dc6a0075fc9
-begin
-	final_min_ϵ2 = final_min_ϵ1
-	found_Nb = round(Int, 2found_a / h_fixed + 1)
-	for N in collect(found_Nb:5:1000)
-		ε_CL = solve_discretised(v_chain, N, found_a; n_ep=3).λ[1]
-		ε_QM = solve_discretised(v_atom, N, found_a; n_ep=3).λ[1]
-	
-		Δε = ε_CL - ε_QM
-		if abs(Δε) < final_min_ϵ2
-			final_min_ϵ2 = Δε
-			found_Nb = N
-		end
+		
 	end
 end
 
-# ╔═╡ 8d3ad605-f732-4176-ae72-2643b3566190
+# ╔═╡ 6c73d339-c344-4f10-8e90-5a040b4c1099
 found_Nb
 
-# ╔═╡ f107a1b6-70ca-477f-a64c-984d2200151a
-final_min_ϵ2
-
-# ╔═╡ 0b09a9f1-1bc0-4d24-94b5-92775313142e
+# ╔═╡ 8ccccd90-6eaa-4989-b707-4cb72ef5ef6a
 begin
-	ε_CL = solve_discretised(v_chain, 800, found_a; n_ep=3).λ[1]
-	ε_QM = solve_discretised(v_atom, 800, found_a; n_ep=3).λ[1]
-	println(ε_CL - ε_QM)
+	found_a = 4
+	local prev = 1
+	for a in collect(4:1:10)
+		ε_CL = solve_discretised(v_chain, found_Nb, a; n_ep=3).λ[1]
+		ε_QM = solve_discretised(v_atom, found_Nb, a; n_ep=3).λ[1]
 	
+		Δε = ε_CL - ε_QM
+		println(Δε)
+		if abs(Δε - prev) < 1e-6
+			found_a = a
+			break
+		else
+			prev = Δε
+		end
+	end
 end
 
-# ╔═╡ 7f3b3187-e059-4a08-ba2c-94e5a72b8af6
-# ╠═╡ disabled = true
-#=╠═╡
+# ╔═╡ b47068b5-f33c-42bb-8a32-4a3884d215de
+found_Nb, found_a
 
-  ╠═╡ =#
+# ╔═╡ 489ff1ca-2b4c-46d9-9e2b-3fde6367e303
+h_found = 2found_a/(found_Nb - 1)
+
+# ╔═╡ c51733ca-e3f0-4d6d-902f-f2efc8b6bcaa
+begin
+	ε_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3).λ[1]
+	ε_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3).λ[1]
+	println(ε_CL - ε_QM)
+end
 
 # ╔═╡ a18370bd-e054-4fe5-840a-1638ad4fbca2
 md"""
 **(b)** Employ the Kato-Temple bound employed in Task 7 (c) to verify that the combined algorithm and arithmetic error of $Δε$ is less than the $3$ digits of convergence, i.e. that the algorithm and arithmetic error can be neglected.
 """
 
-# ╔═╡ b7ca310f-6bf1-4f80-93d8-7942b8cdf9d9
+# ╔═╡ 607f6521-9a3d-45a0-ab7b-bc88941534dd
 begin
 	result_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3)
 	residual_norms_CL = residual_norms_interval(v_chain, result_CL.λ, result_CL.X, found_Nb, found_a)
 	upper_bound_CL = get_upper_bound(result_CL, residual_norms_CL)
 end
 
-# ╔═╡ 03abecb0-8fe6-413d-9e77-e31a84504ba4
+# ╔═╡ 9ae0dccf-9282-4813-9ab2-9c63c901039e
 begin
 	result_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3)
 	residual_norms_QM = residual_norms_interval(v_atom, result_QM.λ, result_QM.X, found_Nb, found_a)
 	upper_bound_QM = get_upper_bound(result_QM, residual_norms_QM)
 end
 
-# ╔═╡ 56284925-4a6b-4bfe-bf90-31f38209cfb1
+# ╔═╡ 5e43e466-728b-49da-a2da-7c9575859c75
 result_CL.λ[1] - result_QM.λ[1]
 
 # ╔═╡ e826fee5-8fe2-4d77-a94f-24ff976a3e1f
@@ -1347,7 +1373,6 @@ end
 let
 	plot( v_extended_chain(1), xlims=(-7, 7), label="Mtilde = 1")
 	plot!(v_extended_chain(2), label="Mtilde = 2")
-	plot!(v_extended_chain(4), label="Mtilde = 4")
 end
 
 # ╔═╡ acbddbfc-ba95-4f2c-a611-9a785ee5978d
@@ -1361,10 +1386,7 @@ The numerical scheme to achieve this needs a little care as solving the discreti
 *Extra hint:* How many times do you need to solve (CL) ? 
 """
 
-# ╔═╡ d412003e-12b7-4a9f-936c-7b4ca60a98b4
-v_extended_chain(1)
-
-# ╔═╡ bb1eeb82-a97e-400a-96a0-e95fccdf1a83
+# ╔═╡ 43c9a413-7ec0-470a-a2df-9fa6d59ae4cc
 begin
 	M = 50
 	CL = solve_discretised(v_extended_chain(M), found_Nb, found_a; n_ep=3).λ[1]
@@ -1373,16 +1395,11 @@ begin
 	tun_energy = CL - QM
 end
 
-# ╔═╡ 5be79266-6661-4b7f-b9dc-ba91b6651e7c
-md"""
-By changing the value of $\widetilde{M}$ we can see that tunneling energy is converging, in our case to -0.00042.
-"""
-
-# ╔═╡ 21a3d94b-7145-4c47-8327-92a0a7a241d1
-function solve_discretised_QM(V, Nb, a; X_32=randn(Float32, size(H_float32, 2), n_ep), n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100, verbose=false)
+# ╔═╡ 95c8b18a-b776-418b-b175-368c20052dc5
+function solve_discretised_QM(V, Nb, a; n_ep=3, X_32=randn(Float32, Nb, n_ep), tol32=1e-2, tol=1e-6, maxiter=100, verbose=false)
     H_float32 = fd_hamiltonian(V, Nb, a; T=Float32)
 
-    lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose=verbose, maxiter=maxiter, Pinv=InverseMap(factorize(H_float32)));
+    lobpcg_result_float32 = lobpcg(H_float32; X=Float32.(X_32), tol=tol32, verbose=verbose, maxiter=maxiter, Pinv=InverseMap(factorize(H_float32)));
 	
     H_float64 = fd_hamiltonian(V, Nb, a; T=Float64)
     X_64 = Float64.(lobpcg_result_float32.X) 
@@ -1392,12 +1409,46 @@ function solve_discretised_QM(V, Nb, a; X_32=randn(Float32, size(H_float32, 2), 
     return lobpcg_result_float64
 end
 
-# ╔═╡ aec43f88-e9d7-4528-8e3e-41ce46ce9775
-X_init = solve_discretised_QMv_extended_chain(M), found_Nb, found_a; n_ep=3; X_32=randn(Float32, size(H_float32, 2))).X
+# ╔═╡ 0b2d4572-84a7-40c7-a401-3adc3c73b7a8
+begin
+	t_energy = Float64[]
+	m = 1
+	local a = 2m + 4
+	local Nb = round(Int, 2a/h_found) + 1
 
-for M_tilda in 2:1:20
+	qm_res = solve_discretised_QM(v_extended_chain(m), Nb, a; n_ep=3)
 	
+	X_prev = qm_res.X
+	
+	for m in 2:1:50
+		a = 2m + 4
+		Nb = round(Int, 2a/h_found) + 1
+				
+		noise = 0.01 * randn(size(X_prev))
+		X_prev = X_prev + noise
+
+		n = round(Int, 0.5 * (Nb - size(X_prev)[1]))
+		padding = zeros(n, 3)
+		X_in_guess = vcat(padding, X_prev, padding)
+		CL = solve_discretised_QM(v_extended_chain(m), Nb, a; X_32=Float32.(X_in_guess), n_ep=3).λ[1]
+		QM = solve_discretised(v_atom, Nb, a; n_ep=3).λ[1]
+	
+		push!(t_energy, CL - QM)
+	end
 end
+
+# ╔═╡ 4420bde6-eb5a-4bca-87b4-236cb591d3e6
+plot(t_energy, label="Tunneling energy")
+
+# ╔═╡ 2f09a456-feb7-49d7-bd2f-76a52897e810
+t_energy[end]
+
+# ╔═╡ 07605283-d22b-4f0d-81f5-6aacf7de6f83
+md"""
+By changing the value of $\widetilde{M}$ we can see that tunneling energy is converging, in our case to -1.65.
+
+In optimization procedures such as lobpcg, there is a possibility that the algorithm will converge to a local minimum if the initial guess is near a stationary point. Adding small random noise helps the algorithm move in different directions and not get stuck in local minima.
+"""
 
 # ╔═╡ 39a08d03-9d18-4346-a93c-86adb85811a1
 md"""
@@ -1413,13 +1464,41 @@ Some questions you should address:
 - Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?
 """
 
-# ╔═╡ bfe3473b-edc8-4b38-84a6-9d990ce90ad2
+# ╔═╡ 06b6be7a-1d65-49fd-8217-f95ea11baa67
 md"""
-- 3, 4, 5, 6, 7, 8
-- to do what anyone prefers to do
+**Olivier**
+
+- _Which tasks and subtasks ((a), (b), etc.) of the project did you mostly work on ?_
+3, 4, 5, 6, 7, 8
+
 - Mostly
 - Doing mathematical proofs or coding
-- 
+- Physics-related questions
+
+
+- _How did you decide within the group to distribute the workload as such ?_
+to do what anyone prefers to do.
+
+- _In your opinion did each group member contribute equally to the project ?_
+On top of doing her parts, Anna has done more work because she helped me (re)write my parts to have cleaner code and checked that everything made sense Whereas I just re-read what she had done without changing much (maybe a bit on the plots).
+
+- _Where could your specific expertise and background from your prior studies contribute most to the project and the exercises we did earlier in the semester?_
+To be honest I am not sure anything we have seen in the mandatory material science background gave me an edge over someone that studied math/ computational science like Anna did, maybe on the solid-states physics question in task 1?   
+
+- _Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?_
+It was interesting to work with Anna because she has a lot more experience so I can take what she codes as an example to write cleaner code. I also think her mathematical background made her more rigorous than what I am usually used to working with people from engineering.  
+
+
+
+
+
+
+
+
+
+
+
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -3401,6 +3480,9 @@ version = "1.4.1+1"
 # ╠═2cd96b11-41e9-4f37-a509-1c9f80e68159
 # ╟─4db84a39-89f2-449e-a340-4a8012a71017
 # ╠═e28a9c9c-9efd-473a-9ef5-9ec37273ce36
+# ╟─b7673185-8f01-4332-b8d4-abde2ad62700
+# ╠═ae1e777a-fe2b-4ea6-9ecb-240698e54608
+# ╟─cb360789-42b1-451c-a89e-4fcdd21d964c
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
@@ -3422,118 +3504,115 @@ version = "1.4.1+1"
 # ╟─3246102a-29c2-47a8-8cb6-2215447c655e
 # ╠═468e1424-9204-4ea7-996d-c18747d6ed59
 # ╟─9532eabd-8888-4054-be04-136916bfb2ec
-# ╠═c4517741-dd2f-4cbc-a0b1-75f3b9cd7060
-# ╠═9b66f88c-667f-45bc-9d54-8c97966edd01
-# ╠═2c682b30-f257-4094-a75e-81c1737b81dd
-# ╟─8bcc2985-c1cc-4790-8303-406c61f1cead
+# ╠═5eca2aaa-ff33-4dce-bd12-f3dfae42191a
+# ╠═53d14a45-8347-4a22-8b24-161a9e8d46b7
+# ╠═78d980de-68d6-46c8-a262-f235084963dc
+# ╠═def6770d-3b93-4023-afaf-ecffbd11ff51
 # ╟─d1b1ee12-479c-4b46-b008-30be3f3edfec
+# ╠═f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╟─2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
-# ╟─9c55be21-4168-49bd-bfc0-bfeb241d1dde
-# ╠═272b2df8-a19f-4be8-979d-68a4224816fe
-# ╠═b0853a92-4975-4295-ba5e-692086b0993f
-# ╟─244679dc-2ae6-4dee-b4e9-05bdec67b202
-# ╠═a7955af9-0c88-4bcd-94e2-903e7dc0027c
+# ╟─2ed26679-3bfd-41b8-a447-89447d8a3186
+# ╠═44131ba5-19e7-4182-8435-7e6f78df6639
+# ╠═70257d18-8494-46e7-b5cf-56b42a1b2f0d
+# ╠═35a8746f-ee32-4ced-9b42-28b4212a738d
 # ╟─92f4c1fe-010b-429c-a83f-23bf21daae2b
 # ╠═92cf9a34-51ac-4767-94d2-f5013b6f1a94
-# ╟─8c35343c-546c-4d30-b59b-4d66ae67fe61
-# ╠═ff837238-03cd-4fdb-bd57-24cf0d60643b
-# ╟─b3fb67b3-ac8f-4836-b795-252d08bb39ec
-# ╟─ff592eef-e31b-4865-bfb0-19a283de20c4
-# ╟─f57a5576-345e-4012-aa96-fd84f9bf4e7f
-# ╠═3ffe6928-30e2-4142-8a34-e7874999c147
-# ╠═8df30591-c27c-449a-8d2f-361db4a8153b
-# ╟─e8619c00-0ee9-4af3-bb4b-5458cdba0f31
+# ╠═ff592eef-e31b-4865-bfb0-19a283de20c4
+# ╠═478f93fc-f4ac-499b-948b-32ba735e933f
+# ╠═81c442fd-1153-43d4-a19e-551d7240ddb5
+# ╠═b41e3340-19b7-44f2-896f-72f5d8436b2c
+# ╠═44302ad1-bac9-46dc-b0f0-3759014a7d25
+# ╠═d785d381-21fd-4794-ac06-0381db035b77
+# ╠═95d9ea88-361d-4c77-9e04-cc82f4da9dc9
+# ╟─a26da64e-054f-4740-afec-ecf049a5fa48
 # ╟─affd0b8f-2b57-40d9-87e1-43de738c0778
-# ╟─9895d1a2-5019-405e-966b-105dce803aa1
-# ╠═d7259bc9-8b9a-47a6-85af-dfa06eb94849
-# ╟─17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
+# ╟─08434ed2-9761-43df-a9d3-b9ffc14ec284
+# ╠═1043482c-3471-44bf-8839-88bec51e1f71
+# ╟─b56193b9-ecae-4bb2-be34-c3a9c9c08419
 # ╟─6d49ed54-f809-470f-83c9-65e40871db51
 # ╟─dfd18ddd-a9e4-460a-97c4-07afbb83f4f2
 # ╟─a6f782cb-27b3-45a3-8b0e-23681406abef
-# ╟─110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
+# ╟─6d611640-f656-426c-8256-5095effa60d7
 # ╟─50e2baea-317d-43d5-82a2-df63936ddefd
-# ╟─97dce896-28bd-4e74-8ba9-cc9ff3b181c2
-# ╠═d2049d09-c25a-4531-9c1d-fea56287ab5b
-# ╠═47151505-4564-4f24-a6a4-3102386c06b7
-# ╟─5370f280-530f-490d-b625-e001d5592eb7
+# ╟─6e4af0c2-596c-47a1-9c7d-87a5a403950e
+# ╠═9af91883-6930-4567-8f4a-dbd3c82d478b
+# ╠═984f04a3-7112-4d0d-ba5b-647f66c6ae2e
+# ╟─2bb7d04c-15e5-4c52-822d-a98b8dd25443
 # ╟─3c1849b8-6345-4cdf-875a-a32ba455516b
-# ╟─bbf0ee35-8793-4565-9237-6dac36f9fe00
-# ╠═f0e13305-d26d-49d0-9cc7-f1b509bf8b71
-# ╠═8fe22329-09f1-49d8-bea8-6fd7d78ced67
-# ╠═fb96d065-43a6-4e70-a20b-ac962fa38249
-# ╟─275aabe3-f065-4fd0-ad44-8a992951caff
+# ╟─200a0a73-eda6-4939-93fe-9a0c34ec50a1
+# ╠═19eb7840-08fe-4e38-b97c-e6d4540c4719
+# ╠═be69ba3d-55b8-4e59-8ddb-e5621b773fa1
+# ╠═dca0a26d-723d-47e5-a8ab-5555d872a048
+# ╟─f797e23a-f607-4722-a2a6-3a5956f7a2b8
 # ╟─eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
-# ╠═1378a594-7106-490e-9175-e5532f3599fd
-# ╠═3588e8e1-3966-4779-9ebc-dfcedc21bea0
+# ╠═f409efe3-5577-407e-a99f-3e76ce44f86a
+# ╠═380ef886-a6e6-407b-8a16-784567770c8e
+# ╠═96046951-beb7-4f03-a696-3c881bf9d080
 # ╟─baa15be1-4aaf-4789-95d6-c08c918cb245
 # ╠═5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
-# ╠═4569f866-05e4-474d-899a-c68e000b656b
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
-# ╠═c457eefe-7bd5-41d3-951d-3c0aa52b83b6
-# ╠═d2fdffee-ab75-41e9-8723-8a9ce90b4331
+# ╠═927c2ac2-09dd-466a-9878-868654b66e99
+# ╠═d04fa4f3-96df-4e8a-8d38-4c651a655a2b
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
-# ╟─f88e8e6d-7734-44b3-affa-68179a721aa2
+# ╟─25ccfadc-d81c-4e77-b67d-11540e3f34b7
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
-# ╠═b0c2622d-78b0-4fa9-887c-42455bacdda3
-# ╠═50eda9d8-b120-46f0-86a2-cd5f1e4f2aa4
-# ╠═181c19fc-4e5b-4d95-b438-eea546f2ad1d
-# ╠═7a098bcc-5f27-45d0-b2f4-9c7ec14c0d94
-# ╠═a613f981-2ec7-422c-a461-473464bb5574
-# ╟─667d77be-a743-4fdf-b99c-18845c37946d
+# ╠═f87e69fa-f235-4122-b11d-4d0d8ce90fff
+# ╠═90ce0032-ef4b-4ec9-930d-3f1f70ab3018
+# ╠═b1801336-e0ea-46d3-9520-967ef7d7b48e
+# ╠═b9320a33-246b-43f7-a86e-6b2944ca49b9
+# ╠═4c9d10ab-dd8e-44e3-8354-20c0281390cd
+# ╠═ecf25610-4385-4ede-812c-106d18ba73ba
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
-# ╠═bd5a7a95-e45e-4d88-94bd-62339078ceef
-# ╠═edf470bf-809e-40cd-b032-a1bd55d295f1
-# ╟─2a51aaa4-e89a-4066-bf46-1b82176a11cf
+# ╠═0722bcc9-2dde-4289-8c7b-c6e3816281ff
+# ╠═6ae5e7c3-3aea-4c59-97ae-76b25dfe611b
+# ╟─49b6eed8-da2f-48cf-952a-7bdbd46e6469
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
-# ╠═8dde28af-f1d5-4252-bbd1-22936a6a794e
+# ╠═0c9d5496-8e9a-4477-85d8-cb8dd490e509
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
-# ╠═8d6daaad-3c5a-400c-a680-53ce149d9a49
-# ╠═9985e9f4-eaa7-4bec-9976-1327f3dedbd0
-# ╠═2ac303fd-9db3-4718-acfd-197f304c742a
-# ╠═8619e0da-e9ce-4661-8a5e-369ec49645b2
+# ╠═2603bd07-1ec5-4e26-bd8e-42a4f3856ee6
+# ╠═5f55dc28-4d87-4096-ad18-b51903759abe
+# ╟─2467467f-568c-4355-bbfe-87212f76a975
 # ╟─46578541-6513-4236-bcdc-2eba4b821ca0
 # ╠═232061e4-da8c-42d6-9801-23e724d7502c
 # ╟─df7d3c42-4956-4b36-a9bc-e8fb0f0ce2f1
 # ╠═bf63a030-eba0-420e-9209-e05016f3eca3
 # ╟─e0e06f34-9d43-442a-82ca-fe0f7501511f
-# ╠═157a3634-c42e-4bf4-a183-dd9d79d63c45
-# ╠═e470bd9b-566b-40e4-b5aa-dd3a42817dc8
-# ╠═16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
-# ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
-# ╠═8c07227d-4dcc-414c-b542-b2de090e87ae
-# ╠═ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
+# ╠═01ac5df4-9be7-4728-942e-642a15ca7f32
+# ╠═eb5cfa7b-589e-4ac8-ad45-268eb2d9c590
+# ╠═71a45639-50df-4810-9808-0e46f3684614
+# ╠═486fe36e-bfab-44e2-86af-dce3e3becf69
+# ╠═2572eb08-8baa-41e6-9a2b-db3d4ad05ea2
+# ╟─3d9223bd-7f1a-48f8-9363-6adea3582f54
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
 # ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
-# ╠═e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
-# ╠═2999f76b-8c6c-4cf0-abbe-7cc876c20b87
-# ╠═662db386-54bf-476e-ae35-d44e3a02638d
-# ╠═7a05482e-618d-4f5b-b67e-b8b6c590ec0b
-# ╠═c46f0b42-0095-4549-922d-9dc6a0075fc9
-# ╠═8d3ad605-f732-4176-ae72-2643b3566190
-# ╠═f107a1b6-70ca-477f-a64c-984d2200151a
-# ╠═0b09a9f1-1bc0-4d24-94b5-92775313142e
-# ╠═7f3b3187-e059-4a08-ba2c-94e5a72b8af6
+# ╠═3e4239a6-3a2c-4e2d-b81f-6459eaa86b67
+# ╠═6c73d339-c344-4f10-8e90-5a040b4c1099
+# ╠═8ccccd90-6eaa-4989-b707-4cb72ef5ef6a
+# ╠═b47068b5-f33c-42bb-8a32-4a3884d215de
+# ╠═489ff1ca-2b4c-46d9-9e2b-3fde6367e303
+# ╠═c51733ca-e3f0-4d6d-902f-f2efc8b6bcaa
 # ╟─a18370bd-e054-4fe5-840a-1638ad4fbca2
-# ╠═b7ca310f-6bf1-4f80-93d8-7942b8cdf9d9
-# ╠═03abecb0-8fe6-413d-9e77-e31a84504ba4
-# ╠═56284925-4a6b-4bfe-bf90-31f38209cfb1
+# ╠═607f6521-9a3d-45a0-ab7b-bc88941534dd
+# ╠═9ae0dccf-9282-4813-9ab2-9c63c901039e
+# ╠═5e43e466-728b-49da-a2da-7c9575859c75
 # ╟─e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 # ╠═27853643-8358-4d84-a8bd-efc3f415e540
 # ╠═b15e519a-cb5f-4bb7-b105-3b8ae704e489
 # ╟─acbddbfc-ba95-4f2c-a611-9a785ee5978d
-# ╠═d412003e-12b7-4a9f-936c-7b4ca60a98b4
-# ╠═bb1eeb82-a97e-400a-96a0-e95fccdf1a83
-# ╠═5be79266-6661-4b7f-b9dc-ba91b6651e7c
-# ╠═21a3d94b-7145-4c47-8327-92a0a7a241d1
-# ╠═aec43f88-e9d7-4528-8e3e-41ce46ce9775
+# ╠═43c9a413-7ec0-470a-a2df-9fa6d59ae4cc
+# ╠═95c8b18a-b776-418b-b175-368c20052dc5
+# ╠═0b2d4572-84a7-40c7-a401-3adc3c73b7a8
+# ╠═4420bde6-eb5a-4bca-87b4-236cb591d3e6
+# ╠═2f09a456-feb7-49d7-bd2f-76a52897e810
+# ╟─07605283-d22b-4f0d-81f5-6aacf7de6f83
 # ╟─39a08d03-9d18-4346-a93c-86adb85811a1
-# ╠═bfe3473b-edc8-4b38-84a6-9d990ce90ad2
+# ╠═06b6be7a-1d65-49fd-8217-f95ea11baa67
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
