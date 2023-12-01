@@ -1259,6 +1259,38 @@ Some questions you should address:
 - Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?
 """
 
+# ╔═╡ 06b6be7a-1d65-49fd-8217-f95ea11baa67
+md"""
+**Olivier**
+
+- _Which tasks and subtasks ((a), (b), etc.) of the project did you mostly work on ?_
+I was in charge of tasks 1-2 and 5-6.
+
+- _How did you decide within the group to distribute the workload as such ?_
+We thought that 2 exercises per person at both both begining and at the end of the project would be a good way of splitting the workload, ensuring that we have both been acquainted with all parts of the project.
+
+- _In your opinion did each group member contribute equally to the project ?_
+On top of doing her parts, Anna has done more work because she helped me (re)write my parts to have cleaner code and checked that everything made sense Whereas I just re-read what she had done without changing much (maybe a bit on the plots).
+
+- _Where could your specific expertise and background from your prior studies contribute most to the project and the exercises we did earlier in the semester?_
+To be honest I am not sure anything we have seen in the mandatory material science background gave me an edge over someone that studied math/ computational science like Anna did, maybe on the solid-states physics question in task 1?   
+
+- _Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?_
+It was interesting to work with Anna because she has a lot more experience so I can take what she codes as an example to write cleaner code. I also think her mathematical background made her more rigorous than what I am usually used to working with people from engineering.  
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
 # ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╠═╡ disabled = true
 #=╠═╡
@@ -3359,5 +3391,6 @@ version = "1.4.1+1"
 # ╠═b15e519a-cb5f-4bb7-b105-3b8ae704e489
 # ╟─acbddbfc-ba95-4f2c-a611-9a785ee5978d
 # ╟─39a08d03-9d18-4346-a93c-86adb85811a1
+# ╠═06b6be7a-1d65-49fd-8217-f95ea11baa67
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
