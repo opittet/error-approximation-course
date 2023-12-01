@@ -1064,22 +1064,22 @@ Explain why you have to recompute the Hamiltonian with `T=Float64` instead of si
 """
 
 # ╔═╡ bd5a7a95-e45e-4d88-94bd-62339078ceef
-function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100)
+function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100, verbose=false)
     H_float32 = fd_hamiltonian(V, Nb, a; T=Float32)
     X_32 = randn(Float32, size(H_float32, 2), n_ep)
 
-    lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose = false, maxiter=maxiter, Pinv=diagm(1.0 ./ diag(H_float32)));
+    lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose=verbose, maxiter=maxiter, Pinv=InverseMap(factorize(H_float32)));
 	
     H_float64 = fd_hamiltonian(V, Nb, a; T=Float64)
-    X_64 = copy(lobpcg_result_float32.X) # Float64.
+    X_64 = Float64.(lobpcg_result_float32.X) 
 
-    lobpcg_result_float64 = lobpcg(H_float64; X=Float64.(X_64), tol=tol, maxiter=maxiter, verbose = false, Pinv=diagm(1.0 ./ diag(H_float64)))
+    lobpcg_result_float64 = lobpcg(H_float64; X=X_64, tol=tol, maxiter=maxiter, verbose=verbose, Pinv=InverseMap(factorize(H_float64)))
 
     return lobpcg_result_float64
 end
 
 # ╔═╡ edf470bf-809e-40cd-b032-a1bd55d295f1
-lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100)
+lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100,verbose=true)
 
 # ╔═╡ 2a51aaa4-e89a-4066-bf46-1b82176a11cf
 md"""
@@ -1133,10 +1133,11 @@ function residual_norms_interval(V, λ, X, Nb, a)
     H_interval = fd_hamiltonian_interval(V, Nb, a)
     residual_norms = zeros(Interval{Float64}, length(λ))
 
-    for i in 1:length(λ)
-        residual = H_interval * X[:, i] - λ[i] * X[:, i]
-        residual_norms[i] = norm(residual)
-    end
+    # for i in 1:length(λ)
+    #     residual = H_interval * X[:, i] - λ[i] * X[:, i]
+    #     residual_norms[i] = norm(residual)
+    # end
+	residual_norms =  norm.(eachcol(H_interval * X - X * Diagonal(λ)))
 
     return residual_norms
 end
@@ -1291,24 +1292,26 @@ md"""
 
 # ╔═╡ f2dfe489-d2d3-4fe2-8592-e147ddeda8db
 begin
-	a_v = 4
 	N_b = 500
-	h = (2a)/(N_b - 1)
+	a_v = 2.4
+	h = 2a_v/(N_b - 1) 
 end
 
 # ╔═╡ e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
 begin
 	ε_CL = solve_discretised(v_chain, N_b, a_v; n_ep=3).λ[1]
 	ε_QM = solve_discretised(v_atom, N_b, a_v; n_ep=3).λ[1]
-end
 
-# ╔═╡ f5a636b6-8f49-4ccd-92e6-7760b6091971
-Δε = ε_CL - ε_QM
+	Δε = ε_CL - ε_QM
+end
 
 # ╔═╡ a18370bd-e054-4fe5-840a-1638ad4fbca2
 md"""
 **(b)** Employ the Kato-Temple bound employed in Task 7 (c) to verify that the combined algorithm and arithmetic error of $Δε$ is less than the $3$ digits of convergence, i.e. that the algorithm and arithmetic error can be neglected.
 """
+
+# ╔═╡ 03abecb0-8fe6-413d-9e77-e31a84504ba4
+
 
 # ╔═╡ e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 md"""
@@ -1334,6 +1337,7 @@ end
 let
 	plot( v_extended_chain(1), xlims=(-7, 7), label="Mtilde = 1")
 	plot!(v_extended_chain(2), label="Mtilde = 2")
+	plot!(v_extended_chain(4), label="Mtilde = 4")
 end
 
 # ╔═╡ acbddbfc-ba95-4f2c-a611-9a785ee5978d
@@ -1345,6 +1349,23 @@ Within this setup investigate the limit $\widetilde{M} \to \infty$ numerically. 
 The numerical scheme to achieve this needs a little care as solving the discretised QM problem numerically gets more and more challenging when $\widetilde{M}$ increases. In a naive approach your tunnelling energy might oscillate artifically. You can remedy this by not starting from a random initial guess, but by starting from the solution you obtained at $\widetilde{M} - 1$. Sometimes adding in a little random noise (e.g. `randn` but scaled by a small constant) can be helpful (Why ?). Describe and justify your developed numerical scheme in a few sentences.
 
 *Extra hint:* How many times do you need to solve (CL) ? 
+"""
+
+# ╔═╡ d412003e-12b7-4a9f-936c-7b4ca60a98b4
+v_extended_chain(1)
+
+# ╔═╡ bb1eeb82-a97e-400a-96a0-e95fccdf1a83
+begin
+	M = 10
+	CL = solve_discretised(v_extended_chain(M), N_b, a_v; n_ep=3).λ[1]
+	QM = solve_discretised(v_atom, N_b, a_v; n_ep=3).λ[1]
+
+	tun_energy = CL - QM
+end
+
+# ╔═╡ 5be79266-6661-4b7f-b9dc-ba91b6651e7c
+md"""
+By changing the value of $\widetilde{M}$ we can see that tunneling energy is converging, in our case to 
 """
 
 # ╔═╡ 39a08d03-9d18-4346-a93c-86adb85811a1
@@ -3458,15 +3479,18 @@ version = "1.4.1+1"
 # ╠═bf20ba12-b1fb-471d-83f6-48c014eac8f9
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
-# ╠═264ce53d-40ff-4ae7-838e-49078f6d1ef1
+# ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
 # ╠═f2dfe489-d2d3-4fe2-8592-e147ddeda8db
 # ╠═e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
-# ╠═f5a636b6-8f49-4ccd-92e6-7760b6091971
 # ╟─a18370bd-e054-4fe5-840a-1638ad4fbca2
+# ╠═03abecb0-8fe6-413d-9e77-e31a84504ba4
 # ╟─e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 # ╠═27853643-8358-4d84-a8bd-efc3f415e540
 # ╠═b15e519a-cb5f-4bb7-b105-3b8ae704e489
 # ╟─acbddbfc-ba95-4f2c-a611-9a785ee5978d
+# ╠═d412003e-12b7-4a9f-936c-7b4ca60a98b4
+# ╠═bb1eeb82-a97e-400a-96a0-e95fccdf1a83
+# ╠═5be79266-6661-4b7f-b9dc-ba91b6651e7c
 # ╟─39a08d03-9d18-4346-a93c-86adb85811a1
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
