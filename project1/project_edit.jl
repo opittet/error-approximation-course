@@ -1063,6 +1063,29 @@ In your implementation replace `tol32=XXX` by a sensible default value for `tol3
 Explain why you have to recompute the Hamiltonian with `T=Float64` instead of simply converting the `Float32` Hamiltonian. Is there a way to avoid computing the Hamiltonian twice ?
 """
 
+# ╔═╡ bd5a7a95-e45e-4d88-94bd-62339078ceef
+function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100)
+    H_float32 = fd_hamiltonian(V, Nb, a; T=Float32)
+    X_32 = randn(Float32, size(H_float32, 2), n_ep)
+
+    lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose = false, maxiter=maxiter, Pinv=diagm(1.0 ./ diag(H_float32)));
+	
+    H_float64 = fd_hamiltonian(V, Nb, a; T=Float64)
+    X_64 = Float64.(lobpcg_result_float32.X)
+
+    lobpcg_result_float64 = lobpcg(H_float64; X=X_64, tol=tol, maxiter=maxiter, verbose = false, Pinv=diagm(1.0 ./ diag(H_float64)))
+
+    return lobpcg_result_float64
+end
+
+# ╔═╡ edf470bf-809e-40cd-b032-a1bd55d295f1
+lobpcg_result_float64 = solve_discretised(v_chain, Nb, a; n_ep=3, tol32=1e-2, tol=1e-6, maxiter=100)
+
+# ╔═╡ 2a51aaa4-e89a-4066-bf46-1b82176a11cf
+md"""
+Converting a matrix from `Float32` to `Float64`change the precision of individual elements but because all computation should be done in a specific format we need to recompute the Hamiltonian once again using `T=Float64`. A way could be to first, compute the Hamiltonian with `T=Float64` and then convert it to the Float32 Hamiltonian. 
+"""
+
 # ╔═╡ 32263be1-05bc-441e-b220-fa2f2aa8c052
 md"""
 ## Bounds on algorithm and arithmetic error
@@ -3275,6 +3298,9 @@ version = "1.4.1+1"
 # ╠═a613f981-2ec7-422c-a461-473464bb5574
 # ╟─667d77be-a743-4fdf-b99c-18845c37946d
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
+# ╠═bd5a7a95-e45e-4d88-94bd-62339078ceef
+# ╠═edf470bf-809e-40cd-b032-a1bd55d295f1
+# ╟─2a51aaa4-e89a-4066-bf46-1b82176a11cf
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
