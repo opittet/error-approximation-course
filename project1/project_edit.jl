@@ -1375,7 +1375,7 @@ end
 
 # ╔═╡ 5be79266-6661-4b7f-b9dc-ba91b6651e7c
 md"""
-By changing the value of $\widetilde{M}$ we can see that tunneling energy is converging, in our case to -0.00042.
+By changing the value of $\widetilde{M}$ we can see that tunneling energy is converging, in our case to -1.11e-5.
 """
 
 # ╔═╡ 21a3d94b-7145-4c47-8327-92a0a7a241d1
@@ -1393,7 +1393,7 @@ function solve_discretised_QM(V, Nb, a; X_32=randn(Float32, size(H_float32, 2), 
 end
 
 # ╔═╡ aec43f88-e9d7-4528-8e3e-41ce46ce9775
-X_init = solve_discretised_QMv_extended_chain(M), found_Nb, found_a; n_ep=3; X_32=randn(Float32, size(H_float32, 2))).X
+X_init = solve_discretised_QM(v_extended_chain(M), found_Nb, found_a; n_ep=3; X_32=randn(Float32, size(H_float32, 2))).X
 
 for M_tilda in 2:1:20
 	
@@ -1414,13 +1414,7 @@ Some questions you should address:
 """
 
 # ╔═╡ bfe3473b-edc8-4b38-84a6-9d990ce90ad2
-md"""
-- 3, 4, 5, 6, 7, 8
-- to do what anyone prefers to do
-- Mostly
-- Doing mathematical proofs or coding
-- 
-"""
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """

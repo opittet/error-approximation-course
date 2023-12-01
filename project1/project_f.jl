@@ -1413,7 +1413,7 @@ end
 begin
 	t_energy = Float64[]
 	m = 1
-	local a = 2m + 4
+	local a = 2m + 2
 	local Nb = round(Int, 2a/h_found) + 1
 
 	qm_res = solve_discretised_QM(v_extended_chain(m), Nb, a; n_ep=3)
@@ -1421,7 +1421,7 @@ begin
 	X_prev = qm_res.X
 	
 	for m in 2:1:50
-		a = 2m + 4
+		a = 2m + 2
 		Nb = round(Int, 2a/h_found) + 1
 				
 		noise = 0.01 * randn(size(X_prev))
@@ -3613,6 +3613,6 @@ version = "1.4.1+1"
 # ╠═2f09a456-feb7-49d7-bd2f-76a52897e810
 # ╟─07605283-d22b-4f0d-81f5-6aacf7de6f83
 # ╟─39a08d03-9d18-4346-a93c-86adb85811a1
-# ╠═06b6be7a-1d65-49fd-8217-f95ea11baa67
+# ╟─06b6be7a-1d65-49fd-8217-f95ea11baa67
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
