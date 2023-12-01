@@ -896,53 +896,6 @@ md"""
 # ╔═╡ 5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 ortho_dftk(X) = DFTK.ortho!(copy(X)).X
 
-# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
-begin
-	error_gs = Float64[]
-	error_mgs = Float64[]
-	error_qr = Float64[]
-	error_ch = Float64[]
-	error_s_ch = Float64[]
-	error_dftk = Float64[]
-
-	mrange = 10.0 .^ range(-16, stop=0, length=100)
-	
-	for m in mrange
-	    X = testmatrix(m)
-	    gs_result = ortho_gs(X)
-	    qr_result = ortho_qr(X)
-		mgs_result = ortho_mgs(X)
-		dftk_result = ortho_dftk(X)
-		
-		if m > 0.5 * 10. ^ (-7)
-			ch_result = ortho_cholesky(X)
-        	push!(error_ch, orthonormality_error(ch_result))
-		else
-			push!(error_ch, NaN)
-		end
-
-		if m > 0.5 * 10. ^ (-10)
-			s_ch_result = ortho_shift_cholesky(X)
-        	push!(error_s_ch, orthonormality_error(s_ch_result))
-		else
-			push!(error_s_ch, NaN)
-		end
-	    
-	    push!(error_gs, orthonormality_error(gs_result))
-	    push!(error_qr, orthonormality_error(qr_result))
-		push!(error_mgs, orthonormality_error(mgs_result))
-		push!(error_dftk, orthonormality_error(dftk_result))
-	end
-	
-	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
-	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
-	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
-	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
-	scatter!(mrange, error_dftk, label="error_dftk", markeralpha=0.2, markersize=2)
-end
-
-
 # ╔═╡ 4569f866-05e4-474d-899a-c68e000b656b
 begin
 	dftk_res = @benchmark ortho_dftk($Xmatrix)
@@ -967,10 +920,78 @@ md"""
 Code up such an orthogonalisation routine `ortho_svd` based on Julia's `svd` funciton. Look up its documentation to get more details. Benchmark `ortho_svd` on  `X = randn(1000, 10)` and add this function to  your plot of Task 3 (d).
 """
 
+# ╔═╡ c457eefe-7bd5-41d3-951d-3c0aa52b83b6
+function ortho_svd(X)
+    U, _, _ = svd(X)
+    return U
+end
+
+# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
+begin
+	error_gs = Float64[]
+	error_mgs = Float64[]
+	error_qr = Float64[]
+	error_ch = Float64[]
+	error_s_ch = Float64[]
+	error_dftk = Float64[]
+	error_svd = Float64[]
+
+	mrange = 10.0 .^ range(-16, stop=0, length=100)
+	
+	for m in mrange
+	    X = testmatrix(m)
+	    gs_result = ortho_gs(X)
+	    qr_result = ortho_qr(X)
+		mgs_result = ortho_mgs(X)
+		dftk_result = ortho_dftk(X)
+		svd_result = ortho_svd(X)
+		
+		if m > 0.5 * 10. ^ (-7)
+			ch_result = ortho_cholesky(X)
+        	push!(error_ch, orthonormality_error(ch_result))
+		else
+			push!(error_ch, NaN)
+		end
+
+		if m > 0.5 * 10. ^ (-10)
+			s_ch_result = ortho_shift_cholesky(X)
+        	push!(error_s_ch, orthonormality_error(s_ch_result))
+		else
+			push!(error_s_ch, NaN)
+		end
+	    
+	    push!(error_gs, orthonormality_error(gs_result))
+	    push!(error_qr, orthonormality_error(qr_result))
+		push!(error_mgs, orthonormality_error(mgs_result))
+		push!(error_dftk, orthonormality_error(dftk_result))
+		push!(error_svd, orthonormality_error(svd_result))
+	end
+	
+	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
+	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
+	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
+	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
+	plot!(mrange, error_dftk, label="error_dftk")
+	plot!(mrange, error_svd, label="error_svd")
+end
+
+
+# ╔═╡ d2fdffee-ab75-41e9-8723-8a9ce90b4331
+begin
+	svd_res = @benchmark ortho_svd($Xmatrix)
+	println("SVD Time: ", mean(svd_res).time)
+end
+
 # ╔═╡ 49f347c3-0e77-4a1f-9bef-08a7e15b9149
 md"""
 **(b)** You should now have a good overview of the runtimes and qualities of the orthogonalisation algorithms `ortho_gs_matrix`, `ortho_mgs`, `ortho_qr`, `ortho_svd`, `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk`.
 With this in mind try to explain the recent popularity of cholesky-based approaches like `ortho_dftk` for othogonalising vectors. If no cholesky-based approach should be chosen (i.e. `ortho_cholesky`, `ortho_shift_cholesky` and `ortho_dftk` are out), which other approach provides in your opinion the best compromise between runtime and accuracy and why?
+"""
+
+# ╔═╡ f88e8e6d-7734-44b3-affa-68179a721aa2
+md"""
+In general, Cholesky-based approach in comparison with other methods is computationally efficient as we can see by comparing the running times. It is also numerically stable for positive definite matrices as we observe from the plots above. However, when Cholesky-based approaches are not available, `ortho_qr` often provides a good compromise between runtime and accuracy among the other approaches. 
 """
 
 # ╔═╡ 14faf0a3-d7da-485c-b5e6-cee1f24592ac
@@ -999,6 +1020,39 @@ md"""
 In each run use the *the same* initial guess for each floating-point precision `T` to make the residual history comparable. However, ensure to convert this guess to the same floating-point precision before passing it to  `lobpcg` (e.g. `lobpcg ...; X=Float32.(X), ...`). In one plot, show the residual norm history of the largest of the three eigenpairs (`last.(lobpcg( ... ).residual_norms)`) depending on the chosen floating-point precision `T`.
 
 From your experiments: Roughly at which residual norm is it advisable to switch from one precision to the other in order to avoid impacting the rate of convergence ?
+"""
+
+# ╔═╡ b0c2622d-78b0-4fa9-887c-42455bacdda3
+begin
+	H_f32 = Htest(Float32)
+	X_init = randn(size(H_f32, 2), 3)
+
+	H_f64 = Htest(Float64)
+	H_d64 = Htest(Double64)
+
+end
+
+# ╔═╡ 50eda9d8-b120-46f0-86a2-cd5f1e4f2aa4
+r_norms32 = last.( lobpcg(H_f32; X=Float32.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f32)), tol=1e-6, maxiter=100).residual_norms)
+
+# ╔═╡ 181c19fc-4e5b-4d95-b438-eea546f2ad1d
+r_norms64 = last.(lobpcg(H_f64; X=Float64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-12, maxiter=100).residual_norms)
+
+# ╔═╡ 7a098bcc-5f27-45d0-b2f4-9c7ec14c0d94
+r_normsd64 = last.(lobpcg(H_d64; X=Double64.(X_init), ortho=ortho_dftk, Pinv=InverseMap(factorize(H_f64)), tol=1e-25, maxiter=100).residual_norms)
+
+# ╔═╡ a613f981-2ec7-422c-a461-473464bb5574
+begin
+	plot(r_norms32, label="Float32", yaxis=:log, ylabel="Residual Norm")
+	plot!(r_norms64, label="Float64", yticks=10.0 .^ (-27:2:2))
+	plot!(r_normsd64, label="Float64", xlabel="Number of iterations")
+end
+
+# ╔═╡ 667d77be-a743-4fdf-b99c-18845c37946d
+md"""
+As we can see from the plot, a good strategy would be to switch from one precision to the other at the moment when the residual norm stops decreasing significantly. In our case it would be:
+- from `Float32` to `Float64`: 1e-2;
+- from `Float64` to `Double64`: 1e-11.
 """
 
 # ╔═╡ 2e02d881-40df-4559-82a9-f6a11239f337
@@ -3206,11 +3260,20 @@ version = "1.4.1+1"
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
+# ╠═c457eefe-7bd5-41d3-951d-3c0aa52b83b6
+# ╠═d2fdffee-ab75-41e9-8723-8a9ce90b4331
 # ╟─49f347c3-0e77-4a1f-9bef-08a7e15b9149
+# ╟─f88e8e6d-7734-44b3-affa-68179a721aa2
 # ╟─14faf0a3-d7da-485c-b5e6-cee1f24592ac
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
+# ╠═b0c2622d-78b0-4fa9-887c-42455bacdda3
+# ╠═50eda9d8-b120-46f0-86a2-cd5f1e4f2aa4
+# ╠═181c19fc-4e5b-4d95-b438-eea546f2ad1d
+# ╠═7a098bcc-5f27-45d0-b2f4-9c7ec14c0d94
+# ╠═a613f981-2ec7-422c-a461-473464bb5574
+# ╟─667d77be-a743-4fdf-b99c-18845c37946d
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
