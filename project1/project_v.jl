@@ -486,6 +486,7 @@ begin
 	n = 3 
 	X0 = randn(size(H_fd, 2), n)
 	
+	
 	# Perfect preconditioner
 	precond = diagm(1.0 ./ diag(H_fd))
 	eigenvalues, eigenvectors = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond)
@@ -626,70 +627,18 @@ md"""
 This is not bad, but this can still be improved. One idea is to remove the inner loop over `j`. This can be achieved by using matrix-matrix products instead of vector-only operations. Since matrix-matrix operations are generally faster, this gives a speedup. Rewrite `ortho_gs` by using to a larger extend matrix-matrix operations. Call the new function `ortho_gs_matrix`. Benchmark this second function as well. Compare the runtime of both functions to `ortho_qr`. How much faster is Gram-Schmidt compared to QR?
 """
 
-# ╔═╡ c4517741-dd2f-4cbc-a0b1-75f3b9cd7060
-@views function ortho_gs_matrix(X)
-    Xnew = copy(X)
-    n, m = size(Xnew)
-
-	Xnew[:, 1] ./= norm(Xnew[:, 1])
-
-    for i in 2:m
-		projections = Xnew[:, 1:(i-1)]' * Xnew[:, i]
-		Xnew[:, i] .-= Xnew[:, 1:(i-1)] * projections
-        Xnew[:, i] ./= norm(Xnew[:, i])
-    end
-    Xnew
-end
-
-# ╔═╡ 9b66f88c-667f-45bc-9d54-8c97966edd01
-begin
-	X = randn(1000, 10);
-	result_gs = @benchmark ortho_gs($X)
-	result_gs_matrix = @benchmark ortho_gs_matrix($X)
-	result_qr = @benchmark ortho_qr($X)
-
-	println("Orthogonal GS Time: ", mean(result_gs).time)
-	println("Ortho GS Matrix Time: ", mean(result_gs_matrix).time)
-	println("Ortho QR Time: ", mean(result_qr).time)
-end
-
-# ╔═╡ 2c682b30-f257-4094-a75e-81c1737b81dd
-mean(result_qr).time / mean(result_gs_matrix).time
-
-# ╔═╡ 8bcc2985-c1cc-4790-8303-406c61f1cead
-md"""
-We can see that Gram-Schmidt is approximately 3 times faster compared to QR.
-"""
-
 # ╔═╡ d1b1ee12-479c-4b46-b008-30be3f3edfec
 md"""
 **(b)** Motivated by the speedup of Gram-Schmidt methods we want to employ `ortho_gs` and `ortho_gs_matrix` within our `lobpcg`. This can be achieved by setting the `ortho` keyword argument appropriately (e.g. `lobpcg(...; ortho=ortho_gs)`). Focus on computing the $4$ smallest eigenpairs of the testproblem `Htest()` to `tol=1e-8` --- using again its factorised form as a preconditioner.
 """
 
+# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
+Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+
 # ╔═╡ 2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 md"""
 What do you notice with the Gram-Schmidt-based orthogonalisation? Do we win something using this faster technique? Plot the convergence history of the largest eigenpair when using `ortho_qr` and `ortho_gs`. Try to find an explanaition for the observed behaviour. *Hint:* Part (c) might be helpful.
 """
-
-# ╔═╡ 9c55be21-4168-49bd-bfc0-bfeb241d1dde
-md"""
-**Answer:**
-"""
-
-# ╔═╡ 272b2df8-a19f-4be8-979d-68a4224816fe
-begin
-	Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
-	X1 = randn(eltype(Htest()), size(Htest(), 2), 4)
-	precond_inv = InverseMap(factorize(Htest()))
-end
-
-# ╔═╡ 244679dc-2ae6-4dee-b4e9-05bdec67b202
-md"""
-Analyzing the plots we can see that while Gram-Schmidt is faster computationally, it may have numerical stability issues compared to QR orthogonalization. 
-"""
-
-# ╔═╡ a7955af9-0c88-4bcd-94e2-903e7dc0027c
-
 
 # ╔═╡ 92f4c1fe-010b-429c-a83f-23bf21daae2b
 md"""
@@ -699,124 +648,17 @@ md"""
 # ╔═╡ 92cf9a34-51ac-4767-94d2-f5013b6f1a94
 testmatrix(m; T=Float64, N=1000, M=10) = abs.(randn(T, N, M)) .^ T(m)
 
-# ╔═╡ 8c35343c-546c-4d30-b59b-4d66ae67fe61
+# ╔═╡ ff592eef-e31b-4865-bfb0-19a283de20c4
 md"""
 is a good way of generating challenging benchmark matrices for orthogonalisation routines. *Hint:* Plot the numerical range using the `extrema` function for values $m \in (0, 1)$. 
 
-**Answer:**
-"""
-
-# ╔═╡ ff837238-03cd-4fdb-bd57-24cf0d60643b
-begin
-	msteps = 0:0.01:1
-	ranges = [extrema(testmatrix(m)) for m in msteps]
-
-	lower_bounds = [r[1] for r in ranges]
-	upper_bounds = [r[2] for r in ranges]
-	
-	means = [mean(r) for r in ranges]
-	
-	# Create the plot with means, lower bounds, and upper bounds
-	plot(msteps, means, ribbon=(abs.(lower_bounds .- means), abs.(upper_bounds .- means)), fillalpha=0.2, alpha=0., xlabel="m", ylabel="Numerical Range", label="Numerical Range")
-	plot!(msteps, lower_bounds, label="Lower bounds")
-	plot!(msteps, upper_bounds, label="Upper bounds")
-end
-
-# ╔═╡ b3fb67b3-ac8f-4836-b795-252d08bb39ec
-md"""
-If vectors are very similar, especially when their entries are within the same numerical range, numerical errors may accumulate, leading to loss of orthogonality or other stability issues. In such cases, using Gram-Schmidt orthogonalization methods might be problematic due to the ill-conditioning of the vectors.
-
-The `testmatrix` function is useful for creating matrices that test orthogonalization routines, helping to find numerical stability problems and assess the strength of the implemented algorithms.
-
-
-
-
-"""
-
-# ╔═╡ ff592eef-e31b-4865-bfb0-19a283de20c4
-md"""
 **(d)** Test `ortho_gs` and `ortho_qr` for various values of $m$, i.e. check the orthonormality error `maximum(abs, X'*X - I)` after having orthogonalised test matrices with various values of $m$. Plot this error for both methods versus $m$ in the range $10^{-16}$ to $1$. What do you notice in particular for the challenging cases ?
-"""
-
-# ╔═╡ f57a5576-345e-4012-aa96-fd84f9bf4e7f
-md"""
-**Answer:**
-"""
-
-# ╔═╡ 3ffe6928-30e2-4142-8a34-e7874999c147
-orthonormality_error(X) = maximum(abs, X' * X - I)
-
-# ╔═╡ e8619c00-0ee9-4af3-bb4b-5458cdba0f31
-md"""
-In challenging cases, we can observe higher orthonormality errors that indicate the difficulty of maintaining orthonormality using Gram-Schmidt procedure when the entries of the vectors are within the same small numerical range.
 """
 
 # ╔═╡ affd0b8f-2b57-40d9-87e1-43de738c0778
 md"""
 **(e)** The observed behaviour is a well-known flaw of the standard Gram-Schmidt procedure. A simple and common modification improves the situaton notably. This is known as the *modified Gram-Schmidt procedure* (MGS), which is described for example [on wikipedia](https://en.wikipedia.org/wiki/Gram%E2%80%93Schmidt_process). Code up an MGS and call the function `ortho_mgs`. Add `ortho_mgs` to your plots in **(b)** and **(d)**. You should observe that the overall behaviour improves.
 *Hint:* Compared to `ortho_gs` you don't have to change much.
-"""
-
-# ╔═╡ 9895d1a2-5019-405e-966b-105dce803aa1
-md"""
-**Answer:**
-"""
-
-# ╔═╡ d7259bc9-8b9a-47a6-85af-dfa06eb94849
-@views function ortho_mgs(X)
-	Xnew = copy(X)
-	for i in 1:size(X, 2)
-		for j in 1:(i-1)
-			Xnew[:, i] .-= dot(Xnew[:, i], Xnew[:, j]) * Xnew[:, j]
-		end
-		Xnew[:, i] ./= norm(Xnew[:, i])
-	end
-	Xnew
-end
-
-# ╔═╡ b0853a92-4975-4295-ba5e-692086b0993f
-begin
-	res_qr = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_qr, tol=1e-8, maxiter = 30, verbose=false)
-	res_gs = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_gs, tol=1e-8, maxiter = 30, verbose=false)
-	res_mgs = lobpcg(Htest(); X=X1, Pinv=precond_inv, ortho=ortho_mgs, tol=1e-8, maxiter = 30, verbose=false)
-	
-	rnorm_qr=[norms[1] for norms in res_qr.residual_norms]
-	rnorm_gs=[norms[1] for norms in res_gs.residual_norms]
-	rnorm_mgs=[norms[1] for norms in res_mgs.residual_norms]
-
-	plot(rnorm_qr, label="QR Orthogonalization", yaxis=:log, xlabel="Iterations", ylabel="Residual Norm", lw=2)
-	plot!(rnorm_gs, label="Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
-	plot!(rnorm_mgs, label="Modified Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
-end
-
-# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
-begin
-	error_gs = Float64[]
-	error_mgs = Float64[]
-	error_qr = Float64[]
-
-	mrange = 10.0 .^ range(-16, stop=0, length=100)
-	
-	for m in mrange
-	    X = testmatrix(m)
-	    gs_result = ortho_gs(X)
-	    qr_result = ortho_qr(X)
-		mgs_result = ortho_mgs(X)
-	    
-	    push!(error_gs, orthonormality_error(gs_result))
-	    push!(error_qr, orthonormality_error(qr_result))
-		push!(error_mgs, orthonormality_error(mgs_result))
-	end
-	
-	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
-	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
-end
-
-
-# ╔═╡ 17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
-md"""
-Analyzing the plots above, we can see that the modified Gram-Schmidt procedure doesn't give high orthonormality errors and on the tested examples is as good as QR method. On the other hand, MGS doesn't show a big improvement within our lobpcg algorithm.
 """
 
 # ╔═╡ 6d49ed54-f809-470f-83c9-65e40871db51
@@ -838,39 +680,9 @@ md"""
 Given an arbitrary $X \in \mathbb{R}^{n \times p}$ and Cholesky factors $L$ such that $X^H X = L L^H$, prove that $X \left(L^H)^{-1}\right) \in \mathbb{R}^{n \times p}$ is indeed orthogonal.
 """
 
-# ╔═╡ 110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
-md"""
-**Proof:**
-
-Let $M = \left(L^H\right)^{-1}$ and consider the product:
-
-```math
-\left( X M \right)^H X M = M^H (X^H X) M = M^H (L L^H) M = \left(\left(L^H\right)^{-1}\right)^H L L^H \left(L^H\right)^{-1} = I,
-```
-since the conjugate transpose of a real lower triangular matrix is its inverse. On the other hand,
-
-```math
-X M \left( X M \right)^H  = X M M^H X^H = X \left(L^H\right)^{-1} L^{-1} (L L^H) M = \left(\left(L^H\right)^{-1}\right)^H L L^H \left(L^H\right)^{-1} = I
-```
-
-As a result, we have:
-```math
-\left( X \left(L^H\right)^{-1} \right)^H X \left(L^H\right)^{-1} = I,
-```
-which means that $X \left(L^H\right)^{-1}$ is indeed orthogonal.
-"""
-
-# ╔═╡ cb9d5564-6c68-4a6d-be6f-ad64a46da045
-
-
 # ╔═╡ 50e2baea-317d-43d5-82a2-df63936ddefd
 md"""
 **(b)** Look up how the `cholesky` function works in Julia and use it to code up an `ortho_cholesky(X)`, which orthonormalises the columns of the passed matrix `X`. Benchmark `ortho_cholesky` on a `X = randn(1000, 10)` testmatrix and compare the timings to `ortho_qr` and `ortho_gs_matrix`. Can you explain the appealing feature of this method?
-"""
-
-# ╔═╡ 97dce896-28bd-4e74-8ba9-cc9ff3b181c2
-md"""
-**Answer:**
 """
 
 # ╔═╡ 3c1849b8-6345-4cdf-875a-a32ba455516b
@@ -943,6 +755,31 @@ In each run use the *the same* initial guess for each floating-point precision `
 From your experiments: Roughly at which residual norm is it advisable to switch from one precision to the other in order to avoid impacting the rate of convergence ?
 """
 
+# ╔═╡ 90ce0032-ef4b-4ec9-930d-3f1f70ab3018
+begin
+	
+	
+	
+	Type_list=[Float32,Float64,Double64]
+	X_6a=Float64.(randn(size(4000),3))
+#		x = randn(size(H, 2));
+	
+	#X0 = randn(size(H_fd, 2), n)
+
+	println(X_6a)
+#	ortho_dftk(X) = DFTK.ortho!(copy(X)).X
+	
+	for T in Type_list
+		Htest_6a = fd_hamiltonian(v_chain, 4000, 4; T)
+		X_ortho=ortho_dftk(X_6a)
+		T_lobpcg = lobpcg(Htest_6a;X=T.(X_ortho),Pinv=factorize(Htest_6a),verbose=false)
+
+		max_residual_norm=[maximum(residual_norms) for residual_norms in T_lobpcg.residual_norms] 
+		plot!(p, max_residual_norm_noisy; label = string(T) , lw 	= 2,ls = :dash, mark = :x)
+	end
+		
+end
+
 # ╔═╡ 2e02d881-40df-4559-82a9-f6a11239f337
 md"""
 **(b)** With this outcome in mind code up a routine `solve_discretised(V, Nb, a; n_ep=3, tol32=XXX, tol=1e-6, maxiter=100)`, which first constructs the Hamiltonian using `fd_hamiltonian(V, Nb, a; T=Float32)` and then uses a preconditioned `lobpcg` to solve it for `n_ep` eigenpairs until `tol32` is reached, starting from a random guess. Then it switches to `Float64` as the working precision and continues the iterations by invoking `lobpcg` a second time. Note that for this you will need to recompute the Hamiltonian in `Float64`. Make sure the named tuple returned by the second call to `lobpcg` is also returned by `solve_discretised` itself. 
@@ -970,7 +807,7 @@ end
 md"""
 **Answer (b)**
 
-It is a loss of generality to _upcast_ a Float32 into a Float64. As the computer will simply fill the remaining bits with 0’s, this _a posteriori_ change does not enhance the precision of the calculation.
+There is no point in _upcasting_ a Float32 into a Float64, as the computer will simply fill the remaining bits with 0’s. This _a posteriori_ change does not enhance the precision of the calculation.
 
 One alternative to calculating twice the hamiltonian is to _downcast_ it from Float64 to Float32.
 """
@@ -3126,38 +2963,17 @@ version = "1.4.1+1"
 # ╟─3246102a-29c2-47a8-8cb6-2215447c655e
 # ╠═468e1424-9204-4ea7-996d-c18747d6ed59
 # ╟─9532eabd-8888-4054-be04-136916bfb2ec
-# ╠═c4517741-dd2f-4cbc-a0b1-75f3b9cd7060
-# ╠═9b66f88c-667f-45bc-9d54-8c97966edd01
-# ╠═2c682b30-f257-4094-a75e-81c1737b81dd
-# ╟─8bcc2985-c1cc-4790-8303-406c61f1cead
 # ╟─d1b1ee12-479c-4b46-b008-30be3f3edfec
+# ╠═f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╟─2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
-# ╟─9c55be21-4168-49bd-bfc0-bfeb241d1dde
-# ╠═272b2df8-a19f-4be8-979d-68a4224816fe
-# ╠═b0853a92-4975-4295-ba5e-692086b0993f
-# ╟─244679dc-2ae6-4dee-b4e9-05bdec67b202
-# ╠═a7955af9-0c88-4bcd-94e2-903e7dc0027c
 # ╟─92f4c1fe-010b-429c-a83f-23bf21daae2b
 # ╠═92cf9a34-51ac-4767-94d2-f5013b6f1a94
-# ╟─8c35343c-546c-4d30-b59b-4d66ae67fe61
-# ╠═ff837238-03cd-4fdb-bd57-24cf0d60643b
-# ╟─b3fb67b3-ac8f-4836-b795-252d08bb39ec
 # ╟─ff592eef-e31b-4865-bfb0-19a283de20c4
-# ╟─f57a5576-345e-4012-aa96-fd84f9bf4e7f
-# ╠═3ffe6928-30e2-4142-8a34-e7874999c147
-# ╠═8df30591-c27c-449a-8d2f-361db4a8153b
-# ╟─e8619c00-0ee9-4af3-bb4b-5458cdba0f31
 # ╟─affd0b8f-2b57-40d9-87e1-43de738c0778
-# ╟─9895d1a2-5019-405e-966b-105dce803aa1
-# ╠═d7259bc9-8b9a-47a6-85af-dfa06eb94849
-# ╟─17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
 # ╟─6d49ed54-f809-470f-83c9-65e40871db51
 # ╟─dfd18ddd-a9e4-460a-97c4-07afbb83f4f2
 # ╟─a6f782cb-27b3-45a3-8b0e-23681406abef
-# ╠═110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
-# ╠═cb9d5564-6c68-4a6d-be6f-ad64a46da045
 # ╟─50e2baea-317d-43d5-82a2-df63936ddefd
-# ╠═97dce896-28bd-4e74-8ba9-cc9ff3b181c2
 # ╟─3c1849b8-6345-4cdf-875a-a32ba455516b
 # ╟─eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
 # ╟─baa15be1-4aaf-4789-95d6-c08c918cb245
@@ -3170,6 +2986,7 @@ version = "1.4.1+1"
 # ╟─0098759c-76f5-4749-ad97-0db3745bfda4
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
+# ╠═90ce0032-ef4b-4ec9-930d-3f1f70ab3018
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
 # ╠═0722bcc9-2dde-4289-8c7b-c6e3816281ff
 # ╠═49b6eed8-da2f-48cf-952a-7bdbd46e6469
