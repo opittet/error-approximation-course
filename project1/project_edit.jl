@@ -1131,44 +1131,19 @@ as returned in the named tuple of `solve_discretised` and computes their residua
 # ╔═╡ 8d6daaad-3c5a-400c-a680-53ce149d9a49
 function residual_norms_interval(V, λ, X, Nb, a)
     H_interval = fd_hamiltonian_interval(V, Nb, a)
-    residual_norms = zeros(Interval{Float64}, length(λ))
-
-    # for i in 1:length(λ)
-    #     residual = H_interval * X[:, i] - λ[i] * X[:, i]
-    #     residual_norms[i] = norm(residual)
-    # end
 	residual_norms =  norm.(eachcol(H_interval * X - X * Diagonal(λ)))
 
     return residual_norms
 end
 
 # ╔═╡ 9985e9f4-eaa7-4bec-9976-1327f3dedbd0
-H_interval = fd_hamiltonian_interval(v_chain, 1000, 4)
+# H_interval = fd_hamiltonian_interval(v_chain, 1000, 4)
 
 # ╔═╡ 2ac303fd-9db3-4718-acfd-197f304c742a
 begin
 	result = solve_discretised(v_chain, 1000, 4; n_ep=3)
 	residual_norms = residual_norms_interval(v_chain, result.λ, result.X, 1000, 4)
 end
-
-# ╔═╡ 1941bd87-52e8-4cdf-8e4d-a9ee01235887
-result.λ
-
-
-# ╔═╡ a846d975-f935-4d61-8b0b-623e5738fd6a
-result.X[:, 1]
-
-# ╔═╡ dea55d17-ab05-49c1-9b37-90f3d7f67f89
-norm(fd_hamiltonian(v_chain, 1000, 4) * result.X[:, 1] - result.λ[1] * result.X[:, 1])
-
-# ╔═╡ 40b2dabd-d27b-4fa2-9444-2d87b32a3580
-norm(fd_hamiltonian_interval(v_chain, 1000, 4) * result.X[:, 1] - result.λ[1] * result.X[:, 1])
-
-# ╔═╡ e3570f1b-22a3-4d4c-b814-8e2a26009698
-for i in 1:length(λ)
-        residual = H_interval * X[:, i] - λ[i] * X[:, i]
-        residual_norms[i] = norm(residual)
-    end
 
 # ╔═╡ 8619e0da-e9ce-4661-8a5e-369ec49645b2
 md"""
@@ -1220,21 +1195,19 @@ end
 guaranteed_upper_bound = [interval(result.λ[i]).hi for i in 1:3]
 
 # ╔═╡ 16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
-alg_arith_error = get_upper_bound(result, residual_norms)
-
-# ╔═╡ dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
-begin
-	λ_interval = interval(result.λ[1])
-	# upper bound to the arithmetic error
-	arithm_upper_bound = radius(λ_interval)
-end
+alg_arith_ub = get_upper_bound(result, residual_norms)
 
 # ╔═╡ 0c803ce1-efcc-44e8-bcb1-a417a55cc604
-# width of the residual interval as an estimate for the arithmetic error in the first eigenvalue
-res_width = residual_norms[1].hi - residual_norms[1].lo
+# estimate for the arithmetic error in the first eigenvalue
+arithm_upper_bound = residual_norms[1].hi - residual_norms[1].lo
 
 # ╔═╡ 8c07227d-4dcc-414c-b542-b2de090e87ae
+alg_upper_bound = alg_arith_ub - arithm_upper_bound
 
+# ╔═╡ ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
+md"""
+From comparing arithmatic and algorithmic errors it's hard to say clearly which of them dominates. In some examples, we noticed that they both contribute more or less equally.
+"""
 
 # ╔═╡ b73829c8-c833-45a4-b168-d68e9b54547f
 md"""
@@ -3427,12 +3400,7 @@ version = "1.4.1+1"
 # ╠═8dde28af-f1d5-4252-bbd1-22936a6a794e
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
 # ╠═8d6daaad-3c5a-400c-a680-53ce149d9a49
-# ╠═1941bd87-52e8-4cdf-8e4d-a9ee01235887
 # ╠═9985e9f4-eaa7-4bec-9976-1327f3dedbd0
-# ╠═a846d975-f935-4d61-8b0b-623e5738fd6a
-# ╠═dea55d17-ab05-49c1-9b37-90f3d7f67f89
-# ╠═40b2dabd-d27b-4fa2-9444-2d87b32a3580
-# ╠═e3570f1b-22a3-4d4c-b814-8e2a26009698
 # ╠═2ac303fd-9db3-4718-acfd-197f304c742a
 # ╟─8619e0da-e9ce-4661-8a5e-369ec49645b2
 # ╟─46578541-6513-4236-bcdc-2eba4b821ca0
@@ -3443,9 +3411,9 @@ version = "1.4.1+1"
 # ╠═157a3634-c42e-4bf4-a183-dd9d79d63c45
 # ╠═e470bd9b-566b-40e4-b5aa-dd3a42817dc8
 # ╠═16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
-# ╠═dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
 # ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
 # ╠═8c07227d-4dcc-414c-b542-b2de090e87ae
+# ╟─ccfb6b20-d9c9-4c3e-b1d6-3176d1279b90
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
 # ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
