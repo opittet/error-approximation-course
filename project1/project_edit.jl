@@ -1112,6 +1112,15 @@ let
 	interval.(Float64, values)
 end
 
+# ╔═╡ 8dde28af-f1d5-4252-bbd1-22936a6a794e
+function fd_hamiltonian_interval(V, Nb, a)
+    H_bfloat = fd_hamiltonian(V, Nb, a; T=BigFloat)
+    
+    H_interval = interval.(Float64, H_bfloat)
+
+    return H_interval
+end
+
 # ╔═╡ ba83ffcc-662e-41e0-b875-ed42c89018f3
 md"""
 **(b)** Use `fd_hamiltonian_interval` to code up the function `residual_norms_interval(V, λ, X, Nb, a)`,
@@ -3303,7 +3312,8 @@ version = "1.4.1+1"
 # ╟─2a51aaa4-e89a-4066-bf46-1b82176a11cf
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
-# ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
+# ╠═8dde28af-f1d5-4252-bbd1-22936a6a794e
+# ╠═ba83ffcc-662e-41e0-b875-ed42c89018f3
 # ╟─46578541-6513-4236-bcdc-2eba4b821ca0
 # ╠═232061e4-da8c-42d6-9801-23e724d7502c
 # ╟─df7d3c42-4956-4b36-a9bc-e8fb0f0ce2f1
