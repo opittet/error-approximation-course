@@ -366,7 +366,7 @@ end
 # ╔═╡ 3feee600-5458-4e2c-98f0-dfe7e4332708
 begin
 	bar(["H * x", "H backslash x", "H_dense * x", "H_dense backslash x"], 
-		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns]", 
+		[Float64(median(H_mult).time), Float64(median(H_div).time), Float64(median(H_dense_mult).time), Float64(median(H_dense_div).time)],   xlabel="Operation", ylabel="Time [ns])", 
 		yaxis=:log, labels="time", 
 		title="Matrix Vector operations median time benchmark")
 end
@@ -383,18 +383,6 @@ md"""
 
 # ╔═╡ 4db84a39-89f2-449e-a340-4a8012a71017
 md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
-"""
-
-# ╔═╡ b7673185-8f01-4332-b8d4-abde2ad62700
-md"""
-As can be seen on the plot above,the factorization plays a crucial role to reduce the number of iteration steps required.
-
-Let’s now see if the algorithm is stable if we increase the number of discretisation points $Nb$:
-"""
-
-# ╔═╡ cb360789-42b1-451c-a89e-4fcdd21d964c
-md"""
-It appears that the algorithm does not suffer from unstability.
 """
 
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
@@ -496,54 +484,28 @@ end
 
 # ╔═╡ e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 begin
-	p = plot(yaxis=:log,xaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm",ylims=(1e-6, 1e7))
+	p = plot(yaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm")
 
 	# Perfect preconditioner
-	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = precond).residual_norms
+	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond).residual_norms
 	max_rnorm_perfect=[maximum(r_norms) for r_norms in inv_diag_residual_norms] 
-	
-	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2)
+	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2,mark = :x)
 
 	# Preconditioner plus noise
 	prec_noise = 10 ^ log_prec_noise * randn(size(H_fd, 1))
 	noisy_precond = Diagonal(1 ./ diag(H_fd) .+ prec_noise)
-	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = noisy_precond).residual_norms
+	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = noisy_precond).residual_norms
 	max_rnorm_noisy=[maximum(r_norms) for r_norms in noisy_rnorms]
 
-	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash)
+	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash, mark = :x)
 
 	# Apgd preconditioner
 	Alopcg = Diagonal(abs.(randn(Nb)).^0.1);
 	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
-	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv).residual_norms
+	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv).residual_norms
 	max_rnorm_apgd=[maximum(r_norms) for r_norms in apgd_rnorms]
-	
-    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash)
 
-	#perfect preconditionner using factorization
-	Pinv= H_fd\I
-    factorized_inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, Pinv).residual_norms
-	max_rnorms_factorized= [maximum(r_norms) for r_norms in factorized_inv_diag_residual_norms] 
-
-    plot(p, max_rnorms_factorized; label = string(lobpcg) * " (factorized perfect preconditionner)", 	lw = 2,mark = :x)
-	plot!()
-end
-
-# ╔═╡ ae1e777a-fe2b-4ea6-9ecb-240698e54608
-begin
-	    k = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="stability of high number of discretization points",xlabel="number of iterations",ylabel="maximum residual norm")
-	for Nb in 2500:2500:20000
-		H_nb=fd_hamiltonian(v_chain, Nb, 4)
-	    X = randn(eltype(H_nb), size(H_nb,2), 3)
-
-		Pinv_nb= factorize(H_nb) \I
-
-	    nb_inv_diag_residual_norms = lobpcg(H_nb; X = X, verbose = false, tol = 1e-6, Pinv=Pinv_nb,maxiter=30).residual_norms
-		nb_factorized_max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in nb_inv_diag_residual_norms] 
-
-    	plot!(k,nb_factorized_max_residual_norm_perfect; label = string(Nb) * "  points", 	lw = 2,mark = :x)
-	end
-	plot!()
+    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash, mark = :x)
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -789,31 +751,6 @@ begin
 	plot!(rnorm_mgs, label="Modified Gram-Schmidt Orthogonalization", yaxis=:log, lw=2)
 end
 
-# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
-begin
-	error_gs = Float64[]
-	error_mgs = Float64[]
-	error_qr = Float64[]
-
-	mrange = 10.0 .^ range(-16, stop=0, length=100)
-	
-	for m in mrange
-	    X = testmatrix(m)
-	    gs_result = ortho_gs(X)
-	    qr_result = ortho_qr(X)
-		mgs_result = ortho_mgs(X)
-	    
-	    push!(error_gs, orthonormality_error(gs_result))
-	    push!(error_qr, orthonormality_error(qr_result))
-		push!(error_mgs, orthonormality_error(mgs_result))
-	end
-	
-	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
-	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
-end
-
-
 # ╔═╡ 17ca9f09-3a3f-40e0-9314-94ce8e5f36b8
 md"""
 Analyzing the plots above, we can see that the modified Gram-Schmidt procedure doesn't give high orthonormality errors and on the tested examples is as good as QR method. On the other hand, MGS doesn't show a big improvement within our lobpcg algorithm.
@@ -847,21 +784,27 @@ Let $M = \left(L^H\right)^{-1}$ and consider the product:
 ```math
 \left( X M \right)^H X M = M^H (X^H X) M = M^H (L L^H) M = \left(\left(L^H\right)^{-1}\right)^H L L^H \left(L^H\right)^{-1} = I,
 ```
-since the conjugate transpose of a real lower triangular matrix is its inverse. On the other hand,
+On the other hand,
 
 ```math
-X M \left( X M \right)^H  = X M M^H X^H = X \left(L^H\right)^{-1} L^{-1} (L L^H) M = \left(\left(L^H\right)^{-1}\right)^H L L^H \left(L^H\right)^{-1} = I
+\begin{align}
+X M \left( X M \right)^H  &= X M M^H X^H = X \left(L^H\right)^{-1} L^{-1} X^H \\
+	&= X \left(L L^H\right)^{-1} X^H = X \left(X^H X \right)^{-1} X^H  \\
+	&= X X^{-1} (X^H)^{-1} X^H= I.
+\end{align}
 ```
 
 As a result, we have:
 ```math
-\left( X \left(L^H\right)^{-1} \right)^H X \left(L^H\right)^{-1} = I,
+\left( X \left(L^H\right)^{-1} \right)^H X \left(L^H\right)^{-1} = I
 ```
+and 
+```math
+ X \left(L^H\right)^{-1} \left(X \left(L^H\right)^{-1} \right)^H= I,
+```
+
 which means that $X \left(L^H\right)^{-1}$ is indeed orthogonal.
 """
-
-# ╔═╡ cb9d5564-6c68-4a6d-be6f-ad64a46da045
-
 
 # ╔═╡ 50e2baea-317d-43d5-82a2-df63936ddefd
 md"""
@@ -873,15 +816,77 @@ md"""
 **Answer:**
 """
 
+# ╔═╡ d2049d09-c25a-4531-9c1d-fea56287ab5b
+function ortho_cholesky(X)
+    L = cholesky(X' * X).L
+    Xnew = X / L'
+	return Xnew
+end
+
+# ╔═╡ 47151505-4564-4f24-a6a4-3102386c06b7
+begin
+	Xmatrix = randn(1000, 10)
+	
+	ch_res = @benchmark ortho_cholesky($Xmatrix)
+	qr_res = @benchmark ortho_qr($Xmatrix)
+	gs_res = @benchmark ortho_gs_matrix($Xmatrix)
+
+	println("Orthogonal GS Time: ", mean(gs_res).time)
+	println("Ortho Cholesky Time: ", mean(ch_res).time)
+	println("Ortho QR Time: ", mean(qr_res).time)
+end
+
+# ╔═╡ 5370f280-530f-490d-b625-e001d5592eb7
+md"""
+The Cholesky factorization method is computationally efficient since matrix $L$ is lower triangular and can be more stable because it doesn't accumulate errors across iterations but computes all vectors simultaneously.
+"""
+
 # ╔═╡ 3c1849b8-6345-4cdf-875a-a32ba455516b
 md"""
-**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method to fail for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
+**(c)** Now run `ortho_cholesky` on `testmatrix(m)` for various values of $m$. You should notice this method fails for too small values of $m$ (`PosDefException`), because $X^H X$ is numerically no longer positive definite. By computing the eigenspectrum of `X^H X` check exactly what happens as $m$ gets smaller. With this in mind add `ortho_cholesky` to your plot in Task 3 (d) by truncating the range of $m$ appropriately for `ortho_cholesky`. How does it perform in contrast to the other methods we discussed so far?
+"""
+
+# ╔═╡ bbf0ee35-8793-4565-9237-6dac36f9fe00
+md"""
+**Answer:**
+"""
+
+# ╔═╡ f0e13305-d26d-49d0-9cc7-f1b509bf8b71
+ortho_cholesky(testmatrix(10^(-7)))
+
+# ╔═╡ 8fe22329-09f1-49d8-bea8-6fd7d78ced67
+let
+	testm = testmatrix(10^(-5))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ fb96d065-43a6-4e70-a20b-ac962fa38249
+let
+	testm = testmatrix(10^(-8))
+	eigvals(testm' * testm)
+end
+
+# ╔═╡ 275aabe3-f065-4fd0-ad44-8a992951caff
+md"""
+We can see that as $m$ gets too small a part of eigenvalues approaches numerical zero. In comparison with other methods, it shows the same performance as `orth_gs` before m gets too small resulting in an ill-conditioned or nearly singular matrix 
+$X^H X$ so that `orth_cholesky` fails.
 """
 
 # ╔═╡ eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
 md"""
 **(d)** To avoid the breakdown of cholesky-based orthogonalisation approaches, a typical trick is to apply the cholesky factorisation to $X^H X + β * I$ instead of $X^H X$, where $β > 0$ is a small constant. With the $L L^H$ factorisation at hand one then forms $\tilde{X} = X \left(L^H)^{-1}\right)$ as usual. $\tilde{X}$ is now not yet orthogonal, but its closer than $X$ is. A second application of (unshifted) `ortho_cholesky` to $\tilde{X}$ is then performed to finally obtain a matrix with orthonormal columns. Code up this procedure for $β=1$ as the function `ortho_shift_cholesky` and add it to the plot in Task 3 (d). You should again need to truncate the range of $m$ to avoid a `PosDefException`, but much smaller values for $m$ should be feasible. 
 """
+
+# ╔═╡ 1378a594-7106-490e-9175-e5532f3599fd
+function ortho_shift_cholesky(X; β=1.0)
+    L = cholesky(X' * X + β * I).L
+    X_tilde = X / L'
+    L_tilde = cholesky(X_tilde' * X_tilde).L
+    return X_tilde / L_tilde'
+end
+
+# ╔═╡ 3588e8e1-3966-4779-9ebc-dfcedc21bea0
+ortho_shift_cholesky(testmatrix(10^(-10)))
 
 # ╔═╡ baa15be1-4aaf-4789-95d6-c08c918cb245
 md"""
@@ -890,6 +895,59 @@ md"""
 
 # ╔═╡ 5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
 ortho_dftk(X) = DFTK.ortho!(copy(X)).X
+
+# ╔═╡ 8df30591-c27c-449a-8d2f-361db4a8153b
+begin
+	error_gs = Float64[]
+	error_mgs = Float64[]
+	error_qr = Float64[]
+	error_ch = Float64[]
+	error_s_ch = Float64[]
+	error_dftk = Float64[]
+
+	mrange = 10.0 .^ range(-16, stop=0, length=100)
+	
+	for m in mrange
+	    X = testmatrix(m)
+	    gs_result = ortho_gs(X)
+	    qr_result = ortho_qr(X)
+		mgs_result = ortho_mgs(X)
+		dftk_result = ortho_dftk(X)
+		
+		if m > 0.5 * 10. ^ (-7)
+			ch_result = ortho_cholesky(X)
+        	push!(error_ch, orthonormality_error(ch_result))
+		else
+			push!(error_ch, NaN)
+		end
+
+		if m > 0.5 * 10. ^ (-10)
+			s_ch_result = ortho_shift_cholesky(X)
+        	push!(error_s_ch, orthonormality_error(s_ch_result))
+		else
+			push!(error_s_ch, NaN)
+		end
+	    
+	    push!(error_gs, orthonormality_error(gs_result))
+	    push!(error_qr, orthonormality_error(qr_result))
+		push!(error_mgs, orthonormality_error(mgs_result))
+		push!(error_dftk, orthonormality_error(dftk_result))
+	end
+	
+	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
+	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
+	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
+	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
+	scatter!(mrange, error_dftk, label="error_dftk", markeralpha=0.2, markersize=2)
+end
+
+
+# ╔═╡ 4569f866-05e4-474d-899a-c68e000b656b
+begin
+	dftk_res = @benchmark ortho_dftk($Xmatrix)
+	println("DFTK.ortho! Time: ", mean(dftk_res).time)
+end
 
 # ╔═╡ 512200e7-9230-4469-b5f4-4855c7754c95
 md"""
@@ -949,30 +1007,6 @@ md"""
 In your implementation replace `tol32=XXX` by a sensible default value for `tol32`.
 
 Explain why you have to recompute the Hamiltonian with `T=Float64` instead of simply converting the `Float32` Hamiltonian. Is there a way to avoid computing the Hamiltonian twice ?
-"""
-
-# ╔═╡ 0722bcc9-2dde-4289-8c7b-c6e3816281ff
-function solve_discretised(V,Nb,a; n_ep=3,tol32=XXX,tol=1e-6,maxiter=100)
-	
-	fd_hamiltonian32 = fd_hamiltonian(V, Nb, a; T=Float32)
-	fd_hamiltonian64 = fd_hamiltonian(V, Nb, a; T=Float64)
-
-	X=randn(eltype(Float64), size(fd_hamiltonian32, 2),n_ep)
-	
-	factorized_lobpcg32= lobpcg(fd_hamiltonian32; X = Float32.(X), verbose = false, tol = XXX, Pinv=factorized(fd_hamiltonian32)\I)
-
-	factorized_lobpcg64= lobpcg(fd_hamiltonian64; X = Float64.(factorized_lobpcg64.X), verbose = false, tol = 1e-6, Pinv=factorized(fd_hamiltonian64)\I)
-return 	factorized_lobpcg64
-end
-
-
-# ╔═╡ 49b6eed8-da2f-48cf-952a-7bdbd46e6469
-md"""
-**Answer (b)**
-
-It is a loss of generality to _upcast_ a Float32 into a Float64. As the computer will simply fill the remaining bits with 0’s, this _a posteriori_ change does not enhance the precision of the calculation.
-
-One alternative to calculating twice the hamiltonian is to _downcast_ it from Float64 to Float32.
 """
 
 # ╔═╡ 32263be1-05bc-441e-b220-fa2f2aa8c052
@@ -3076,7 +3110,7 @@ version = "1.4.1+1"
 # ╠═b398b4ca-c0f9-4291-afb4-30a9644bbdb5
 # ╟─3465e45d-344d-4473-83e6-da157e01a31c
 # ╟─198f0276-f01b-4e8a-9225-4df74bcc2a46
-# ╟─9414343d-25d2-4502-ab1f-e66e7ef98357
+# ╠═9414343d-25d2-4502-ab1f-e66e7ef98357
 # ╟─51f20534-ff70-4eb8-b075-480b7ca34aab
 # ╟─36992fa1-49dc-4ab8-98d3-2b1aed333852
 # ╟─fd442026-e333-46af-a454-2e2b630a74f0
@@ -3102,9 +3136,6 @@ version = "1.4.1+1"
 # ╠═2cd96b11-41e9-4f37-a509-1c9f80e68159
 # ╟─4db84a39-89f2-449e-a340-4a8012a71017
 # ╠═e28a9c9c-9efd-473a-9ef5-9ec37273ce36
-# ╠═b7673185-8f01-4332-b8d4-abde2ad62700
-# ╠═ae1e777a-fe2b-4ea6-9ecb-240698e54608
-# ╠═cb360789-42b1-451c-a89e-4fcdd21d964c
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
@@ -3154,14 +3185,24 @@ version = "1.4.1+1"
 # ╟─6d49ed54-f809-470f-83c9-65e40871db51
 # ╟─dfd18ddd-a9e4-460a-97c4-07afbb83f4f2
 # ╟─a6f782cb-27b3-45a3-8b0e-23681406abef
-# ╠═110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
-# ╠═cb9d5564-6c68-4a6d-be6f-ad64a46da045
+# ╟─110aaa6e-3cad-4374-a95f-2f3dbbfc37e6
 # ╟─50e2baea-317d-43d5-82a2-df63936ddefd
-# ╠═97dce896-28bd-4e74-8ba9-cc9ff3b181c2
+# ╟─97dce896-28bd-4e74-8ba9-cc9ff3b181c2
+# ╠═d2049d09-c25a-4531-9c1d-fea56287ab5b
+# ╠═47151505-4564-4f24-a6a4-3102386c06b7
+# ╟─5370f280-530f-490d-b625-e001d5592eb7
 # ╟─3c1849b8-6345-4cdf-875a-a32ba455516b
+# ╟─bbf0ee35-8793-4565-9237-6dac36f9fe00
+# ╠═f0e13305-d26d-49d0-9cc7-f1b509bf8b71
+# ╠═8fe22329-09f1-49d8-bea8-6fd7d78ced67
+# ╠═fb96d065-43a6-4e70-a20b-ac962fa38249
+# ╟─275aabe3-f065-4fd0-ad44-8a992951caff
 # ╟─eedff6d1-e11b-43e4-a3d1-a04e44f65fc5
+# ╠═1378a594-7106-490e-9175-e5532f3599fd
+# ╠═3588e8e1-3966-4779-9ebc-dfcedc21bea0
 # ╟─baa15be1-4aaf-4789-95d6-c08c918cb245
 # ╠═5fdd20df-4b7e-43f1-8d14-fdbfad544f6d
+# ╠═4569f866-05e4-474d-899a-c68e000b656b
 # ╟─512200e7-9230-4469-b5f4-4855c7754c95
 # ╟─c71766f8-0f7f-499b-a1aa-37cfd6233735
 # ╟─6450e4ce-a827-4d8b-8d26-0921eea7a5bf
@@ -3171,8 +3212,6 @@ version = "1.4.1+1"
 # ╟─41d4f20f-d01e-4a4f-8d2f-da7a140a2bd8
 # ╟─0f913723-86a8-407e-84be-5e5a607a2ead
 # ╟─2e02d881-40df-4559-82a9-f6a11239f337
-# ╠═0722bcc9-2dde-4289-8c7b-c6e3816281ff
-# ╠═49b6eed8-da2f-48cf-952a-7bdbd46e6469
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
 # ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
