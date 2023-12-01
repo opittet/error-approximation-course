@@ -1216,17 +1216,11 @@ function get_upper_bound(result, residual_norms)
 	err_KT_λ1 = residual_norms[1].hi .^2 ./ δ1
 end
 
-# ╔═╡ 67ccedd4-5e13-4e33-86af-31c09d85b67c
-begin
-	g_upper_bound = zeros(eltype(result.λ), length(result.λ))
-	for i in 1:3
-		g_upper_bound[i] =  interval(result.λ[i]).hi 
-	end
-	g_upper_bound
-end
+# ╔═╡ e470bd9b-566b-40e4-b5aa-dd3a42817dc8
+guaranteed_upper_bound = [interval(result.λ[i]).hi for i in 1:3]
 
 # ╔═╡ 16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
-get_upper_bound(result, residual_norms)
+alg_arith_error = get_upper_bound(result, residual_norms)
 
 # ╔═╡ dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
 begin
@@ -1239,8 +1233,8 @@ end
 # width of the residual interval as an estimate for the arithmetic error in the first eigenvalue
 res_width = residual_norms[1].hi - residual_norms[1].lo
 
-# ╔═╡ bf20ba12-b1fb-471d-83f6-48c014eac8f9
-alg_upper_bound = g_upper_bound[1] - arithm_upper_bound
+# ╔═╡ 8c07227d-4dcc-414c-b542-b2de090e87ae
+
 
 # ╔═╡ b73829c8-c833-45a4-b168-d68e9b54547f
 md"""
@@ -3447,11 +3441,11 @@ version = "1.4.1+1"
 # ╠═bf63a030-eba0-420e-9209-e05016f3eca3
 # ╟─e0e06f34-9d43-442a-82ca-fe0f7501511f
 # ╠═157a3634-c42e-4bf4-a183-dd9d79d63c45
-# ╠═67ccedd4-5e13-4e33-86af-31c09d85b67c
+# ╠═e470bd9b-566b-40e4-b5aa-dd3a42817dc8
 # ╠═16dbcbf5-e0bc-4b09-8eae-fbea8b9142eb
 # ╠═dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
 # ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
-# ╠═bf20ba12-b1fb-471d-83f6-48c014eac8f9
+# ╠═8c07227d-4dcc-414c-b542-b2de090e87ae
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
 # ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
