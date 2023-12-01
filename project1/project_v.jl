@@ -1267,7 +1267,7 @@ md"""
 I was in charge of tasks 1-2 and 5-6.
 
 - _How did you decide within the group to distribute the workload as such ?_
-We thought that 2 each at the begining and at the end would be a good way of splitting the workload, ensuring that we each have seen a bit of all parts of the project.
+We thought that 2 exercises per person at both both begining and at the end of the project would be a good way of splitting the workload, ensuring that we have both been acquainted with all parts of the project.
 
 - _In your opinion did each group member contribute equally to the project ?_
 On top of doing her parts, Anna has done more work because she helped me (re)write my parts to have cleaner code and checked that everything made sense Whereas I just re-read what she had done without changing much (maybe a bit on the plots).
