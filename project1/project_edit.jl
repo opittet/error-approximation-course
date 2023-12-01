@@ -1236,28 +1236,115 @@ md"""
 *Hint:* A good strategy is to first select a reasonable value for $N_b$, then keep $h = \frac{2a}{N_b - 1}$ fixed and converged wrt. $a$, then use that value for $a$ to converge wrt. $N_b$ (by decreasing $h$), then repeat until the desired tolerance is found.
 """
 
-# ╔═╡ f2dfe489-d2d3-4fe2-8592-e147ddeda8db
-begin
-	N_b = 500
-	a_v = 2.4
-	h = 2a_v/(N_b - 1) 
-end
-
 # ╔═╡ e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
 begin
-	ε_CL = solve_discretised(v_chain, N_b, a_v; n_ep=3).λ[1]
-	ε_QM = solve_discretised(v_atom, N_b, a_v; n_ep=3).λ[1]
-
-	Δε = ε_CL - ε_QM
+	min_ϵ = 10
+	found_a = 0
+	h_fixed = 0.1
+	
+	for a in collect(1:0.1:10)
+		Nb = round(Int, 2a / h_fixed + 1)
+		ε_CL = solve_discretised(v_chain, Nb, Float64(a); n_ep=3).λ[1]
+		ε_QM = solve_discretised(v_atom, Nb, Float64(a); n_ep=3).λ[1]
+	
+		Δε = ε_CL - ε_QM
+		if abs(Δε) < min_ϵ
+			min_ϵ = Δε
+			found_a = a
+		end
+	end
+	final_min_ϵ1 = min_ϵ
 end
+
+# ╔═╡ 2999f76b-8c6c-4cf0-abbe-7cc876c20b87
+final_min_ϵ1
+
+# ╔═╡ 662db386-54bf-476e-ae35-d44e3a02638d
+found_a
+
+# ╔═╡ 7a05482e-618d-4f5b-b67e-b8b6c590ec0b
+round(Int, 2found_a / h_fixed + 1)
+
+# ╔═╡ c46f0b42-0095-4549-922d-9dc6a0075fc9
+begin
+	final_min_ϵ2 = final_min_ϵ1
+	found_Nb = round(Int, 2found_a / h_fixed + 1)
+	for N in collect(found_Nb:5:1000)
+		ε_CL = solve_discretised(v_chain, N, found_a; n_ep=3).λ[1]
+		ε_QM = solve_discretised(v_atom, N, found_a; n_ep=3).λ[1]
+	
+		Δε = ε_CL - ε_QM
+		if abs(Δε) < final_min_ϵ2
+			final_min_ϵ2 = Δε
+			found_Nb = N
+		end
+	end
+end
+
+# ╔═╡ 8d3ad605-f732-4176-ae72-2643b3566190
+found_Nb
+
+# ╔═╡ f107a1b6-70ca-477f-a64c-984d2200151a
+final_min_ϵ2
+
+# ╔═╡ 0b09a9f1-1bc0-4d24-94b5-92775313142e
+begin
+	ε_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3).λ[1]
+	ε_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3).λ[1]
+	println(ε_CL - ε_QM)
+	
+end
+
+# ╔═╡ 7f3b3187-e059-4a08-ba2c-94e5a72b8af6
+# ╠═╡ disabled = true
+#=╠═╡
+
+  ╠═╡ =#
+
+# ╔═╡ 7d3a8900-0144-4f90-b910-7e2e86a4b103
+# ╠═╡ disabled = true
+#=╠═╡
+# begin
+# 	final_ϵ2 = final_min_ϵ1
+# 	# found_Nb = round(Int, 2found_a / h_fixed + 1)
+# 	for a in collect(1:0.1:10)
+# 		current_Nb = round(Int, 2a / h_fixed + 1)
+# 		for N in collect(current_Nb:50:1500)
+# 			ε_CL = solve_discretised(v_chain, N, a; n_ep=3).λ[1]
+# 			ε_QM = solve_discretised(v_atom, N, a; n_ep=3).λ[1]
+		
+# 			Δε = ε_CL - ε_QM
+# 			if abs(Δε) < final_ϵ2
+# 				final_ϵ2 = Δε
+# 				f_Nb = N
+# 				f_A = a
+# 			end
+# 		end
+# 	end
+# end
+  ╠═╡ =#
 
 # ╔═╡ a18370bd-e054-4fe5-840a-1638ad4fbca2
 md"""
 **(b)** Employ the Kato-Temple bound employed in Task 7 (c) to verify that the combined algorithm and arithmetic error of $Δε$ is less than the $3$ digits of convergence, i.e. that the algorithm and arithmetic error can be neglected.
 """
 
-# ╔═╡ 03abecb0-8fe6-413d-9e77-e31a84504ba4
+# ╔═╡ b7ca310f-6bf1-4f80-93d8-7942b8cdf9d9
+begin
+	result_CL = solve_discretised(v_chain, found_Nb, found_a; n_ep=3)
+	residual_norms_CL = residual_norms_interval(v_chain, result_CL.λ, result_CL.X, found_Nb, found_a)
+	upper_bound_CL = get_upper_bound(result_CL, residual_norms_CL)
+end
 
+# ╔═╡ 03abecb0-8fe6-413d-9e77-e31a84504ba4
+begin
+	result_QM = solve_discretised(v_atom, found_Nb, found_a; n_ep=3)
+	residual_norms_QM = residual_norms_interval(v_atom, result_QM.λ, result_QM.X, found_Nb, found_a)
+	upper_bound_QM = get_upper_bound(result_QM, residual_norms_QM)
+end
+
+# ╔═╡ 56284925-4a6b-4bfe-bf90-31f38209cfb1
+result_CL.λ[1] - result_QM.λ[1]
 
 # ╔═╡ e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 md"""
@@ -3417,10 +3504,20 @@ version = "1.4.1+1"
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
 # ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
-# ╠═f2dfe489-d2d3-4fe2-8592-e147ddeda8db
 # ╠═e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
+# ╠═2999f76b-8c6c-4cf0-abbe-7cc876c20b87
+# ╠═662db386-54bf-476e-ae35-d44e3a02638d
+# ╠═7a05482e-618d-4f5b-b67e-b8b6c590ec0b
+# ╠═c46f0b42-0095-4549-922d-9dc6a0075fc9
+# ╠═8d3ad605-f732-4176-ae72-2643b3566190
+# ╠═f107a1b6-70ca-477f-a64c-984d2200151a
+# ╠═0b09a9f1-1bc0-4d24-94b5-92775313142e
+# ╠═7f3b3187-e059-4a08-ba2c-94e5a72b8af6
+# ╠═7d3a8900-0144-4f90-b910-7e2e86a4b103
 # ╟─a18370bd-e054-4fe5-840a-1638ad4fbca2
+# ╠═b7ca310f-6bf1-4f80-93d8-7942b8cdf9d9
 # ╠═03abecb0-8fe6-413d-9e77-e31a84504ba4
+# ╠═56284925-4a6b-4bfe-bf90-31f38209cfb1
 # ╟─e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 # ╠═27853643-8358-4d84-a8bd-efc3f415e540
 # ╠═b15e519a-cb5f-4bb7-b105-3b8ae704e489
