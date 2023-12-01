@@ -1071,9 +1071,9 @@ function solve_discretised(V, Nb, a; n_ep=3, tol32=1e-6, tol=1e-6, maxiter=100)
     lobpcg_result_float32 = lobpcg(H_float32; X=X_32, tol=tol32, verbose = false, maxiter=maxiter, Pinv=diagm(1.0 ./ diag(H_float32)));
 	
     H_float64 = fd_hamiltonian(V, Nb, a; T=Float64)
-    X_64 = Float64.(lobpcg_result_float32.X)
+    X_64 = copy(lobpcg_result_float32.X) # Float64.
 
-    lobpcg_result_float64 = lobpcg(H_float64; X=X_64, tol=tol, maxiter=maxiter, verbose = false, Pinv=diagm(1.0 ./ diag(H_float64)))
+    lobpcg_result_float64 = lobpcg(H_float64; X=Float64.(X_64), tol=tol, maxiter=maxiter, verbose = false, Pinv=diagm(1.0 ./ diag(H_float64)))
 
     return lobpcg_result_float64
 end
@@ -1128,6 +1128,52 @@ which gets the solution eigenpairs `λ` and `X` in `Float64`
 as returned in the named tuple of `solve_discretised` and computes their residual norms using interval arithmetic. The return value should be a vector of $n$ intervals if $n$ eigenpairs are passed to the function. Test your function on the result of `solve_discretised` for `v_chain`, `Nb = 1000`, `a = 4` and `n_ep=3`. You should obtain narrow intervals with upper and lower bounds around the value chosen for `tol`.
 """
 
+# ╔═╡ 8d6daaad-3c5a-400c-a680-53ce149d9a49
+function residual_norms_interval(V, λ, X, Nb, a)
+    H_interval = fd_hamiltonian_interval(V, Nb, a)
+    residual_norms = zeros(Interval{Float64}, length(λ))
+
+    for i in 1:length(λ)
+        residual = H_interval * X[:, i] - λ[i] * X[:, i]
+        residual_norms[i] = norm(residual)
+    end
+
+    return residual_norms
+end
+
+# ╔═╡ 9985e9f4-eaa7-4bec-9976-1327f3dedbd0
+H_interval = fd_hamiltonian_interval(v_chain, 1000, 4)
+
+# ╔═╡ 2ac303fd-9db3-4718-acfd-197f304c742a
+begin
+	result = solve_discretised(v_chain, 1000, 4; n_ep=3)
+	residual_norms = residual_norms_interval(v_chain, result.λ, result.X, 1000, 4)
+end
+
+# ╔═╡ 1941bd87-52e8-4cdf-8e4d-a9ee01235887
+result.λ
+
+
+# ╔═╡ a846d975-f935-4d61-8b0b-623e5738fd6a
+result.X[:, 1]
+
+# ╔═╡ dea55d17-ab05-49c1-9b37-90f3d7f67f89
+norm(fd_hamiltonian(v_chain, 1000, 4) * result.X[:, 1] - result.λ[1] * result.X[:, 1])
+
+# ╔═╡ 40b2dabd-d27b-4fa2-9444-2d87b32a3580
+norm(fd_hamiltonian_interval(v_chain, 1000, 4) * result.X[:, 1] - result.λ[1] * result.X[:, 1])
+
+# ╔═╡ e3570f1b-22a3-4d4c-b814-8e2a26009698
+for i in 1:length(λ)
+        residual = H_interval * X[:, i] - λ[i] * X[:, i]
+        residual_norms[i] = norm(residual)
+    end
+
+# ╔═╡ 8619e0da-e9ce-4661-8a5e-369ec49645b2
+md"""
+As we can see, this gives us narrow intervals around the value chosen for tol.
+"""
+
 # ╔═╡ 46578541-6513-4236-bcdc-2eba4b821ca0
 md"""
 Recall that the residual norm itself is one of the main ingredients to obtain an upper bound to the error of the eigenvalue (see the Bauer-Fike and Kato-Temple bounds). Furthermore the intervals obtained from interval arithmetic are guaranteed to enclose the exact result (the result if *exact arithmetic* was employed). Therefore if we denote the exact residual norm by $\|r_i\| > 0$ and the returned intervals from `residual_norms_interval` by $\big[\|r_i\|_\text{lo}, \|r_i\|_\text{hi}\big]$, we are guaranteed to have $\|r_i\|\in \big[\|r_i\|_\text{lo}, \|r_i\|_\text{hi}\big]$. A guaranteed upper bound to the residual norm accounting for both algorithm *and* arithmetic error is thus to employ $\|r_i\|_\text{hi}$ instead of $\|r_i\|$. From an interval `pi_inter` this can be extracted as such:
@@ -1160,6 +1206,62 @@ md"""
 ----------------------
 """
 
+# ╔═╡ 49dc420d-0144-4c99-9753-aa7849619442
+residual_norms
+
+# ╔═╡ 1b359590-0ca5-47be-ba68-8d90ca2e482b
+result.λ
+
+# ╔═╡ 67ccedd4-5e13-4e33-86af-31c09d85b67c
+begin
+	g_upper_bound = zeros(eltype(result.λ), length(result.λ))
+	for i in 1:3
+		g_upper_bound[i] =  interval(result.λ[i]).hi 
+	end
+	g_upper_bound
+end
+
+# ╔═╡ b0f7d197-32db-404a-9f98-2afaeef33d38
+begin
+	δ_list = [0. for i in 1:3]
+	δ_list[1] = abs(result.λ[1] - result.λ[2]) - g_upper_bound[2]
+	δ_list[3] = abs(result.λ[3] - result.λ[2]) - g_upper_bound[2]
+	
+	δ_left = abs(result.λ[2] - result.λ[1]) - g_upper_bound[1]
+	δ_right = abs(result.λ[2] - result.λ[3]) - g_upper_bound[3]
+	δ_list[2] = min(δ_left, δ_right)
+	
+	δ = [max(0, i) for i in δ_list]
+end
+
+# ╔═╡ 3a12fa98-9a85-4836-9915-70189f0e6ceb
+residual_norms[2]
+
+# ╔═╡ b1bc0285-9007-4930-ae27-b08c10e6030a
+begin
+	δ1 = abs(result.λ[1] - result.λ[2]) - residual_norms[2].hi
+	
+	# upper bound for the combined algorithm and arithmetic error 
+	err_KT_λ1 = g_upper_bound .^2 ./ δ1
+end
+
+# ╔═╡ dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
+begin
+	λ_interval = interval(result.λ[1])
+	# upper bound to the arithmetic error
+	arithm_upper_bound = radius(λ_interval)
+end
+
+# ╔═╡ dc691698-4c64-48c4-9ebb-c796113dc469
+residuals[1]
+
+# ╔═╡ 0c803ce1-efcc-44e8-bcb1-a417a55cc604
+# width of the residual interval as an estimate for the arithmetic error in the first eigenvalue
+res_width = residuals[1].hi - residuals[1].lo
+
+# ╔═╡ bf20ba12-b1fb-471d-83f6-48c014eac8f9
+alg_upper_bound = g_upper_bound[1] - arithm_upper_bound
+
 # ╔═╡ b73829c8-c833-45a4-b168-d68e9b54547f
 md"""
 ## Computing the effect of tunnelling
@@ -1186,6 +1288,22 @@ md"""
 
 *Hint:* A good strategy is to first select a reasonable value for $N_b$, then keep $h = \frac{2a}{N_b - 1}$ fixed and converged wrt. $a$, then use that value for $a$ to converge wrt. $N_b$ (by decreasing $h$), then repeat until the desired tolerance is found.
 """
+
+# ╔═╡ f2dfe489-d2d3-4fe2-8592-e147ddeda8db
+begin
+	a_v = 4
+	N_b = 500
+	h = (2a)/(N_b - 1)
+end
+
+# ╔═╡ e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
+begin
+	ε_CL = solve_discretised(v_chain, N_b, a_v; n_ep=3).λ[1]
+	ε_QM = solve_discretised(v_atom, N_b, a_v; n_ep=3).λ[1]
+end
+
+# ╔═╡ f5a636b6-8f49-4ccd-92e6-7760b6091971
+Δε = ε_CL - ε_QM
 
 # ╔═╡ a18370bd-e054-4fe5-840a-1638ad4fbca2
 md"""
@@ -3196,7 +3314,7 @@ version = "1.4.1+1"
 # ╠═b398b4ca-c0f9-4291-afb4-30a9644bbdb5
 # ╟─3465e45d-344d-4473-83e6-da157e01a31c
 # ╟─198f0276-f01b-4e8a-9225-4df74bcc2a46
-# ╠═9414343d-25d2-4502-ab1f-e66e7ef98357
+# ╟─9414343d-25d2-4502-ab1f-e66e7ef98357
 # ╟─51f20534-ff70-4eb8-b075-480b7ca34aab
 # ╟─36992fa1-49dc-4ab8-98d3-2b1aed333852
 # ╟─fd442026-e333-46af-a454-2e2b630a74f0
@@ -3313,15 +3431,37 @@ version = "1.4.1+1"
 # ╟─32263be1-05bc-441e-b220-fa2f2aa8c052
 # ╠═cdfab704-98c0-4f5a-b3b1-f9892b926f78
 # ╠═8dde28af-f1d5-4252-bbd1-22936a6a794e
-# ╠═ba83ffcc-662e-41e0-b875-ed42c89018f3
+# ╟─ba83ffcc-662e-41e0-b875-ed42c89018f3
+# ╠═8d6daaad-3c5a-400c-a680-53ce149d9a49
+# ╠═1941bd87-52e8-4cdf-8e4d-a9ee01235887
+# ╠═9985e9f4-eaa7-4bec-9976-1327f3dedbd0
+# ╠═a846d975-f935-4d61-8b0b-623e5738fd6a
+# ╠═dea55d17-ab05-49c1-9b37-90f3d7f67f89
+# ╠═40b2dabd-d27b-4fa2-9444-2d87b32a3580
+# ╠═e3570f1b-22a3-4d4c-b814-8e2a26009698
+# ╠═2ac303fd-9db3-4718-acfd-197f304c742a
+# ╟─8619e0da-e9ce-4661-8a5e-369ec49645b2
 # ╟─46578541-6513-4236-bcdc-2eba4b821ca0
 # ╠═232061e4-da8c-42d6-9801-23e724d7502c
 # ╟─df7d3c42-4956-4b36-a9bc-e8fb0f0ce2f1
 # ╠═bf63a030-eba0-420e-9209-e05016f3eca3
 # ╟─e0e06f34-9d43-442a-82ca-fe0f7501511f
+# ╠═49dc420d-0144-4c99-9753-aa7849619442
+# ╠═1b359590-0ca5-47be-ba68-8d90ca2e482b
+# ╠═67ccedd4-5e13-4e33-86af-31c09d85b67c
+# ╠═b0f7d197-32db-404a-9f98-2afaeef33d38
+# ╠═3a12fa98-9a85-4836-9915-70189f0e6ceb
+# ╠═b1bc0285-9007-4930-ae27-b08c10e6030a
+# ╠═dc8db7e2-e300-48bb-ab9d-61f47ffdc9ee
+# ╠═dc691698-4c64-48c4-9ebb-c796113dc469
+# ╠═0c803ce1-efcc-44e8-bcb1-a417a55cc604
+# ╠═bf20ba12-b1fb-471d-83f6-48c014eac8f9
 # ╟─b73829c8-c833-45a4-b168-d68e9b54547f
 # ╠═e5e1630d-7d9e-43da-8da9-4c437e615e71
-# ╟─264ce53d-40ff-4ae7-838e-49078f6d1ef1
+# ╠═264ce53d-40ff-4ae7-838e-49078f6d1ef1
+# ╠═f2dfe489-d2d3-4fe2-8592-e147ddeda8db
+# ╠═e5816d94-aa7d-41d3-aa92-bcabcd1bf0f4
+# ╠═f5a636b6-8f49-4ccd-92e6-7760b6091971
 # ╟─a18370bd-e054-4fe5-840a-1638ad4fbca2
 # ╟─e826fee5-8fe2-4d77-a94f-24ff976a3e1f
 # ╠═27853643-8358-4d84-a8bd-efc3f415e540
