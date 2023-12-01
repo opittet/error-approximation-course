@@ -385,6 +385,18 @@ md"""
 md"""**Preconditioner Noise Level:** `log_prec_noise` = $(@bind log_prec_noise PlutoUI.Slider(-3:0.1:-1.5, default=-2.5, show_value=true))
 """
 
+# ╔═╡ b7673185-8f01-4332-b8d4-abde2ad62700
+md"""
+As can be seen on the plot above,the factorization plays a crucial role to reduce the number of iteration steps required.
+
+Let’s now see if the algorithm is stable if we increase the number of discretisation points $Nb$:
+"""
+
+# ╔═╡ cb360789-42b1-451c-a89e-4fcdd21d964c
+md"""
+It appears that the algorithm does not suffer from unstability.
+"""
+
 # ╔═╡ e2a514d7-e71e-472e-b127-af2783167dad
 md"""
 -------------------
@@ -484,28 +496,54 @@ end
 
 # ╔═╡ e28a9c9c-9efd-473a-9ef5-9ec37273ce36
 begin
-	p = plot(yaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm")
+	p = plot(yaxis=:log,xaxis=:log,title=string(lobpcg) * ": different preconditioners" ,xlabel="Number of iterations",ylabel="Maximum residual norm",ylims=(1e-6, 1e7))
 
 	# Perfect preconditioner
-	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = precond).residual_norms
+	inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = precond).residual_norms
 	max_rnorm_perfect=[maximum(r_norms) for r_norms in inv_diag_residual_norms] 
-	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2,mark = :x)
+	
+	plot!(p, max_rnorm_perfect; label = "Perfect preconditioner", lw = 2)
 
 	# Preconditioner plus noise
 	prec_noise = 10 ^ log_prec_noise * randn(size(H_fd, 1))
 	noisy_precond = Diagonal(1 ./ diag(H_fd) .+ prec_noise)
-	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv = noisy_precond).residual_norms
+	noisy_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv = noisy_precond).residual_norms
 	max_rnorm_noisy=[maximum(r_norms) for r_norms in noisy_rnorms]
 
-	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash, mark = :x)
+	plot!(p, max_rnorm_noisy; label = "Noisy preconditioner", lw = 2,  		ls = :dash)
 
 	# Apgd preconditioner
 	Alopcg = Diagonal(abs.(randn(Nb)).^0.1);
 	Pinv = Diagonal(1 ./ diag(Alopcg))  # Diagonal preconditioner for Apgd    
-	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 30, Pinv).residual_norms
+	apgd_rnorms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, maxiter = 1000, Pinv).residual_norms
 	max_rnorm_apgd=[maximum(r_norms) for r_norms in apgd_rnorms]
+	
+    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash)
 
-    plot!(p, max_rnorm_apgd; label = "apgd preconditioner", lw 	= 2, ls = :dash, mark = :x)
+	#perfect preconditionner using factorization
+	Pinv= H_fd\I
+    factorized_inv_diag_residual_norms = lobpcg(H_fd; X = X0, verbose = false, tol = tol, Pinv).residual_norms
+	max_rnorms_factorized= [maximum(r_norms) for r_norms in factorized_inv_diag_residual_norms] 
+
+    plot(p, max_rnorms_factorized; label = string(lobpcg) * " (factorized perfect preconditionner)", 	lw = 2,mark = :x)
+	plot!()
+end
+
+# ╔═╡ ae1e777a-fe2b-4ea6-9ecb-240698e54608
+begin
+	    k = plot(yaxis=:log,xaxis=:log, ylims=(1e-6, 1e6),title="stability of high number of discretization points",xlabel="number of iterations",ylabel="maximum residual norm")
+	for Nb in 2500:2500:20000
+		H_nb=fd_hamiltonian(v_chain, Nb, 4)
+	    X = randn(eltype(H_nb), size(H_nb,2), 3)
+
+		Pinv_nb= factorize(H_nb) \I
+
+	    nb_inv_diag_residual_norms = lobpcg(H_nb; X = X, verbose = false, tol = 1e-6, Pinv=Pinv_nb,maxiter=30).residual_norms
+		nb_factorized_max_residual_norm_perfect=[maximum(residual_norms) for residual_norms in nb_inv_diag_residual_norms] 
+
+    	plot!(k,nb_factorized_max_residual_norm_perfect; label = string(Nb) * "  points", 	lw = 2,mark = :x)
+	end
+	plot!()
 end
 
 # ╔═╡ a867c1e4-5ccf-45d5-a81e-8d40ae6ad397
@@ -725,10 +763,28 @@ Explain why you have to recompute the Hamiltonian with `T=Float64` instead of si
 """
 
 # ╔═╡ 0722bcc9-2dde-4289-8c7b-c6e3816281ff
+function solve_discretised(V,Nb,a; n_ep=3,tol32=XXX,tol=1e-6,maxiter=100)
+	
+	fd_hamiltonian32 = fd_hamiltonian(V, Nb, a; T=Float32)
+	fd_hamiltonian64 = fd_hamiltonian(V, Nb, a; T=Float64)
+
+	X=randn(eltype(Float64), size(fd_hamiltonian32, 2),n_ep)
+	
+	factorized_lobpcg32= lobpcg(fd_hamiltonian32; X = Float32.(X), verbose = false, tol = XXX, Pinv=factorized(fd_hamiltonian32)\I)
+
+	factorized_lobpcg64= lobpcg(fd_hamiltonian64; X = Float64.(factorized_lobpcg64.X), verbose = false, tol = 1e-6, Pinv=factorized(fd_hamiltonian64)\I)
+return 	factorized_lobpcg64
+end
 
 
 # ╔═╡ 49b6eed8-da2f-48cf-952a-7bdbd46e6469
+md"""
+**Answer (b)**
 
+It is a loss of generality to _upcast_ a Float32 into a Float64. As the computer will simply fill the remaining bits with 0’s, this _a posteriori_ change does not enhance the precision of the calculation.
+
+One alternative to calculating twice the hamiltonian is to _downcast_ it from Float64 to Float32.
+"""
 
 # ╔═╡ 32263be1-05bc-441e-b220-fa2f2aa8c052
 md"""
@@ -2857,6 +2913,9 @@ version = "1.4.1+1"
 # ╠═2cd96b11-41e9-4f37-a509-1c9f80e68159
 # ╟─4db84a39-89f2-449e-a340-4a8012a71017
 # ╠═e28a9c9c-9efd-473a-9ef5-9ec37273ce36
+# ╠═b7673185-8f01-4332-b8d4-abde2ad62700
+# ╠═ae1e777a-fe2b-4ea6-9ecb-240698e54608
+# ╠═cb360789-42b1-451c-a89e-4fcdd21d964c
 # ╟─e2a514d7-e71e-472e-b127-af2783167dad
 # ╟─032e67ec-8614-4403-958f-2aea77c0a80f
 # ╠═4a6de877-7866-4d22-87a3-5720fab2ea38
