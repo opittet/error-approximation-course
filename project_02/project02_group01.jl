@@ -116,16 +116,16 @@ As defined in the lectures, an operator is called bounded if the following is tr
 Considering the norm of $V(x)$ we have:
 ```math
 \begin{align}
-\left\| V(x)\right\|_{L^2(\mathbb{R^3})} &\leq \sum_{|G| < \sqrt{2\mathcal{E}_V}} \| \hat{V}(G)\|_{L^2} \|e_G(x)\|_{L^2} = \\
+\left\| V(x)\right\|_{L^2(\mathbb{R^3})} &\leq \sum_{|G| < \sqrt{2\mathcal{E}_V}} \| \hat{V}(G)\|_{L^2} \|v\|_{L^2} = \\
 	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} \| \hat{V}(G)\|_{L^2} < \infty,
 \end{align}
 ```
 
 since $\hat{V}(G)$ is finite and only a small number of Fourier coefficients is non-zero. Therefore, the Cohen-Bergstresser potential is bounded.
 
-On the other hand,
+On the other hand, the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$, from which follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
 
-
+(?)
 """
 
 # ╔═╡ ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
@@ -161,6 +161,19 @@ From this conclude that for any $e_G \in \mathbb{B}_k^{\mathcal{E}}$ we have
 i.e. that each plane wave only couples via the Hamiltonian with these plane waves, that differ in the wave vector by no more than $\sqrt{2\mathcal{E}_V}$.
 
 -------
+"""
+
+# ╔═╡ e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+md"""
+**Solution (b):**
+
+We have
+
+```math
+\begin{align}
+\langle e_G | e_{G'} \rangle &= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |
+\end{align}
+```
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -2705,10 +2718,11 @@ version = "1.4.1+1"
 # ╟─f09f563c-e458-480f-92be-355ab4582fb5
 # ╟─363b4496-5728-4eea-a3cc-4a090952155c
 # ╟─11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
-# ╟─354b8072-dcf0-4182-9897-c3e9534bef5a
-# ╟─0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
+# ╠═354b8072-dcf0-4182-9897-c3e9534bef5a
+# ╠═0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
-# ╟─40f62be2-8394-4886-84e8-d595b6ff7cab
+# ╠═40f62be2-8394-4886-84e8-d595b6ff7cab
+# ╠═e06ad336-9ff8-48bb-9eaf-4a606d69d51c
 # ╟─05d40b5e-fd83-4e73-8c78-dfd986a42fc0
 # ╠═c4393902-7c57-4126-80af-8765bea42ebd
 # ╠═78cc8d4a-cb63-48d0-a2f9-b8ec8c2950e5
