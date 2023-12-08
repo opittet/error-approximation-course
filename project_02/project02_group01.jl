@@ -107,25 +107,30 @@ md"""
 md"""
 **(a) Solution:**
 
-As defined in the lectures, an operator is called bounded if the following is true:
+A function is called bounded if there exists a constant $C$ such that:
 
 ```math
-\left\| V \right\|_{\mathcal{B}(H^2, L^2)} = \sup_{0 \neq x \in H^2} \frac{\left\| V(x)\right\|_{L^2}}{\| x \|_{H^2}} < \infty.
+\sup_{0 \neq x \in H^2} | V(x)| \leq C.
 ```
 
 Considering the norm of $V(x)$ we have:
 ```math
 \begin{align}
-\left\| V(x)\right\|_{L^2(\mathbb{R^3})} &\leq \sum_{|G| < \sqrt{2\mathcal{E}_V}} \| \hat{V}(G)\|_{L^2} \|v\|_{L^2} = \\
-	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} \| \hat{V}(G)\|_{L^2} < \infty,
+| V(x)| &\leq  \frac{1}{\sqrt{|\Omega|}}  \sum_{|G| < \sqrt{2\mathcal{E}_V}} | \hat{V}(G)| |e^{iG \cdot x}| = \\
+	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} | \hat{V}(G)| = C,
 \end{align}
 ```
 
-since $\hat{V}(G)$ is finite and only a small number of Fourier coefficients is non-zero. Therefore, the Cohen-Bergstresser potential is bounded.
+where $C$ is a constant since $\hat{V}(G)$ is finite and only a small number of Fourier coefficients is non-zero: ...because $G$ is from the lattice and inside the circle. The constant $| \Omega |$ is the volume of the unit cell which can be calculated as follows: 
 
-On the other hand, the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$, from which follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
+```math
+```
 
-(?)
+Therefore, the Cohen-Bergstresser potential is bounded.
+
+On the other hand, the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$, from which follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a finite sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
+
+Therefore, since $V(x) \in L^{3/2}_{per}(\Omega)$ by applying theorem 10.1 the operator $H$ is self adjoint.
 """
 
 # ╔═╡ ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
@@ -174,6 +179,8 @@ We have
 \langle e_G | e_{G'} \rangle &= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |
 \end{align}
 ```
+
+why Fuirer coefficients are orthogonal
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -2718,7 +2725,7 @@ version = "1.4.1+1"
 # ╟─f09f563c-e458-480f-92be-355ab4582fb5
 # ╟─363b4496-5728-4eea-a3cc-4a090952155c
 # ╟─11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
-# ╠═354b8072-dcf0-4182-9897-c3e9534bef5a
+# ╟─354b8072-dcf0-4182-9897-c3e9534bef5a
 # ╠═0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
 # ╠═40f62be2-8394-4886-84e8-d595b6ff7cab
