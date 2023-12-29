@@ -321,6 +321,7 @@ begin
 	push!(Ecut_2a,80)
 	λ_conv=[]
 	X_conv=[]
+	res_norm=[]
 	ρ_bf=[]
 	n_bands_2a = 2
 
@@ -340,8 +341,7 @@ begin
 			push!(ρ_bf,(norm(residual_k)/norm(Xk[1]),norm(residual_k)/norm(Xk[2])))
 			push!(λ_conv,λk)
 			push!(X_conv,Xk)
-			#println(Xk)
-			#println("aaaaaaaaaa",residual_k)
+			push!(res_norm,norm(residual_k))
 		end		
 	end
 	println(ρ_bf)
@@ -368,6 +368,20 @@ begin
 	plot!(p,Ecut_2a[1:end-1],λ2[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	title!(p,subplot=1,"convergence of the first 2 eigenvalues")
+
+
+
+
+end
+
+# ╔═╡ f41b96ae-51a6-4aae-b9d2-ef0c546f2999
+begin
+	p_r= plot(layout=(1, 1),xlabel=L"$\mathcal{E}$ values")
+
+	println(res_norm)
+	plot!(p_r,Ecut_2a[1:end-1],res_norm[1:end-1],subplot=1,shape=:cross,label="the residual norm")
+
+	title!(p_r,subplot=1,"residual norm")
 
 
 
@@ -495,7 +509,7 @@ end
 
 # ╔═╡ 983b1a76-ecb9-42cd-a109-d8847d78ca79
 md"""
-The bounds do not get tighter as the eigenvalues converge
+The bounds do not get tighter as the eigenvalues converge.
 
 """
 
@@ -557,6 +571,8 @@ md"Error bars for indicating eigenvalue errors can also be easily added:"
 begin
 	λerror = [0.02 * abs.(randn(size(λk))) for λk in band_data.λ]  # dummy data
 	data_with_errors = merge(band_data, (; λerror))
+	print(band_data)
+	print(data_with_errors)
 	DFTK.plot_band_data(kpath, data_with_errors)
 end
 
@@ -573,6 +589,69 @@ function basis_change_Ecut(basis_small, Ecut_large)
                    basis_small.kcoords_global,
                    basis_small.kweights_global)
 end
+
+# ╔═╡ 8ad78ab5-fb3b-4a0c-a21d-fbddbf3d3f8c
+	band_data3 = compute_bands_auto(model; n_bands=6, tol=1e-3, Ecut=7)
+
+
+# ╔═╡ 6bda48f6-a89a-4827-9ba9-b20d00e27761
+begin
+	λ_conv3=[]
+	X_conv3=[]
+	res_norm3=[]
+	ham_list3=[]
+	ρ_bf3 = Vector{Vector{Float64}}()
+	print(ρ_bf3)
+
+		
+	ham_3 = Hamiltonian(band_data3.basis)
+	eigres_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_3, 6)
+
+
+	for (ik, kpt) in enumerate(band_data3.basis.kpoints)
+		
+
+		hamk = ham_3[ik]
+		λk   = eigres_3.λ[ik]
+		Xk   = eigres_3.X[ik]
+		residual_k = hamk * Xk - Xk * Diagonal(λk)
+		push!(ham_list3,hamk)
+		push!(ρ_bf3,([norm(residual_k)/norm(Xk[i]) for i in 1:6]))
+		push!(λ_conv3,λk)
+		push!(X_conv3,Xk)
+		push!(res_norm3,norm(residual_k))
+	end		
+	println(ρ_bf3)
+
+end
+
+# ╔═╡ e2274211-47d9-4751-92e4-fbd2839a4b2c
+
+begin
+	println(ρ_bf3)
+	band_data3_bf=merge(band_data3,(;ρ_bf3))
+	DFTK.plot_band_data(kpath, band_data3_bf)
+end
+
+# ╔═╡ f3a8531e-cad3-4575-9944-52d2cade1f76
+print(data_with_errors)
+
+# ╔═╡ 2c62a65c-5b8c-44cc-a028-5860f5119e8c
+print(band_data3_bf)
+
+# ╔═╡ b83e56f8-a339-4f53-a765-3f1295145287
+begin
+	println(typeof(ρ_bf3))
+	println(size(ρ_bf3))
+	println(size(ρ_bf3[1]))
+	
+	println(typeof(λerror))
+	println(size(λerror))
+	println(size(λerror[1]))
+end
+
+# ╔═╡ 8aa3159d-4845-463a-a1d2-336ec8f6efa6
+basis3=basis_change_Ecut(basis_one,Ecut_large=7)
 
 # ╔═╡ 646242a2-8df6-4caf-81dc-933345490e6c
 md"""
@@ -607,6 +686,14 @@ md"""
 
 -----
 """
+
+# ╔═╡ 3bff8455-bb2d-4acf-b098-268d57c101d5
+begin
+	print(ham_list3)
+	[(map(x -> vec(x), Hk)) for Hk in ham_list3]
+	ham_list3_flat= [hcat(map(x -> vec(x), Hk)) for Hk in ham_list3]
+	λ_kn,X_kn = [eigen(diag(Hk)) for Hk in ham_list3]
+end
 
 # ╔═╡ 14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 md"""
@@ -2907,6 +2994,7 @@ version = "1.4.1+1"
 # ╟─e0a07aca-f81a-436b-b11e-8446120e0235
 # ╠═2bf7d1a6-cd49-41ee-a670-4352febd02b6
 # ╠═0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
+# ╠═f41b96ae-51a6-4aae-b9d2-ef0c546f2999
 # ╠═6bfa0a42-a0e6-4bef-9dc0-0023796f087b
 # ╠═682f52e7-f7a9-4146-b789-268672049fa9
 # ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
@@ -2932,9 +3020,17 @@ version = "1.4.1+1"
 # ╠═2dee9a6b-c5dd-4511-a9e3-1d5bc33db946
 # ╟─da8c23eb-d473-4c2f-86f9-879016659f3e
 # ╠═3006a991-d017-40b3-b52b-31438c05d088
+# ╠═8ad78ab5-fb3b-4a0c-a21d-fbddbf3d3f8c
+# ╠═6bda48f6-a89a-4827-9ba9-b20d00e27761
+# ╠═e2274211-47d9-4751-92e4-fbd2839a4b2c
+# ╠═f3a8531e-cad3-4575-9944-52d2cade1f76
+# ╠═2c62a65c-5b8c-44cc-a028-5860f5119e8c
+# ╠═b83e56f8-a339-4f53-a765-3f1295145287
+# ╠═8aa3159d-4845-463a-a1d2-336ec8f6efa6
 # ╟─646242a2-8df6-4caf-81dc-933345490e6c
 # ╟─d7f3cadf-6161-41ce-8a7a-20fba5182cfb
 # ╟─f6efea9b-9656-4337-82a1-5b894e078338
+# ╠═3bff8455-bb2d-4acf-b098-268d57c101d5
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
