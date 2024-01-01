@@ -110,27 +110,35 @@ md"""
 A function is called bounded if there exists a constant $C$ such that:
 
 ```math
-\sup_{0 \neq x \in H^2} | V(x)| \leq C.
+| V(x)| \leq C \qquad \forall x \in \mathbb{R}^3.
 ```
 
-Considering the norm of $V(x)$ we have:
+Applying triangular inequality and using the fact that $|e^{iG \cdot x}| = 1$ as a modulus of a complex number in a polar form we have:
 ```math
 \begin{align}
 | V(x)| &\leq  \frac{1}{\sqrt{|\Omega|}}  \sum_{|G| < \sqrt{2\mathcal{E}_V}} | \hat{V}(G)| |e^{iG \cdot x}| = \\
-	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} | \hat{V}(G)| = C,
+	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} | \hat{V}(G)| = C \qquad \forall x \in \mathbb{R}^3,
 \end{align}
 ```
 
-where $C$ is a constant since $\hat{V}(G)$ is finite and only a small number of Fourier coefficients is non-zero: ...because $G$ is from the lattice and inside the circle. The constant $| \Omega |$ is the volume of the unit cell which can be calculated as follows: 
-
-```math
-```
+where $| \Omega |$ is a constant since it is the volume of the parallelepiped spanned by three vectors that form a unit cell. Only a small number of Fourier coefficients is non-zero because there is a finite number of vectors $G$ which is from the reciprocal lattice $\mathbb{L}^*$ and also inside the circle with the radius $\sqrt{2\mathcal{E}_V}$. Since $\hat{V}(G)$ is given to be finite we can conclude that $C$ is indeed a constant.
 
 Therefore, the Cohen-Bergstresser potential is bounded.
 
-On the other hand, the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$, from which follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a finite sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
+On the other hand, from the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$ follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a finite sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
 
-Therefore, since $V(x) \in L^{3/2}_{per}(\Omega)$ by applying theorem 10.1 the operator $H$ is self adjoint.
+Moreover, function $V(x) \in L^{2}(\Omega)$ which means that $\int_{\Omega}{|V(x)|^2 \,dx}$ is finite. Using Hölder's inequality, we have:
+
+```math
+\begin{align}
+\int_{\Omega}{|V(x)|^{3/2} \,dx} 
+	&\leq \left( \int_{\Omega}{ \left(|V(x)|^{3/2} \right)^{4/3} \,dx} \right)^{3/4} \left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4} = \\
+	&= \left( \int_{\Omega}{|V(x)|^{2} \,dx} \right)^{3/4} \left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4}< \infty,
+\end{align}
+```
+where $\left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4}$ is finite as a measure of the unit cell $\Omega$ and $\left(\int(|V(x)|^2) \,dx\right)^{3/4}$ is also finite by the assumption that $V(x)$ is in $L^2$.
+
+Therefore, $V(x) \in L^{3/2}_{per}(\Omega)$ and by applying theorem $10.1$ from the lectures the operator $H$ is self adjoint.
 """
 
 # ╔═╡ ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
@@ -168,19 +176,60 @@ i.e. that each plane wave only couples via the Hamiltonian with these plane wave
 -------
 """
 
-# ╔═╡ e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╔═╡ 055bf84a-abf2-4604-9c71-0ef3dca7fa78
 md"""
 **Solution (b):**
 
 We have
 
 ```math
-\begin{align}
-\langle e_G | e_{G'} \rangle &= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |
-\end{align}
+\langle e_G | e_{G'} \rangle 
+= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx
 ```
 
-why Fuirer coefficients are orthogonal
+In case when $G = G'$ we have:
+```math
+\int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \int_{\Omega} 1 \,dx = |\Omega|
+```
+
+In case of $G \neq G'$ denoting $(G - G') = G''$ which is also an element of the reciprocal lattice $\mathbb{L}^*$:
+```math
+\begin{align}
+\int_{\Omega} e^{iG'' \cdot x} \,dx = \int_{\Omega} \left(\cos{G'' \cdot x} + i \sin{G'' \cdot x} \right) \,dx = \int_{\Omega} \cos{G'' \cdot x} \,dx.
+\end{align}
+```
+Imaginary part is equal to zero since sine is an odd function. On the other hand, since we can reprecent the vectors $x$ and $G''$ as follows:
+
+$x = \alpha_1 a_1 + \alpha_2 a_2 + \alpha_3 a_3$
+
+and
+
+$G'' = \beta_1 b_1 + \beta_2 b_2 + \beta_3 b_3,$
+
+we have 
+
+$\cos{G'' \cdot x} = \cos{ \left( 2\pi \left( \alpha_1 \beta_1 + \alpha_2 \beta_2 + \alpha_3 \beta_3 \right) \right)} = 0$
+
+since $a_i \cdot b_j = 2π δ_{ij}$. Finally, we can see that
+
+$\langle e_G | e_{G'} \rangle  = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |.$
+
+"""
+
+# ╔═╡ e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+md"""
+
+
+Considering
+
+```math
+\begin{align}
+\langle e_G | T_k e_{G'} \rangle &= \int_\Omega e^{- iG \cdot x} \cdot \frac{1}{2} \left(-i \nabla_x + k \right)^2 e^{iG' \cdot x} \,dx \\
+&= \frac{1}{2} \int_\Omega e^{- iG \cdot x} \left(-i \nabla_x + k \right) \left(-i \nabla_x e^{iG' \cdot x} + k e^{iG' \cdot x} \right)  \,dx 
+= \delta_{GG'} \frac{1}{2} |G+k|^2
+\end{align} 
+```
+**... have to finish ...**
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -2726,10 +2775,11 @@ version = "1.4.1+1"
 # ╟─363b4496-5728-4eea-a3cc-4a090952155c
 # ╟─11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
 # ╟─354b8072-dcf0-4182-9897-c3e9534bef5a
-# ╠═0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
+# ╟─0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
-# ╠═40f62be2-8394-4886-84e8-d595b6ff7cab
-# ╠═e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╟─40f62be2-8394-4886-84e8-d595b6ff7cab
+# ╟─055bf84a-abf2-4604-9c71-0ef3dca7fa78
+# ╟─e06ad336-9ff8-48bb-9eaf-4a606d69d51c
 # ╟─05d40b5e-fd83-4e73-8c78-dfd986a42fc0
 # ╠═c4393902-7c57-4126-80af-8765bea42ebd
 # ╠═78cc8d4a-cb63-48d0-a2f9-b8ec8c2950e5
