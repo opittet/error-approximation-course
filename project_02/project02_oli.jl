@@ -462,25 +462,15 @@ X_large = transfer_blochwave(X_small, basis_small, basis_large)
 Using this technique you can compute the application of the Hamiltonian using a bigger basis (just as `Hamltonian(basis_large) * X_large`). Use this setup to vary $\mathcal{F}$ and use this to estimate $\mathcal{E}_V$ numerically. Check your estimate for various values of $\mathcal{E}$ to ensure it is consistent. Rationalise your results by taking a look at the [Cohen Bergstresser implementation in DFTK](https://github.com/JuliaMolSim/DFTK.jl/blob/0b61e06db832ce94f6b66c0ffb1d215dfa4822d4/src/elements.jl#L142).
 """
 
-# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
+# ╔═╡ 6c055866-68e9-49e1-bc7a-805839ee0147
 begin
 	basis_large = PlaneWaveBasis(model; Ecut=80, kgrid=(1, 1, 1))
 	ham_large = Hamiltonian(basis_large)
 	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
-	X_large=[]
-	println(basis_one.kpoints)
-	println(basis_large.kpoints)
-	for X in X_conv
-		print(X[1])
-		#print(length(G_vectors(basis_one, 1)))
-		#print(size(X[1], 1))
-		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
-		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
-		push!(X_large,(X1_large,X2_large))
-	end
-	prinln(X_large)
-
 end
+
+# ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
+Hamiltonian(basis_large) * X_large
 
 # ╔═╡ d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 md"""
@@ -1040,6 +1030,29 @@ Focusing on the first $5$ eigenvalues of the $\Gamma$ point of the GTH Hamiltoni
 
 **(b)** For a few offsets $\Delta$ between $5$ and $30$ set $\mathcal{F} = \mathcal{E} + \Delta$ and consider the $2$nd and $3$rd eigenvalue. Plot both the obtained error estimate as well as the error of the eigenvalue as you vary $\mathcal{E}$ between $5$ and $50$. Again take $\mathcal{E} = 100$ as a reference. What offset $\Delta$ would you recommend based on this investigation ?
 """
+
+# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	X_large=[]
+	println(basis_one.kpoints)
+	println(basis_large.kpoints)
+	for X in X_conv
+		print(X[1])
+		#print(length(G_vectors(basis_one, 1)))
+		#print(size(X[1], 1))
+		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
+		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
+		push!(X_large,(X1_large,X2_large))
+	end
+	prinln(X_large)
+
+end
+  ╠═╡ =#
+
+# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
+X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3000,6 +3013,9 @@ version = "1.4.1+1"
 # ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
 # ╟─e04087db-9973-4fad-a964-20d109fff335
 # ╟─abdfcc43-245d-425a-809e-d668f03e9b45
+# ╠═6c055866-68e9-49e1-bc7a-805839ee0147
+# ╠═3dab1ef5-ba74-4b22-89c6-8fea651fd959
+# ╠═90ab127d-9054-4a0f-88ba-8a340fa3afcc
 # ╠═3e13955c-b471-466a-b416-5c4b9c874584
 # ╟─d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 # ╠═e42ff75d-f401-4b15-9421-81b24277e01b
