@@ -13,6 +13,8 @@ begin
 	using PlutoTeachingTools
 	using PlutoUI
 	using Printf
+	using LaTeXStrings
+	using Measurements
 end
 
 # ╔═╡ 4b7ade30-8c59-11ee-188d-c3d4588f7106
@@ -229,7 +231,7 @@ Considering
 = \delta_{GG'} \frac{1}{2} |G+k|^2
 \end{align} 
 ```
-**... have to finish ...**
+**...   have to finish ...**
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -362,6 +364,67 @@ md"""
 **(a)** For the case of employing only a single $k$-point (`kgrid = (1, 1, 1)`) vary $\mathcal{E}$ (i.e. `Ecut`) between $5$ and $30$. Taking $\mathcal{E} = 80$ as a reference, plot the convergence of the first two eigenpairs of $H_k$ at the $\Gamma$ point.
 """
 
+# ╔═╡ f3d36456-d289-45f5-b033-de88cb49cf01
+begin
+	Ecut_2a=collect(5:30)
+	push!(Ecut_2a,80)
+	λ_conv=[]
+	X_conv=[]
+	ρ_Bauer_Fike=[]
+	n_bands_2a = 2
+
+	for Ecut_iter in Ecut_2a
+		
+		basis_2a = PlaneWaveBasis(model; Ecut=Ecut_iter, kgrid=(1, 1, 1));
+		ham_2a = Hamiltonian(basis_2a)
+		eigres_2a = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_2a, n_bands_2a)
+		
+		for (ik, kpt) in enumerate(basis_2a.kpoints)
+
+			hamk = ham_2a[ik]
+			λk   = eigres_2a.λ[ik]
+			Xk   = eigres_2a.X[ik]
+			residual_k = hamk * Xk - Xk * Diagonal(λk)
+			# is it just a norm?
+			push!(ρ_Bauer_Fike, (norm.(residual_k)[1], norm.(residual_k)[2]))
+			push!(λ_conv, λk)
+			push!(X_conv, Xk)
+		end		
+	end
+
+end
+
+# ╔═╡ 73588c96-6ed0-41c0-845c-aa32e2891203
+begin
+	p= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
+	λ1=[λ[1] for λ in λ_conv]
+	λ2=[λ[2] for λ in λ_conv]
+
+
+	plot!(p, Ecut_2a[1:end-1], λ1[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+
+    hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
+	plot!(p,Ecut_2a[1:end-1],λ2[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+    hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
+	title!(p,subplot=1,"convergence of the first 2 eigenvalues")
+
+
+end
+
+# ╔═╡ 114f70ef-1355-4e0b-b60a-4e78aafe59dc
+begin
+	p_diff= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values",yscale=:log10,minorgrid=true)
+
+	λ1_dif=[abs(λ-λ1[end]) for λ in λ1]
+	λ2_dif=[abs(λ-λ2[end]) for λ in λ2]
+
+
+	plot!(p_diff, Ecut_2a[1:end-1], λ1_dif[1:end-1], subplot=1, shape=:cross, label=L"|\lambda_1-\lambda_{1,\mathcal{E}=80}|")
+
+	plot!(p_diff, Ecut_2a[1:end-1], λ2_dif[1:end-1],subplot=2,shape=:cross,label=L"|\lambda_2-\lambda_{2,\mathcal{E}=80}|")
+	title!(p_diff,subplot=1,"absolute difference with converged λ")
+end
+
 # ╔═╡ 58856ccd-3a1c-4a5f-9bd2-159be331f07c
 md"""
 We want to compare this convergence behaviour with a first estimate of the eigenvalue discretisation error based on the Bauer-Fike bound. Given an approximate eigenpair $(\widetilde{λ}_{kn}, \widetilde{X}_{kn})$ of the fiber $H_k$ we thus need access to the residual
@@ -416,10 +479,40 @@ X_large = transfer_blochwave(X_small, basis_small, basis_large)
 Using this technique you can compute the application of the Hamiltonian using a bigger basis (just as `Hamltonian(basis_large) * X_large`). Use this setup to vary $\mathcal{F}$ and use this to estimate $\mathcal{E}_V$ numerically. Check your estimate for various values of $\mathcal{E}$ to ensure it is consistent. Rationalise your results by taking a look at the [Cohen Bergstresser implementation in DFTK](https://github.com/JuliaMolSim/DFTK.jl/blob/0b61e06db832ce94f6b66c0ffb1d215dfa4822d4/src/elements.jl#L142).
 """
 
+# ╔═╡ 66457c40-a346-41b4-a1c1-0c40096c7653
+begin
+	basis_large = PlaneWaveBasis(model; Ecut=80, kgrid=(1, 1, 1))
+	ham_large = Hamiltonian(basis_large)
+	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
+end
+
+# ╔═╡ 68cc4a96-42c5-44ef-b736-1036f39f903c
+X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
+
+# ╔═╡ 9f1e1dc3-b1fe-43d9-826e-2fd52573151e
+Hamiltonian(basis_large) * X_large
+
 # ╔═╡ d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 md"""
 **(d)** Based on the Bauer-Fike bound estimate the algorithm and arithmetic error for the first two eigenpairs at the $\Gamma$ point and for using cutoffs between $\mathcal{E} = 5$ and $\mathcal{E} = 30$. Add these estimates to your plot in $(a)$. What do you observe regarding the tightness of the bound ?
 """
+
+# ╔═╡ dbe7c8a1-8748-4a7d-8a34-55ab1c924692
+begin
+	p_bf= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
+
+	plot!(p_bf,Ecut_2a[1:end-1],λ1[1:end-1].±getindex.(ρ_Bauer_Fike,1)[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+    hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
+	
+	plot!(p_bf,Ecut_2a[1:end-1],λ2[1:end-1].±getindex.(ρ_Bauer_Fike,2)[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+    hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
+	
+	title!(p_bf,subplot=1,"convergence of the first 2 eigenvalues with Bauer-Fike bounds")
+
+end
+
+# ╔═╡ da293cbb-58e3-4049-b9a6-348f3b7e9e57
+ρ_Bauer_Fike
 
 # ╔═╡ 9a953b4e-2eab-4cb6-8b12-afe754640e22
 md"""----"""
@@ -881,7 +974,9 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoTeachingTools = "661c6b06-c737-4d37-b85c-46df65de6f69"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -890,6 +985,8 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 [compat]
 Brillouin = "~0.5.14"
 DFTK = "~0.6.14"
+LaTeXStrings = "~1.3.1"
+Measurements = "~2.11.0"
 Plots = "~1.39.0"
 PlutoTeachingTools = "~0.2.13"
 PlutoUI = "~0.7.54"
@@ -901,7 +998,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "59e568995ea38439fd0e6144dcff6ff9d4a92830"
+project_hash = "668bd3d4dabbb71614b44174b6317f5c857ac155"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1036,6 +1133,12 @@ deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jl
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.Calculus]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
+uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+version = "0.5.1"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
@@ -1838,6 +1941,26 @@ version = "1.1.9"
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 version = "2.28.2+0"
+
+[[deps.Measurements]]
+deps = ["Calculus", "LinearAlgebra", "Printf", "Requires"]
+git-tree-sha1 = "bdcde8ec04ca84aef5b124a17684bf3b302de00e"
+uuid = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+version = "2.11.0"
+
+    [deps.Measurements.extensions]
+    MeasurementsBaseTypeExt = "BaseType"
+    MeasurementsJunoExt = "Juno"
+    MeasurementsRecipesBaseExt = "RecipesBase"
+    MeasurementsSpecialFunctionsExt = "SpecialFunctions"
+    MeasurementsUnitfulExt = "Unitful"
+
+    [deps.Measurements.weakdeps]
+    BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
+    Juno = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
+    RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -2798,10 +2921,18 @@ version = "1.4.1+1"
 # ╟─142ac96e-bd9d-45a7-ad31-e187f28e884a
 # ╠═601c837c-1615-4826-938c-b39bb35f46d1
 # ╟─e0a07aca-f81a-436b-b11e-8446120e0235
+# ╠═f3d36456-d289-45f5-b033-de88cb49cf01
+# ╠═73588c96-6ed0-41c0-845c-aa32e2891203
+# ╠═114f70ef-1355-4e0b-b60a-4e78aafe59dc
 # ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
 # ╟─e04087db-9973-4fad-a964-20d109fff335
 # ╟─abdfcc43-245d-425a-809e-d668f03e9b45
+# ╠═66457c40-a346-41b4-a1c1-0c40096c7653
+# ╠═68cc4a96-42c5-44ef-b736-1036f39f903c
+# ╠═9f1e1dc3-b1fe-43d9-826e-2fd52573151e
 # ╟─d26fec73-4416-4a20-bdf3-3a4c8ea533d1
+# ╠═dbe7c8a1-8748-4a7d-8a34-55ab1c924692
+# ╠═da293cbb-58e3-4049-b9a6-348f3b7e9e57
 # ╟─9a953b4e-2eab-4cb6-8b12-afe754640e22
 # ╟─0616cc6b-c5f8-4d83-a247-849a3d8c5de8
 # ╠═d363fa0a-d48b-4904-9337-098bcef015bb
