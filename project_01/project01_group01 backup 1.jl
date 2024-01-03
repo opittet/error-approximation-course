@@ -999,7 +999,7 @@ begin
 	
 	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10,yaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
 	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_mgs, label="ortho_mgs", linestyle=:dash) #typo
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
 	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
 	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
 	plot!(mrange, error_dftk, label="error_dftk")
@@ -3486,6 +3486,7 @@ version = "1.4.1+1"
 # ╠═78d980de-68d6-46c8-a262-f235084963dc
 # ╠═def6770d-3b93-4023-afaf-ecffbd11ff51
 # ╟─d1b1ee12-479c-4b46-b008-30be3f3edfec
+# ╠═f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╟─2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 # ╟─2ed26679-3bfd-41b8-a447-89447d8a3186
 # ╠═44131ba5-19e7-4182-8435-7e6f78df6639
