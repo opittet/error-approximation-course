@@ -287,11 +287,6 @@ begin
 	@show (length(G_vectors_cart(basis_one, basis_one.kpoints[1])), n_bands)
 end
 
-# ╔═╡ c50b9d2e-dcf5-42be-b401-3da8c514165b
-function vector_norm(A,d=1)
-	return sqrt.(sum(abs2,A,d))
-end
-
 # ╔═╡ 142ac96e-bd9d-45a7-ad31-e187f28e884a
 md"""
 As a result if we wanted to compute at each $k$-point the residual
@@ -327,9 +322,8 @@ begin
 	λ_conv=[]
 	X_conv=[]
 	res_norm=[]
-	ρ_bauer_fike=[]
+	ρ_bf=[]
 	n_bands_2a = 2
-	δ_kato_temple=[]
 
 	for Ecut_iter in Ecut_2a
 		
@@ -343,60 +337,22 @@ begin
 			hamk = ham_2a[ik]
 			λk   = eigres_2a.λ[ik]
 			Xk   = eigres_2a.X[ik]
-			#Xk_reordered=Vector{Vector{Float64}}()
-			#for i in 1:n_bands_2a
-					
-			#	Xk_i= getindex.(Xk,i)
-			#	println("xk",size(Xk_i))
-			#	push!(Xk_reordered,Xk_i)
-			#end	
-				
-				
-			# not possible to do norm of vectors for a matrix https://discourse.julialang.org/t/vecnorm-column-row-wise-norm/12354
-
-
-			
 			residual_k = hamk * Xk - Xk * Diagonal(λk)
-
-			column_norms = [norm(residual_k[:,i]) for i in 1:n_bands_2a] #bauer_fike
-			
-			δk=[]
-			for i in 1:n_bands_2a #Kato-Temple
-				if i==n_bands_2a
-					δi= abs(λk[i] - λk[i-1]) - column_norms[i]
-				else
-					δi= abs(λk[i] - λk[i+1]) - column_norms[i]
-				end
-			push!(δk,Float64(δi))
-			println(δk)
-			end
-			push!(δ_kato_temple,δk)
-			
-			push!(ρ_bauer_fike,column_norms)
+			push!(ρ_bf,(norm(residual_k)/norm(Xk[1]),norm(residual_k)/norm(Xk[2])))
 			push!(λ_conv,λk)
 			push!(X_conv,Xk)
 			push!(res_norm,norm(residual_k))
 		end		
 	end
-	println(δ_kato_temple)
-	ρ_kato_temple= [getindex.(ρ_bauer_fike,i) .^2 ./ getindex.(δ_kato_temple,i) for i in 1:n_bands_2a]
-	println(size(ρ_bauer_fike))
-	println(ρ_bauer_fike)
-	#println(res_norm)
+	println(ρ_bf)
 	
 	#plot in for loop with n_bands doesn't work for some reason
 	
 	for i in 1:n_bands_2a
-	    #println(getindex.(λ_conv, i))
+	    println(getindex.(λ_conv, i))
 	    plot!(Ecut_2a, [λ[i] for λ in λ_conv], label="Curve $i")
 	end
-end
 
-
-# ╔═╡ 3856b78c-cadf-4e6c-868b-8026ab0bb670
-begin
-	println(δ_kato_temple)
-	println(ρ_kato_temple)
 end
 
 # ╔═╡ 0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
@@ -420,21 +376,12 @@ end
 
 # ╔═╡ f41b96ae-51a6-4aae-b9d2-ef0c546f2999
 begin
-	p_r= plot(layout=(2, 1),xlabel=L"$\mathcal{E}$ values")
+	p_r= plot(layout=(1, 1),xlabel=L"$\mathcal{E}$ values")
 
-	println(getindex.(ρ_bauer_fike,1))
-	println(getindex.(ρ_kato_temple,1))
-	
-	plot!(p_r,Ecut_2a[1:end-1],getindex.(ρ_bauer_fike,1)[1:end-1],subplot=1,shape=:cross,label="the residual norm of first eigenvalue")
-	plot!(p_r,Ecut_2a[1:end-1],getindex.(ρ_bauer_fike,2)[1:end-1],subplot=1,ylabel="Bauer-Fike bounds",shape=:cross,label="the residual norm of 2nd eigenvalue")
-	
-	plot!(p_r,Ecut_2a[1:end-1],ρ_kato_temple[1][1:end-1],subplot=2,shape=:cross,label="the residual norm of first eigenvalue")
-	plot!(p_r,Ecut_2a[1:end-1],ρ_kato_temple[2][1:end-1],ylabel="Kato-temple bounds",subplot=2,shape=:cross,label="the residual norm of 2nd eigenvalue")
+	println(res_norm)
+	plot!(p_r,Ecut_2a[1:end-1],res_norm[1:end-1],subplot=1,shape=:cross,label="the residual norm")
 
-
-	title!(p_r,subplot=1,"Error bounds with Bauer-Fike & Kato-Temple")
-
-	
+	title!(p_r,subplot=1,"residual norm")
 
 
 
@@ -446,14 +393,13 @@ begin
 	p_x= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values",yscale=:log10,minorgrid=true)
 	X1=[X[1] for X in X_conv]
 	X2=[X[2] for X in X_conv]
-	println(norm.(X1))
+
 
 	plot!(p_x,Ecut_2a[1:end-1],norm.(X1[1:end-1]),subplot=1,shape=:cross,label="first eigenvector norm")
+
     hline!([norm.(X1[end])], line=:dash, color=:red, subplot=1, label="Ecut = 80")
-	
 	plot!(p_x,Ecut_2a[1:end-1],norm.(X2[1:end-1]),subplot=2,shape=:cross,label="second eigenvector norm")
     hline!([norm.(X2[end])], line=:dash, color=:red, subplot=2, label="Ecut = 80")
-	
 	title!(p_x,subplot=1,"convergence of the first 2 eigenvector norms")
 
 
@@ -536,6 +482,19 @@ Using this technique you can compute the application of the Hamiltonian using a 
 """
 
 # ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
+begin
+	basis_large = PlaneWaveBasis(model; Ecut=80, kgrid=(1, 1, 1))
+	ham_large = Hamiltonian(basis_large)
+	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
+end
+
+# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
+X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
+
+# ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
+Hamiltonian(basis_large) * X_large
+
+# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
 # ╠═╡ disabled = true
 #=╠═╡
 begin
@@ -563,13 +522,13 @@ md"""
 # ╔═╡ e42ff75d-f401-4b15-9421-81b24277e01b
 begin
 	p_bf= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
-	print(ρ_bauer_fike)
+	print(ρ_bf)
 
 
-	plot!(p_bf,Ecut_2a[1:end-1],λ1[1:end-1].±getindex.(ρ_bauer_fike,1)[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+	plot!(p_bf,Ecut_2a[1:end-1],λ1[1:end-1].±getindex.(ρ_bf,1)[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
     hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
 	
-	plot!(p_bf,Ecut_2a[10:end-1],λ2[10:end-1].±getindex.(ρ_bauer_fike,2)[10:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+	plot!(p_bf,Ecut_2a[1:end-1],λ2[1:end-1].±getindex.(ρ_bf,2)[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	
 	title!(p_bf,subplot=1,"convergence of the first 2 eigenvalues with Bauer-Fike bounds")
@@ -680,7 +639,7 @@ begin
 	ham_3 = Hamiltonian(band_data3.basis)
 	eigres_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_3, 6)
 	
-	large_base3=basis_change_Ecut(band_data3.basis,20)
+	large_base3=basis_change_Ecut(band_data3.basis,80)
 	ham_large3=Hamiltonian(large_base3)
 	eigres_large_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large3, 6)
 
@@ -700,15 +659,9 @@ begin
 		Xk_large   = eigres_large_3.X[ik]
 		
 		residual_k = hamk_large * Xk_large - Xk_large * Diagonal(λk_large)
-		column_norms = [norm(residual_k[:,i]) for i in 1:6]
-
-		#print(size(residual_k))
-		#println(norm.(residual_k))
-		#println(typeof(norm.(residual_k)))
-		#println(size(norm.(residual_k)))
-
+		#println(residual_k)
 		push!(ham_list3,hamk)
-		push!(ρ_bauer_fike3,column_norms)
+		push!(ρ_bauer_fike3,([norm.(residual_k)/norm.(Xk[i]) for i in 1:6]))
 		push!(λ_conv3,λk)
 		push!(X_conv3,Xk)
 		push!(res_norm3,norm(residual_k))
@@ -720,7 +673,7 @@ end
 # ╔═╡ e2274211-47d9-4751-92e4-fbd2839a4b2c
 
 begin
-	#println(ρ_bauer_fike3)
+	println(ρ_bauer_fike3)
 	band_data3_bf=merge(band_data3,(;ρ_bauer_fike3))
 	DFTK.plot_band_data(kpath, band_data3_bf)
 end
@@ -733,9 +686,9 @@ print(band_data3_bf)
 
 # ╔═╡ b83e56f8-a339-4f53-a765-3f1295145287
 begin
-	println(typeof(ρ_bauer_fike3))
-	println(size(ρ_bauer_fike3))
-	println(size(ρ_bauer_fike3[1]))
+	println(typeof(ρ_bf3))
+	println(size(ρ_bf3))
+	println(size(ρ_bf3[1]))
 	
 	println(typeof(λerror))
 	println(size(λerror))
@@ -779,37 +732,13 @@ md"""
 -----
 """
 
-# ╔═╡ c7c3f1ab-def9-4de9-8fc7-112be4c3631d
-begin
-		p_r_again=plot(layout=(2, 1),xlabel=L"$\mathcal{E}$ values")
-		plot!(p_r_again,Ecut_2a[1:end-1],getindex.(ρ_bauer_fike,1)[1:end-1],subplot=1,shape=:cross,label="the residual norm of first eigenvalue")
-		plot!(p_r_again,Ecut_2a[1:end-1],getindex.(ρ_bauer_fike,2)[1:end-1],subplot=1,ylabel="Bauer-Fike bounds",shape=:cross,label="the residual norm of 2nd eigenvalue")
-		
-		plot!(p_r_again,Ecut_2a[1:end-1],ρ_kato_temple[1][1:end-1],subplot=2,shape=:cross,label="the residual norm of first eigenvalue")
-		plot!(p_r_again,Ecut_2a[1:end-1],ρ_kato_temple[2][1:end-1],ylabel="Kato-temple bounds",subplot=2,shape=:cross,label="the residual norm of 2nd eigenvalue")
-	
-	
-		title!(p_r_again,subplot=1,"Error bounds with Bauer-Fike & Kato-Temple")
-end
-
-# ╔═╡ 1738ca7b-5d33-484c-a37f-eb2f70086a64
-md"""
-the Kato-Temple is simply a shift of $\approx 10^{-6}$ because the $\delta$ value is very stable, thus this bound performs strictly better than its Bauer-Fike counter-part.  
-"""
-
 # ╔═╡ 3bff8455-bb2d-4acf-b098-268d57c101d5
-# ╠═╡ disabled = true
-#=╠═╡
 begin
 	print(ham_list3)
 	[(map(x -> vec(x), Hk)) for Hk in ham_list3]
 	ham_list3_flat= [hcat(map(x -> vec(x), Hk)) for Hk in ham_list3]
 	λ_kn,X_kn = [eigen(diag(Hk)) for Hk in ham_list3]
 end
-  ╠═╡ =#
-
-# ╔═╡ 89ee0273-9c7d-4ffa-b2b6-d1fb178bd513
-
 
 # ╔═╡ 14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 md"""
@@ -1156,12 +1085,6 @@ Focusing on the first $5$ eigenvalues of the $\Gamma$ point of the GTH Hamiltoni
 
 **(b)** For a few offsets $\Delta$ between $5$ and $30$ set $\mathcal{F} = \mathcal{E} + \Delta$ and consider the $2$nd and $3$rd eigenvalue. Plot both the obtained error estimate as well as the error of the eigenvalue as you vary $\mathcal{E}$ between $5$ and $50$. Again take $\mathcal{E} = 100$ as a reference. What offset $\Delta$ would you recommend based on this investigation ?
 """
-
-# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
-X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
-
-# ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
-Hamiltonian(basis_large) * X_large
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3111,12 +3034,10 @@ version = "1.4.1+1"
 # ╠═c3a6aec7-ab22-4017-8e2f-bfe5696021dd
 # ╟─8f3634ca-9c13-4d40-af3c-0c80588fd8c8
 # ╠═ac0cffd2-effb-489c-a118-60864798d55e
-# ╠═c50b9d2e-dcf5-42be-b401-3da8c514165b
 # ╟─142ac96e-bd9d-45a7-ad31-e187f28e884a
 # ╠═601c837c-1615-4826-938c-b39bb35f46d1
 # ╟─e0a07aca-f81a-436b-b11e-8446120e0235
 # ╠═2bf7d1a6-cd49-41ee-a670-4352febd02b6
-# ╠═3856b78c-cadf-4e6c-868b-8026ab0bb670
 # ╠═0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
 # ╠═f41b96ae-51a6-4aae-b9d2-ef0c546f2999
 # ╠═189d4007-8e6f-4f54-9828-005febe2b89c
@@ -3155,10 +3076,7 @@ version = "1.4.1+1"
 # ╟─646242a2-8df6-4caf-81dc-933345490e6c
 # ╟─d7f3cadf-6161-41ce-8a7a-20fba5182cfb
 # ╟─f6efea9b-9656-4337-82a1-5b894e078338
-# ╠═c7c3f1ab-def9-4de9-8fc7-112be4c3631d
-# ╠═1738ca7b-5d33-484c-a37f-eb2f70086a64
 # ╠═3bff8455-bb2d-4acf-b098-268d57c101d5
-# ╠═89ee0273-9c7d-4ffa-b2b6-d1fb178bd513
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
@@ -3175,7 +3093,5 @@ version = "1.4.1+1"
 # ╟─7fb27a85-27eb-4111-800e-a8c306ea0f18
 # ╠═e0f916f6-ce7f-48b1-8256-2e6a6247e171
 # ╟─62fd73e1-bd11-465f-8032-e87db00bfda7
-# ╠═3dab1ef5-ba74-4b22-89c6-8fea651fd959
-# ╠═90ab127d-9054-4a0f-88ba-8a340fa3afcc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
