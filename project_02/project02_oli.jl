@@ -586,6 +586,26 @@ The bounds do not get tighter as the eigenvalues converge.
 
 """
 
+# ╔═╡ faa100bb-4012-49ab-929d-303a26fa0634
+begin
+	p_kt= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
+	print(ρ_bauer_fike)
+
+
+	plot!(p_kt,Ecut_2a[15:end-1],λ1[15:end-1].±ρ_kato_temple[1][15:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+    hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
+	
+	plot!(p_kt,Ecut_2a[20:end-1],λ2[20:end-1].±ρ_kato_temple[2][20:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+    hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
+	
+	title!(p_kt,subplot=1,"convergence of the first 2 eigenvalues with Kato-Temple bounds")
+	
+
+
+
+
+end
+
 # ╔═╡ 9a953b4e-2eab-4cb6-8b12-afe754640e22
 md"""----"""
 
@@ -779,6 +799,24 @@ md"""
 -----
 """
 
+# ╔═╡ 7121fcd7-c9ec-4d59-ad26-e8b3887ba65e
+begin
+	p_kt_again= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
+
+	plot!(p_kt_again,Ecut_2a[15:end-1],λ1[15:end-1].±ρ_kato_temple[1][15:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+    hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
+	
+	plot!(p_kt_again,Ecut_2a[20:end-1],λ2[20:end-1].±ρ_kato_temple[2][20:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+    hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
+	
+	title!(p_kt_again,subplot=1,"convergence of the first 2 eigenvalues with Kato-Temple bounds")
+	
+
+
+
+
+end
+
 # ╔═╡ c7c3f1ab-def9-4de9-8fc7-112be4c3631d
 begin
 		p_r_again=plot(layout=(2, 1),xlabel=L"$\mathcal{E}$ values")
@@ -791,6 +829,9 @@ begin
 	
 		title!(p_r_again,subplot=1,"Error bounds with Bauer-Fike & Kato-Temple")
 end
+
+# ╔═╡ cda35232-b0ef-490f-9be2-b5a2c84d4ad6
+
 
 # ╔═╡ 1738ca7b-5d33-484c-a37f-eb2f70086a64
 md"""
@@ -807,9 +848,6 @@ begin
 	λ_kn,X_kn = [eigen(diag(Hk)) for Hk in ham_list3]
 end
   ╠═╡ =#
-
-# ╔═╡ 89ee0273-9c7d-4ffa-b2b6-d1fb178bd513
-
 
 # ╔═╡ 14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 md"""
@@ -3129,6 +3167,7 @@ version = "1.4.1+1"
 # ╟─d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 # ╠═e42ff75d-f401-4b15-9421-81b24277e01b
 # ╠═983b1a76-ecb9-42cd-a109-d8847d78ca79
+# ╠═faa100bb-4012-49ab-929d-303a26fa0634
 # ╟─9a953b4e-2eab-4cb6-8b12-afe754640e22
 # ╟─0616cc6b-c5f8-4d83-a247-849a3d8c5de8
 # ╠═d363fa0a-d48b-4904-9337-098bcef015bb
@@ -3155,10 +3194,11 @@ version = "1.4.1+1"
 # ╟─646242a2-8df6-4caf-81dc-933345490e6c
 # ╟─d7f3cadf-6161-41ce-8a7a-20fba5182cfb
 # ╟─f6efea9b-9656-4337-82a1-5b894e078338
+# ╠═7121fcd7-c9ec-4d59-ad26-e8b3887ba65e
 # ╠═c7c3f1ab-def9-4de9-8fc7-112be4c3631d
+# ╠═cda35232-b0ef-490f-9be2-b5a2c84d4ad6
 # ╠═1738ca7b-5d33-484c-a37f-eb2f70086a64
 # ╠═3bff8455-bb2d-4acf-b098-268d57c101d5
-# ╠═89ee0273-9c7d-4ffa-b2b6-d1fb178bd513
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
