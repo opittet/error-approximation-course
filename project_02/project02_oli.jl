@@ -388,6 +388,25 @@ begin
 
 end
 
+# ╔═╡ 189d4007-8e6f-4f54-9828-005febe2b89c
+begin
+	p_x= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values",yscale=:log10,minorgrid=true)
+	X1=[X[1] for X in X_conv]
+	X2=[X[2] for X in X_conv]
+
+
+	plot!(p_x,Ecut_2a[1:end-1],norm.(X1[1:end-1]),subplot=1,shape=:cross,label="first eigenvector norm")
+
+    hline!([norm.(X1[end])], line=:dash, color=:red, subplot=1, label="Ecut = 80")
+	plot!(p_x,Ecut_2a[1:end-1],norm.(X2[1:end-1]),subplot=2,shape=:cross,label="second eigenvector norm")
+    hline!([norm.(X2[end])], line=:dash, color=:red, subplot=2, label="Ecut = 80")
+	title!(p_x,subplot=1,"convergence of the first 2 eigenvector norms")
+
+
+
+
+end
+
 # ╔═╡ 6bfa0a42-a0e6-4bef-9dc0-0023796f087b
 begin
 	p_diff= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values",yscale=:log10,minorgrid=true)
@@ -469,8 +488,31 @@ begin
 	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
 end
 
+# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
+X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
+
 # ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
 Hamiltonian(basis_large) * X_large
+
+# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	X_large=[]
+	println(basis_one.kpoints)
+	println(basis_large.kpoints)
+	for X in X_conv
+		print(X[1])
+		#print(length(G_vectors(basis_one, 1)))
+		#print(size(X[1], 1))
+		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
+		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
+		push!(X_large,(X1_large,X2_large))
+	end
+	prinln(X_large)
+
+end
+  ╠═╡ =#
 
 # ╔═╡ d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 md"""
@@ -590,36 +632,49 @@ begin
 	X_conv3=[]
 	res_norm3=[]
 	ham_list3=[]
-	ρ_bf3 = Vector{Vector{Float64}}()
-	print(ρ_bf3)
+	ρ_bauer_fike3 = Vector{Vector{Float64}}()
+	println(ρ_bauer_fike3)
 
 		
 	ham_3 = Hamiltonian(band_data3.basis)
 	eigres_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_3, 6)
+	
+	large_base3=basis_change_Ecut(band_data3.basis,80)
+	ham_large3=Hamiltonian(large_base3)
+	eigres_large_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large3, 6)
 
 
 	for (ik, kpt) in enumerate(band_data3.basis.kpoints)
 		
 
+		
+
 		hamk = ham_3[ik]
+		hamk_large= ham_large3[ik]
+		
 		λk   = eigres_3.λ[ik]
 		Xk   = eigres_3.X[ik]
-		residual_k = hamk * Xk - Xk * Diagonal(λk)
+		
+		λk_large   = eigres_large_3.λ[ik]
+		Xk_large   = eigres_large_3.X[ik]
+		
+		residual_k = hamk_large * Xk_large - Xk_large * Diagonal(λk_large)
+		#println(residual_k)
 		push!(ham_list3,hamk)
-		push!(ρ_bf3,([norm(residual_k)/norm(Xk[i]) for i in 1:6]))
+		push!(ρ_bauer_fike3,([norm.(residual_k)/norm.(Xk[i]) for i in 1:6]))
 		push!(λ_conv3,λk)
 		push!(X_conv3,Xk)
 		push!(res_norm3,norm(residual_k))
 	end		
-	println(ρ_bf3)
+	println(ρ_bauer_fike3)
 
 end
 
 # ╔═╡ e2274211-47d9-4751-92e4-fbd2839a4b2c
 
 begin
-	println(ρ_bf3)
-	band_data3_bf=merge(band_data3,(;ρ_bf3))
+	println(ρ_bauer_fike3)
+	band_data3_bf=merge(band_data3,(;ρ_bauer_fike3))
 	DFTK.plot_band_data(kpath, band_data3_bf)
 end
 
@@ -1030,29 +1085,6 @@ Focusing on the first $5$ eigenvalues of the $\Gamma$ point of the GTH Hamiltoni
 
 **(b)** For a few offsets $\Delta$ between $5$ and $30$ set $\mathcal{F} = \mathcal{E} + \Delta$ and consider the $2$nd and $3$rd eigenvalue. Plot both the obtained error estimate as well as the error of the eigenvalue as you vary $\mathcal{E}$ between $5$ and $50$. Again take $\mathcal{E} = 100$ as a reference. What offset $\Delta$ would you recommend based on this investigation ?
 """
-
-# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	X_large=[]
-	println(basis_one.kpoints)
-	println(basis_large.kpoints)
-	for X in X_conv
-		print(X[1])
-		#print(length(G_vectors(basis_one, 1)))
-		#print(size(X[1], 1))
-		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
-		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
-		push!(X_large,(X1_large,X2_large))
-	end
-	prinln(X_large)
-
-end
-  ╠═╡ =#
-
-# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
-X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3008,6 +3040,7 @@ version = "1.4.1+1"
 # ╠═2bf7d1a6-cd49-41ee-a670-4352febd02b6
 # ╠═0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
 # ╠═f41b96ae-51a6-4aae-b9d2-ef0c546f2999
+# ╠═189d4007-8e6f-4f54-9828-005febe2b89c
 # ╠═6bfa0a42-a0e6-4bef-9dc0-0023796f087b
 # ╠═682f52e7-f7a9-4146-b789-268672049fa9
 # ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
