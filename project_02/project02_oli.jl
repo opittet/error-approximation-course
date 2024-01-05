@@ -469,8 +469,31 @@ begin
 	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
 end
 
+# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
+X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
+
 # ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
 Hamiltonian(basis_large) * X_large
+
+# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	X_large=[]
+	println(basis_one.kpoints)
+	println(basis_large.kpoints)
+	for X in X_conv
+		print(X[1])
+		#print(length(G_vectors(basis_one, 1)))
+		#print(size(X[1], 1))
+		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
+		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
+		push!(X_large,(X1_large,X2_large))
+	end
+	prinln(X_large)
+
+end
+  ╠═╡ =#
 
 # ╔═╡ d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 md"""
@@ -561,8 +584,8 @@ md"Error bars for indicating eigenvalue errors can also be easily added:"
 begin
 	λerror = [0.02 * abs.(randn(size(λk))) for λk in band_data.λ]  # dummy data
 	data_with_errors = merge(band_data, (; λerror))
-	print(band_data)
-	print(data_with_errors)
+	# print(band_data)
+	# print(data_with_errors)
 	DFTK.plot_band_data(kpath, data_with_errors)
 end
 
@@ -594,17 +617,21 @@ begin
 	print(ρ_bf3)
 
 		
-	ham_3 = Hamiltonian(band_data3.basis)
-	eigres_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_3, 6)
+	# ham_3 = Hamiltonian(band_data3.basis)
+	# is this correct??
+	eigres_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, 		Hamiltonian(band_data3.basis), 6)
+	local basis_large = basis_change_Ecut(band_data3.basis, 80)
+	local X_large = transfer_blochwave(eigres_3.X, band_data3.basis, basis_large)
+	ham_3 = Hamiltonian(basis_large) * X_large
 
 
+	
 	for (ik, kpt) in enumerate(band_data3.basis.kpoints)
 		
-
 		hamk = ham_3[ik]
 		λk   = eigres_3.λ[ik]
 		Xk   = eigres_3.X[ik]
-		residual_k = hamk * Xk - Xk * Diagonal(λk)
+		residual_k = hamk - Xk * Diagonal(λk)
 		push!(ham_list3,hamk)
 		push!(ρ_bf3,([norm(residual_k)/norm(Xk[i]) for i in 1:6]))
 		push!(λ_conv3,λk)
@@ -1030,29 +1057,6 @@ Focusing on the first $5$ eigenvalues of the $\Gamma$ point of the GTH Hamiltoni
 
 **(b)** For a few offsets $\Delta$ between $5$ and $30$ set $\mathcal{F} = \mathcal{E} + \Delta$ and consider the $2$nd and $3$rd eigenvalue. Plot both the obtained error estimate as well as the error of the eigenvalue as you vary $\mathcal{E}$ between $5$ and $50$. Again take $\mathcal{E} = 100$ as a reference. What offset $\Delta$ would you recommend based on this investigation ?
 """
-
-# ╔═╡ 3e13955c-b471-466a-b416-5c4b9c874584
-# ╠═╡ disabled = true
-#=╠═╡
-begin
-	X_large=[]
-	println(basis_one.kpoints)
-	println(basis_large.kpoints)
-	for X in X_conv
-		print(X[1])
-		#print(length(G_vectors(basis_one, 1)))
-		#print(size(X[1], 1))
-		X1_large=transfer_blochwave.(X[1],basis_one,basis_large) 
-		X2_large=transfer_blochwave.(X[2],basis_one,basis_large) 
-		push!(X_large,(X1_large,X2_large))
-	end
-	prinln(X_large)
-
-end
-  ╠═╡ =#
-
-# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
-X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
