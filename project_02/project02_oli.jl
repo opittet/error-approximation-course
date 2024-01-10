@@ -15,6 +15,7 @@ begin
 	using Printf
 	using LaTeXStrings
 	using Measurements
+	using DoubleFloats
 end
 
 # ╔═╡ 4b7ade30-8c59-11ee-188d-c3d4588f7106
@@ -609,8 +610,8 @@ Based on this data we can use the `compute_bands` function to diagonalise all $H
 """
 
 # ╔═╡ d34fa8e5-903f-45f4-97f8-32abd8883e9f
-function compute_bands_auto(model; Ecut, kwargs...)
-	basis = PlaneWaveBasis(model; Ecut, kgrid=(1, 1, 1))
+function compute_bands_auto(model; Ecut, precision=Float64, kwargs...)
+	basis = PlaneWaveBasis(convert(Model{precision}, model); Ecut, kgrid=(1, 1, 1))
 	compute_bands(basis, kpath; show_progress=false, kwargs...)
 end
 
@@ -639,15 +640,6 @@ DFTK.plot_band_data(kpath, band_data)
 
 # ╔═╡ 86f70a52-13ce-42b5-9a28-2c01d92b022d
 md"Error bars for indicating eigenvalue errors can also be easily added:"
-
-# ╔═╡ 2dee9a6b-c5dd-4511-a9e3-1d5bc33db946
-begin
-	λerror = [0.02 * abs.(randn(size(λk))) for λk in band_data.λ]  # dummy data
-	data_with_errors = merge(band_data, (; λerror))
-	print(band_data)
-	print(data_with_errors)
-	DFTK.plot_band_data(kpath, data_with_errors)
-end
 
 # ╔═╡ da8c23eb-d473-4c2f-86f9-879016659f3e
 md"""
@@ -717,11 +709,21 @@ begin
 
 end
 
+# ╔═╡ 2dee9a6b-c5dd-4511-a9e3-1d5bc33db946
+begin
+	λerror = ρ_bauer_fike3 # [0.02 * abs.(randn(size(λk))) for λk in band_data.λ]  # dummy data
+	println(λerror)
+	data_with_errors = merge(band_data, (; λerror))
+	print(band_data)
+	print(data_with_errors)
+	DFTK.plot_band_data(kpath, data_with_errors)
+end
+
 # ╔═╡ e2274211-47d9-4751-92e4-fbd2839a4b2c
 
 begin
-	#println(ρ_bauer_fike3)
-	band_data3_bf=merge(band_data3,(;ρ_bauer_fike3))
+	local λerror=ρ_bauer_fike
+	band_data3_bf=merge(band_data3,(;λerror))
 	DFTK.plot_band_data(kpath, band_data3_bf)
 end
 
@@ -984,6 +986,67 @@ Based on the results so far compute a band structure with guaranteed error bars 
 ------
 """
 
+# ╔═╡ 4ae6fb80-298b-467b-bdbd-f03d6694d3b2
+	begin
+		basis_double64 = PlaneWaveBasis(convert(Model{Double64}, model); Ecut=10.0, kgrid=(1, 1, 1))
+
+		bands_double64 = compute_bands(basis_double64, kpath; show_progress=false)
+	end
+
+
+# ╔═╡ a2553e98-664f-4790-b58a-de4237b2691d
+begin
+	
+	
+
+	λ_conv_double64=[]
+	X_conv_double64=[]
+	res_norm_double64=[]
+	ham_list_double64=[]
+	ρ_bauer_fike_double64 = Vector{Vector{Float64}}()
+	println(ρ_bauer_fike_double64)
+
+		
+	ham_double64 = Hamiltonian(band_data_double64)
+	eigres_double64 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_double64, 6)
+	
+	#large_base3=basis_change_Ecut(band_data_double64.basis,20)
+	#ham_large3=Hamiltonian(large_base3)
+	#eigres_large_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large3, 6)
+
+
+	for (ik, kpt) in enumerate(band_data_double64.basis.kpoints)
+		
+
+		
+
+		hamk = ham_double64[ik]
+		#hamk_large= ham_large3[ik]
+		
+		λk   = eigres_double64.λ[ik]
+		Xk   = eigres_double64.X[ik]
+		
+		#λk_large   = eigres_large_3.λ[ik]
+		#Xk_large   = eigres_large_3.X[ik]
+		
+		residual_k = hamk * Xk - Xk * Diagonal(λk)
+		column_norms = [norm(residual_k[:,i]) for i in 1:6]
+
+		print(size(residual_k))
+		println(norm.(residual_k))
+		println(typeof(norm.(residual_k)))
+		println(size(norm.(residual_k)))
+
+		push!(ham_list_double64,hamk)
+		push!(ρ_bauer_fike_double64,column_norms)
+		push!(λ_conv_double64,λk)
+		push!(X_conv_double64,Xk)
+		push!(res_norm_double64,norm(residual_k))
+	end		
+	println(ρ_bauer_fike_double64)
+
+end
+
 # ╔═╡ 33896109-d190-4992-806a-c447ca36071b
 md"""
 ## Adaptive diagonalisation techniques
@@ -1175,6 +1238,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
+DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
@@ -1186,6 +1250,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 [compat]
 Brillouin = "~0.5.14"
 DFTK = "~0.6.14"
+DoubleFloats = "~1.3.0"
 LaTeXStrings = "~1.3.1"
 Measurements = "~2.11.0"
 Plots = "~1.39.0"
@@ -1199,7 +1264,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "668bd3d4dabbb71614b44174b6317f5c857ac155"
+project_hash = "60dcbb47a34b40ae4c57fe6aa0b117d84a5bbe73"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1558,6 +1623,12 @@ git-tree-sha1 = "2fb1e02f2b635d0845df5d7c167fec4dd739b00d"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.9.3"
 
+[[deps.DoubleFloats]]
+deps = ["GenericLinearAlgebra", "LinearAlgebra", "Polynomials", "Printf", "Quadmath", "Random", "Requires", "SpecialFunctions"]
+git-tree-sha1 = "22b4d37641634df03c89322d74a6439ff0d96f39"
+uuid = "497a8b3b-efae-58df-a0af-a86822472b78"
+version = "1.3.0"
+
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
@@ -1719,6 +1790,12 @@ deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "
 git-tree-sha1 = "025d171a2847f616becc0f84c8dc62fe18f0f6dd"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
 version = "0.72.10+0"
+
+[[deps.GenericLinearAlgebra]]
+deps = ["LinearAlgebra", "Printf", "Random", "libblastrampoline_jll"]
+git-tree-sha1 = "02be7066f936af6b04669f7c370a31af9036c440"
+uuid = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
+version = "0.3.11"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -2461,6 +2538,12 @@ git-tree-sha1 = "37b7bb7aabf9a085e0044307e1717436117f2b3b"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
 version = "6.5.3+1"
 
+[[deps.Quadmath]]
+deps = ["Compat", "Printf", "Random", "Requires"]
+git-tree-sha1 = "15c8465e3cb37b6bf3abcc0a4c9440799f2ba3fb"
+uuid = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
+version = "0.5.9"
+
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -3172,6 +3255,8 @@ version = "1.4.1+1"
 # ╟─fc040eb6-872b-475d-a6cd-7d3ad1fae229
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
+# ╠═4ae6fb80-298b-467b-bdbd-f03d6694d3b2
+# ╠═a2553e98-664f-4790-b58a-de4237b2691d
 # ╟─33896109-d190-4992-806a-c447ca36071b
 # ╠═93552ccd-f7b5-4830-a9ad-417d3fca9af9
 # ╟─968a26f2-12fe-446f-aa41-977fdffc23a0
