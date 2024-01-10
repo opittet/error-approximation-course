@@ -189,7 +189,19 @@ computed_eigenvectors = [Vector([i == j ? 1.0 : 0.0 for j in 1:size(M, 1)]) for 
 if ismissing(computed_eigenvectors) still_missing() end
 
 # ╔═╡ 17c4ef12-9d03-43ac-b431-6e47d5cb4791
-residuals = M * computed_eigenvectors .- computed_eigenvalues .* computed_eigenvectors
+residuals = M * computed_eigenvectors - computed_eigenvalues * computed_eigenvectors
+
+# ╔═╡ 49f728ad-ba12-40e4-afc9-cea7175aa422
+residual_project= M*computed_eigenvectors .- computed_eigenvalues .* computed_eigenvectors
+
+# ╔═╡ 975e29b5-831b-4fc6-aefb-8a4a4867fc27
+M*computed_eigenvectors
+
+# ╔═╡ ee6c87d4-a70e-4efa-b8f4-26081d59ca8c
+computed_eigenvectors
+
+# ╔═╡ fc468462-7ea6-4e07-b9f5-5a2860ea57c9
+computed_eigenvectors
 
 # ╔═╡ 4417faf2-468d-436d-9dec-d083d51904e8
 if ismissing(residuals) still_missing() end
@@ -1455,6 +1467,10 @@ version = "1.4.1+0"
 # ╠═f25657b8-0d76-4f7d-a519-cb5584cd0a07
 # ╟─b7a6e73f-54d5-4988-8250-970c1e7fae8d
 # ╠═17c4ef12-9d03-43ac-b431-6e47d5cb4791
+# ╠═49f728ad-ba12-40e4-afc9-cea7175aa422
+# ╠═975e29b5-831b-4fc6-aefb-8a4a4867fc27
+# ╠═ee6c87d4-a70e-4efa-b8f4-26081d59ca8c
+# ╠═fc468462-7ea6-4e07-b9f5-5a2860ea57c9
 # ╟─4417faf2-468d-436d-9dec-d083d51904e8
 # ╟─559193fe-946d-426a-8c93-5df3f2c577ca
 # ╠═43995e70-9149-44e7-926a-b7b86f066894
