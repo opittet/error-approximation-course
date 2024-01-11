@@ -729,7 +729,7 @@ md"""
 Prove the following statements:
 - First $\forall x \in X$
   ```math
-  \left\langle x \,\middle|\, (H_k^{\mathcal{E}\mathcal{E}} - \mu) x \right\rangle
+  \left\langle x \,\middle|\, (H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} - \mu) x \right\rangle
   \geq \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu,
   ```
   where $\|\,\cdot\,\|_\text{op}$ is the standard Hilbert operator norm
@@ -759,6 +759,131 @@ Prove the following statements:
   ```math
   \|V_k\|_\text{op} \leq \sum_{G \in \mathbb{L}^\ast} |\hat{V}(G)|.
   ```
+"""
+
+# ╔═╡ 19ea5d6d-be3d-48c6-a2e7-79212d958ee7
+md"""
+**Solution (c: 1):**
+
+First of all
+
+```math
+\begin{align}
+H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} 
+&= Q_k^{\mathcal{E}} H_k Q_k^{\mathcal{E}} = Q_k^{\mathcal{E}} T_k Q_k^{\mathcal{E}} + Q_k^{\mathcal{E}} V Q_k^{\mathcal{E}}
+\end{align}
+```
+where the elements of the kinetic term are defined as the following
+
+```math
+(T_k^{\mathcal{E}^\perp\mathcal{E}^\perp})_{GG'} = \left\langle e_G \,\middle|\, T_k e_{G'} \right\rangle = \frac{1}{2} \delta_{GG'} |G + k|^2
+```
+
+It means that $T_k^{\mathcal{E}^\perp\mathcal{E}^\perp}$ is diagonal and we have:
+```math
+\left\langle x \,\middle|\, T_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle = \frac{1}{2}\delta_{GG'} |G + k|^2 \left\langle x \,\middle|\, x \right\rangle \geq \mathcal{E} \left\langle x \,\middle|\, x \right\rangle.
+```
+
+On the other hand,
+```math
+ \left| \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle \right|
+  \leq \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\|
+```
+```math
+ -\|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\| \leq \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle 
+  \leq \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\|
+```
+
+```math
+  \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle 
+  \geq - \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\| \geq - \|x\| \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} \|x\| = - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} \left\langle x \,\middle|\, x \right\rangle
+```
+
+And
+```math
+\left\langle x \,\middle|\, \mu x \right\rangle = \mu \left\langle x \,\middle|\, x \right\rangle
+```
+
+In the end,
+
+```math
+\left\langle x \,\middle|\, (H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} - \mu) x \right\rangle
+  \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right) \left\langle x \,\middle|\, x \right\rangle \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right)
+```
+since
+"""
+
+# ╔═╡ a225cfcb-3e2b-4800-a3f4-e2c9b527a748
+md"""
+**Solution (c: 2):**
+
+Using a full eigendecomposition $H_k^{\mathcal{E} \mathcal{E}} = \widetilde{X}_k \widetilde{Λ}_k \widetilde{X}_k^H$ we can express $\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1}$ as following
+
+```math
+\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} = \widetilde{X}_k \left(\widetilde{Λ}_k - \mu   \right)^{-1} \widetilde{X}_k^H,
+```
+and applying the same logic as above the inner product can be bounded above by the operator norm:
+```math
+\left\langle x \, \middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+\leq \left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op}
+```
+
+Since we work with Cohen-Bergstresser Hamiltonians and $\widetilde{X}_k$ are unitary, applying the sub-multiplicative property of the operator norm we get:
+```math
+\begin{align}
+\left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op} &=
+
+
+\left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op} \leq \\
+
+&\leq \left\|V_k^{\mathcal{R}\mathcal{E}} \right\|_\text{op} \left\|\left(\widetilde{Λ}_k - \mu\right)^{-1} \right\|_\text{op}  \left\|V_k^{\mathcal{R}\mathcal{E}}  \right\|_\text{op} 
+\end{align}
+```
+Since $V_k^{\mathcal{R}\mathcal{E}}$ is part of the Hamiltonian and the operator norm of the $H_k^{\mathcal{E}\mathcal{E}}$ is bounded by its spectral radius:
+
+$\left\|V_k^{\mathcal{R}\mathcal{E}}  \right\|_\text{op} \leq \left\|H_k^{\mathcal{E}\mathcal{E}}  \right\|_\text{op}$
+
+Finally, considering the definition of the interval $I_n$, we can conclude that $\mu < \widetilde{λ}_{kn}$. Therefore,
+
+$\left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op}\\
+\leq \frac{\|V_k\|_\text{op}^2}{\widetilde{λ}_{kn} - \mu}$
+
+"""
+
+# ╔═╡ cb99a834-4822-497d-be10-e1740099b076
+md"""
+**Solution (c: 3):**
+
+We will start with the Young's inequality for the operator norm:
+
+```math
+  \|V_k\|_\text{op} \leq  \sum_{|G| < \sqrt{2\mathcal{E}_V}} |\hat{V}(G)| = l_1^V.
+```
+
+Then for the first inequality:
+```math
+  \left\langle x \,\middle|\, (H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} - \mu) x \right\rangle \geq  \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu  \geq  \mathcal{E} - l_1^V - \mu
+```
+For the second inequality:
+```math
+\begin{align}
+\left\langle x \, \middle|\,
+V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+&\leq  \frac{\|V_k\|_\text{op}^2}{\widetilde{λ}_{kn} - \mu} \leq \frac{(l_1^V)^2}{\widetilde{λ}_{kn} - \mu}
+\end{align}
+```
+Finally,
+
+```math
+\begin{align}
+\langle x,  S_\mu x \rangle &= \left\langle x,  \left( \left(H_k^{\mathcal{E}^\perp \mathcal{E}^\perp} - \mu\right)
+- V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} \right) x \right\rangle = \\
+&= \left\langle x,  \left(H_k^{\mathcal{E}^\perp \mathcal{E}^\perp} - \mu\right) x \right\rangle
+- \left\langle x,  V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle \\
+&\geq  \mathcal{E} - l_1^V - \mu - \frac{(l_1^V)^2}{\widetilde{λ}_{kn} - \mu}
+\end{align}.
+```
+
 """
 
 # ╔═╡ 74df4d8b-0345-449e-ad3a-ded44a94a40d
@@ -2956,6 +3081,9 @@ version = "1.4.1+1"
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
 # ╟─fc040eb6-872b-475d-a6cd-7d3ad1fae229
+# ╟─19ea5d6d-be3d-48c6-a2e7-79212d958ee7
+# ╟─a225cfcb-3e2b-4800-a3f4-e2c9b527a748
+# ╟─cb99a834-4822-497d-be10-e1740099b076
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
 # ╟─33896109-d190-4992-806a-c447ca36071b
