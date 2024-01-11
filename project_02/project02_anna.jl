@@ -808,12 +808,51 @@ In the end,
 
 ```math
 \left\langle x \,\middle|\, (T_k^{\mathcal{E}\mathcal{E}} - \mu) x \right\rangle
-  \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right) \left\langle x \,\middle|\, x \right\rangle
+  \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right) \left\langle x \,\middle|\, x \right\rangle \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right)
+```
+since
+"""
+
+# ╔═╡ a225cfcb-3e2b-4800-a3f4-e2c9b527a748
+md"""
+
+Using a full eigendecomposition $H_k^{\mathcal{E} \mathcal{E}} = \widetilde{X}_k \widetilde{Λ}_k \widetilde{X}_k^H$ we can express $\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1}$ as following
+
+```math
+\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} = \widetilde{X}_k \left(\widetilde{Λ}_k - \mu   \right)^{-1} \widetilde{X}_k^H,
+```
+and applying the same logic as above the inner product can be bounded above by the operator norm:
+```math
+\left\langle x \, \middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+\leq \left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op}
+```
+
+Since the operator norm is sub-multiplicative we have:
+```math
+\left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op} =
+
+
+\left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op}
 ```
 """
 
 # ╔═╡ cb99a834-4822-497d-be10-e1740099b076
-
+md"""
+Second, given a full eigendecomposition $H_k^{\mathcal{E} \mathcal{E}} = \widetilde{X}_k \widetilde{Λ}_k \widetilde{X}_k^H$ show that
+for $\mu \in I_n$ with the open interval
+```math
+I_n = \left(\frac12 \left(\widetilde{λ}_{k,n-1} + \widetilde{λ}_{kn}\right), \, \widetilde{λ}_{kn}\right)
+```
+we have $\forall x \in X$:
+```math
+\begin{align}
+\left\langle x \, \middle|\,
+V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+&\leq \left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op}\\
+&\leq \frac{\|V_k\|_\text{op}^2}{\widetilde{λ}_{kn} - \mu}
+\end{align}
+```
+"""
 
 # ╔═╡ 74df4d8b-0345-449e-ad3a-ded44a94a40d
 md"""
@@ -3009,8 +3048,9 @@ version = "1.4.1+1"
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
-# ╟─fc040eb6-872b-475d-a6cd-7d3ad1fae229
-# ╟─19ea5d6d-be3d-48c6-a2e7-79212d958ee7
+# ╠═fc040eb6-872b-475d-a6cd-7d3ad1fae229
+# ╠═19ea5d6d-be3d-48c6-a2e7-79212d958ee7
+# ╠═a225cfcb-3e2b-4800-a3f4-e2c9b527a748
 # ╠═cb99a834-4822-497d-be10-e1740099b076
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
