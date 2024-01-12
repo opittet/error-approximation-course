@@ -402,17 +402,17 @@ end
 
 # ╔═╡ 0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
 begin
-	p= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
+	p2a= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
 	λ1=[λ[1] for λ in λ_conv]
 	λ2=[λ[2] for λ in λ_conv]
 
 
-	plot!(p,Ecut_2a[1:end-1],λ1[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+	plot!(p2a,Ecut_2a[1:end-1],abs(λ1[1:end-1]),subplot=1,shape=:cross,label="first eigenvalue")
 
     hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
-	plot!(p,Ecut_2a[1:end-1],λ2[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+	plot!(p2a,Ecut_2a[1:end-1],λ2[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
-	title!(p,subplot=1,"convergence of the first 2 eigenvalues")
+	title!(p2a,subplot=1,"convergence of the first 2 eigenvalues")
 
 
 
@@ -1316,7 +1316,7 @@ begin
 
     end
 
-plot(PP...; size = default(:size) .* (1, n), layout = (n, 1), left_margin = 15Plots.mm)
+plot(PP...; size = default(:size) .* (1, 5), layout = (5, 1), left_margin = 15Plots.mm)
 end
 
 # ╔═╡ 15fcf17d-41a7-4ce0-9d78-5299cf972fdd
@@ -1392,14 +1392,123 @@ begin
 
     end
 
-plot(PP_full...; size = default(:size) .* (1, n), layout = (n, 1), left_margin = 15Plots.mm)
+plot(PP_full...; size = default(:size) .* (1, 5), layout = (5, 1), left_margin = 15Plots.mm)
 end
 
-# ╔═╡ 3dab1ef5-ba74-4b22-89c6-8fea651fd959
-X_large = transfer_blochwave(eigres_one.X, basis_one, basis_large)
+# ╔═╡ 3892b4bf-951a-43dd-8de5-a31b8840b33d
+begin	
 
-# ╔═╡ 90ab127d-9054-4a0f-88ba-8a340fa3afcc
-Hamiltonian(basis_large) * X_large
+	λ_conv_gth_b=[]
+	X_conv_gth_b=[]
+	res_norm_gth_b=[]
+	ham_list_gth_b=[]
+	Ecut_list_gth_b=5:5:50
+
+
+	
+	
+	Δ_list=5:5:30
+	
+	ρ_bauer_fike_gth_b = Vector{Vector{Vector{Float64}}}()
+
+
+
+
+
+	
+	for Ecut_iter in Ecut_list_gth_b
+		basis_gth = PlaneWaveBasis(model; Ecut=Ecut_iter, kgrid=(1, 1, 1))
+		ham_gth = Hamiltonian(basis_gth)
+		eigres_gth = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_gth, 3)
+
+
+		for (ik, kpt) in enumerate(basis_gth.kpoints)
+			
+	
+			
+	
+			
+			λk   = eigres_gth.λ[ik]
+			Xk   = eigres_gth.X[ik]
+			column_norms_list=Vector{Vector{Float64}}()
+			for Δ in Δ_list
+				basis_gth_large = PlaneWaveBasis(model; Ecut=Ecut_iter+Δ, kgrid=(1, 1, 1))
+				ham_gth_large = Hamiltonian(basis_gth_large)
+				eigres_gth_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_gth_large, 3)
+				hamk_large = ham_gth_large[ik]
+				λk_large   = eigres_gth_large.λ[ik]
+				Xk_large   = eigres_gth_large.X[ik]
+				residual_k = hamk_large * Xk_large - Xk_large * Diagonal(λk_large)
+				column_norms = [norm(residual_k[:,i]) for i in 1:3]
+				push!(column_norms_list,column_norms)
+			end
+			print(typeof(column_norms_list))
+			push!(ρ_bauer_fike_gth_b,column_norms_list)
+			push!(λ_conv_gth_b,λk)
+			push!(X_conv_gth_b,Xk)
+		end		
+	println(ρ_bauer_fike_gth_b)
+	end
+
+
+end
+
+# ╔═╡ c45c01e8-1ae9-4c55-854d-93a73f54e382
+begin
+	PP_full_b=[]
+
+    for i in 2:3
+        
+        λi = [λ[i] for λ in λ_conv_gth_b]
+		
+	    p_gth_bf_b = plot(xlabel=L"$\mathcal{E}$ values")
+
+
+        println("Plotting eigenvalue convergence for subplot $i")
+        println("Ecut_list_gth[1:end-1]: ", Ecut_list_gth_b[1:end-1])
+        println("λi[1:end-1]: ", λi[1:end-1])
+        #println("ρ_bauer_fike_gth[i][1:end-1]: ", getindex.(ρ_bauer_fike_gth_b[i], i)[1:end-1])
+		for (iter_of_Δ, Δ) in enumerate(Δ_list)
+	        plot!(p_gth_bf_b, Ecut_list_gth_b[2:end-1], λi[2:end-1].±getindex.(getindex.(ρ_bauer_fike_gth_b, iter_of_Δ),i)[2:end-1], shape=:cross,markerstrokecolor=:auto, label="\\Delta =$(Δ)")
+		end
+        hline!([λi[end]], line=:dash, color=:red, label="with Ecut = 100")
+		title!(p_gth_bf_b, "eigenvalue $(i) with Bauer-Fike bounds")
+
+		push!(PP_full_b,p_gth_bf_b)
+		
+
+    end
+
+plot(PP_full_b...; size = default(:size) .* (1, 2), layout = (2, 1), left_margin = 15Plots.mm)
+end
+
+# ╔═╡ 740e4d1a-daba-4228-aec2-ba272af71db9
+begin
+	PP_full_res=[]
+	for (iter,Ecut) in enumerate(Ecut_list_gth_b)
+		p_gth_bf_res = plot(xlabel="\\Delta values",ylabel="residual norm",title="Ecut = $(Ecut)")
+		println(iter)
+	#\\mathcal{E}=$(Ecut)
+	    #for (i, Δ) in enumerate(Δ_list)
+
+	        
+			#println(size(Δ_list))
+			#println(Δ_list)
+
+			println(getindex.(ρ_bauer_fike_gth_b[iter],1))
+			plot!(p_gth_bf_res, Δ_list,getindex.(ρ_bauer_fike_gth_b[iter],2),label="2nd eigenvalue")
+			plot!(p_gth_bf_res, Δ_list,getindex.(ρ_bauer_fike_gth_b[iter],3),label="3rd eigenvalue")
+
+		
+		#end
+		push!(PP_full_res,p_gth_bf_res)
+	end
+	plot(PP_full_res...; size = default(:size) .* (1, 5), layout = (10, 1), left_margin = 30Plots.mm)
+	
+end
+
+# ╔═╡ 806d6a47-2e9a-4c7a-96ad-f96347cbafd7
+
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3434,7 +3543,9 @@ version = "1.4.1+1"
 # ╠═b6bff91a-548b-4a92-bc90-fb3f31895c80
 # ╠═15fcf17d-41a7-4ce0-9d78-5299cf972fdd
 # ╠═6a1dc0d6-da29-421c-8eb9-e159480e2984
-# ╠═3dab1ef5-ba74-4b22-89c6-8fea651fd959
-# ╠═90ab127d-9054-4a0f-88ba-8a340fa3afcc
+# ╠═3892b4bf-951a-43dd-8de5-a31b8840b33d
+# ╠═c45c01e8-1ae9-4c55-854d-93a73f54e382
+# ╠═740e4d1a-daba-4228-aec2-ba272af71db9
+# ╠═806d6a47-2e9a-4c7a-96ad-f96347cbafd7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
