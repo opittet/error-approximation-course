@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ a9548adc-cc71-4f26-96d2-7aefc39a554f
 begin
 	using Brillouin
@@ -15,6 +25,7 @@ begin
 	using Printf
 	using LaTeXStrings
 	using Measurements
+	using FFTW
 	using DoubleFloats
 end
 
@@ -344,18 +355,6 @@ begin
 			hamk = ham_2a[ik]
 			λk   = eigres_2a.λ[ik]
 			Xk   = eigres_2a.X[ik]
-			#Xk_reordered=Vector{Vector{Float64}}()
-			#for i in 1:n_bands_2a
-					
-			#	Xk_i= getindex.(Xk,i)
-			#	println("xk",size(Xk_i))
-			#	push!(Xk_reordered,Xk_i)
-			#end	
-				
-				
-			# not possible to do norm of vectors for a matrix https://discourse.julialang.org/t/vecnorm-column-row-wise-norm/12354
-
-
 			
 			residual_k = hamk * Xk - Xk * Diagonal(λk)
 
@@ -383,14 +382,6 @@ begin
 	ρ_kato_temple= [getindex.(ρ_bauer_fike,i) .^2 ./ getindex.(δ_kato_temple,i) for i in 1:n_bands_2a]
 	println(size(ρ_bauer_fike))
 	println(ρ_bauer_fike)
-	#println(res_norm)
-	
-	#plot in for loop with n_bands doesn't work for some reason
-	
-	for i in 1:n_bands_2a
-	    #println(getindex.(λ_conv, i))
-	    plot!(Ecut_2a, [λ[i] for λ in λ_conv], label="Curve $i")
-	end
 end
 
 
@@ -400,6 +391,12 @@ begin
 	println(ρ_kato_temple)
 end
 
+# ╔═╡ e1fff20b-9fdd-4428-8a08-c7d800515073
+md"""
+- Counter of the first element to plot = $(@bind first_x PlutoUI.Slider(1:1:25; default=5, show_value=true))
+
+"""
+
 # ╔═╡ 0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
 begin
 	p2a= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
@@ -407,10 +404,10 @@ begin
 	λ2=[λ[2] for λ in λ_conv]
 
 
-	plot!(p2a,Ecut_2a[1:end-1],abs(λ1[1:end-1]),subplot=1,shape=:cross,label="first eigenvalue")
+	plot!(p2a,Ecut_2a[first_x:end-1],λ1[first_x:end-1],subplot=1,shape=:cross,label="first eigenvalue")
 
     hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
-	plot!(p2a,Ecut_2a[1:end-1],λ2[1:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+	plot!(p2a,Ecut_2a[first_x:end-1],λ2[first_x:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	title!(p2a,subplot=1,"convergence of the first 2 eigenvalues")
 
@@ -449,10 +446,10 @@ begin
 	X2=[X[2] for X in X_conv]
 	println(norm.(X1))
 
-	plot!(p_x,Ecut_2a[1:end-1],norm.(X1[1:end-1]),subplot=1,shape=:cross,label="first eigenvector norm")
+	plot!(p_x,Ecut_2a[first_x:end-1],norm.(X1[first_x:end-1]),subplot=1,shape=:cross,label="first eigenvector norm")
     hline!([norm.(X1[end])], line=:dash, color=:red, subplot=1, label="Ecut = 80")
 	
-	plot!(p_x,Ecut_2a[1:end-1],norm.(X2[1:end-1]),subplot=2,shape=:cross,label="second eigenvector norm")
+	plot!(p_x,Ecut_2a[first_x:end-1],norm.(X2[first_x:end-1]),subplot=2,shape=:cross,label="second eigenvector norm")
     hline!([norm.(X2[end])], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	
 	title!(p_x,subplot=1,"convergence of the first 2 eigenvector norms")
@@ -478,9 +475,6 @@ begin
 
 
 end
-
-# ╔═╡ 682f52e7-f7a9-4146-b789-268672049fa9
-
 
 # ╔═╡ 58856ccd-3a1c-4a5f-9bd2-159be331f07c
 md"""
@@ -541,16 +535,22 @@ md"""
 **(d)** Based on the Bauer-Fike bound estimate the algorithm and arithmetic error for the first two eigenpairs at the $\Gamma$ point and for using cutoffs between $\mathcal{E} = 5$ and $\mathcal{E} = 30$. Add these estimates to your plot in $(a)$. What do you observe regarding the tightness of the bound ?
 """
 
+# ╔═╡ b7bb8704-09e5-4bfb-843d-113dba177ba6
+md"""
+- Counter of the first element to plot = $(@bind first_x_bf PlutoUI.Slider(1:1:25; default=5, show_value=true))
+
+"""
+
 # ╔═╡ e42ff75d-f401-4b15-9421-81b24277e01b
 begin
 	p_bf= plot(layout=(n_bands_2a, 1),xlabel=L"$\mathcal{E}$ values")
 	print(ρ_bauer_fike)
 
 
-	plot!(p_bf,Ecut_2a[1:end-1],λ1[1:end-1].±getindex.(ρ_bauer_fike,1)[1:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+	plot!(p_bf,Ecut_2a[first_x_bf:end-1],λ1[first_x_bf:end-1].±getindex.(ρ_bauer_fike,1)[first_x_bf:end-1],subplot=1,shape=:cross,label="first eigenvalue")
     hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
 	
-	plot!(p_bf,Ecut_2a[10:end-1],λ2[10:end-1].±getindex.(ρ_bauer_fike,2)[10:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+	plot!(p_bf,Ecut_2a[first_x_bf:end-1],λ2[first_x_bf:end-1].±getindex.(ρ_bauer_fike,2)[first_x_bf:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	
 	title!(p_bf,subplot=1,"convergence of the first 2 eigenvalues with Bauer-Fike bounds")
@@ -563,7 +563,13 @@ end
 
 # ╔═╡ 983b1a76-ecb9-42cd-a109-d8847d78ca79
 md"""
-The bounds do not get tighter as the eigenvalues converge.
+By playing with the knob, one notices that the bounds are considerably larger for the first eigenvalue and do not get tighter as the eigenvalues converge.
+
+"""
+
+# ╔═╡ 9b83de09-2015-4f60-a6c8-05daebed393e
+md"""
+- Counter of the first element to plot = $(@bind first_x_kt PlutoUI.Slider(1:1:25; default=1, show_value=true))
 
 """
 
@@ -573,10 +579,10 @@ begin
 	print(ρ_bauer_fike)
 
 
-	plot!(p_kt,Ecut_2a[15:end-1],λ1[15:end-1].±ρ_kato_temple[1][15:end-1],subplot=1,shape=:cross,label="first eigenvalue")
+	plot!(p_kt,Ecut_2a[first_x_kt:end-1],λ1[first_x_kt:end-1].±ρ_kato_temple[1][first_x_kt:end-1],subplot=1,shape=:cross,label="first eigenvalue")
     hline!([λ1[end]], line=:dash, color=:red, subplot=1, label="Ecut = 80")
 	
-	plot!(p_kt,Ecut_2a[20:end-1],λ2[20:end-1].±ρ_kato_temple[2][20:end-1],subplot=2,shape=:cross,label="second eigenvalue")
+	plot!(p_kt,Ecut_2a[first_x_kt:end-1],λ2[first_x_kt:end-1].±ρ_kato_temple[2][first_x_kt:end-1],subplot=2,shape=:cross,label="second eigenvalue")
     hline!([λ2[end]], line=:dash, color=:red, subplot=2, label="Ecut = 80")
 	
 	title!(p_kt,subplot=1,"convergence of the first 2 eigenvalues with Kato-Temple bounds")
@@ -610,16 +616,9 @@ Based on this data we can use the `compute_bands` function to diagonalise all $H
 """
 
 # ╔═╡ d34fa8e5-903f-45f4-97f8-32abd8883e9f
-begin 
-	function compute_bands_auto(model; Ecut, precision=Float64, kwargs...)
-	basis = PlaneWaveBasis(convert(Model{precision}, model); Ecut, kgrid=(1, 1, 1))
-	compute_bands(basis, kpath; show_progress=false, kwargs...)
-	end
-
-	function compute_bands_auto_double64(model; Ecut, kwargs...)
-	basis = PlaneWaveBasis(convert(Model{Double64}, model), Ecut, kgrid=[1, 1, 1])
-	compute_bands(basis, kpath; show_progress=false, kwargs...)
-	end
+function compute_bands_auto(model; Ecut, kwargs...)
+basis = PlaneWaveBasis(model; Ecut, kgrid=(1, 1, 1))
+compute_bands(basis, kpath; show_progress=false, kwargs...)
 end
 
 # ╔═╡ e3244165-9f04-4676-ae80-57667a6cb8d5
@@ -804,12 +803,9 @@ begin
 		title!(p_r_again,subplot=1,"Error bounds with Bauer-Fike & Kato-Temple")
 end
 
-# ╔═╡ cda35232-b0ef-490f-9be2-b5a2c84d4ad6
-
-
 # ╔═╡ 1738ca7b-5d33-484c-a37f-eb2f70086a64
 md"""
-the Kato-Temple is simply a shift of $\approx 10^{-6}$ because the $\delta$ value is very stable, thus this bound performs strictly better than its Bauer-Fike counter-part.  
+the Kato-Temple is simply a shift of $\approx 10^{-6}$ because the $\delta$ value is very stable, thus this bound "performs" strictly better than its Bauer-Fike counter-part. It does not cover the errors for the first eigenvalue up to $\mathcal{E}=20$, which makes it unsuited for this task.  
 """
 
 # ╔═╡ 14df1c0f-1c4f-4da9-be49-3941b9c12fd3
@@ -966,6 +962,23 @@ The strategy to determine $\mu$ is thus as follows:
 
 [^HLC2020]:  M. F. Herbst, A. Levitt and E. Cancès. Faraday Discuss., **224**, 227 (2020). DOI [10.1039/D0FD00048E](https://doi.org/10.1039/D0FD00048E)
 """
+
+# ╔═╡ 5f152117-e651-4810-87e7-2cc2b61e5c0d
+let
+	Ecut = 5
+	basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+	ham = Hamiltonian(basis)
+	Vreal = ComplexF64.(DFTK.total_local_potential(ham))
+
+	kpoint = basis.kpoints[1]  
+    Vfourier = fft(ham.basis, kpoint, Vreal;) #kpoint,
+
+	l1_V = sum(abs.(Vfourier))
+
+	# eigres = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham, n_bands=6)
+ 	# λkn = eigres.λ[1][1:2]  
+	
+end
 
 # ╔═╡ 48ffb85e-884d-46a4-8184-40126b603aac
 md"""
@@ -1516,6 +1529,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
@@ -1523,6 +1537,17 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoTeachingTools = "661c6b06-c737-4d37-b85c-46df65de6f69"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[compat]
+Brillouin = "~0.5.15"
+DFTK = "~0.6.16"
+DoubleFloats = "~1.3.0"
+FFTW = "~1.7.2"
+LaTeXStrings = "~1.3.1"
+Measurements = "~2.11.0"
+Plots = "~1.39.0"
+PlutoTeachingTools = "~0.2.14"
+PlutoUI = "~0.7.54"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -1531,7 +1556,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "c41aa109a132cea5bdfff901700cbe64417026f1"
+project_hash = "c770569434ca1059c67e872667c7aaf097798fab"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -3476,21 +3501,23 @@ version = "1.4.1+1"
 # ╠═ac0cffd2-effb-489c-a118-60864798d55e
 # ╠═c50b9d2e-dcf5-42be-b401-3da8c514165b
 # ╟─142ac96e-bd9d-45a7-ad31-e187f28e884a
-# ╠═601c837c-1615-4826-938c-b39bb35f46d1
-# ╟─e0a07aca-f81a-436b-b11e-8446120e0235
+# ╟─601c837c-1615-4826-938c-b39bb35f46d1
+# ╠═e0a07aca-f81a-436b-b11e-8446120e0235
 # ╠═2bf7d1a6-cd49-41ee-a670-4352febd02b6
 # ╠═3856b78c-cadf-4e6c-868b-8026ab0bb670
+# ╠═e1fff20b-9fdd-4428-8a08-c7d800515073
 # ╠═0f70ff13-ffb0-4b9a-8570-7e324ff4afd7
 # ╠═f41b96ae-51a6-4aae-b9d2-ef0c546f2999
 # ╠═189d4007-8e6f-4f54-9828-005febe2b89c
 # ╠═6bfa0a42-a0e6-4bef-9dc0-0023796f087b
-# ╠═682f52e7-f7a9-4146-b789-268672049fa9
 # ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
 # ╟─e04087db-9973-4fad-a964-20d109fff335
 # ╟─abdfcc43-245d-425a-809e-d668f03e9b45
 # ╟─d26fec73-4416-4a20-bdf3-3a4c8ea533d1
+# ╟─b7bb8704-09e5-4bfb-843d-113dba177ba6
 # ╠═e42ff75d-f401-4b15-9421-81b24277e01b
 # ╠═983b1a76-ecb9-42cd-a109-d8847d78ca79
+# ╠═9b83de09-2015-4f60-a6c8-05daebed393e
 # ╠═faa100bb-4012-49ab-929d-303a26fa0634
 # ╟─9a953b4e-2eab-4cb6-8b12-afe754640e22
 # ╟─0616cc6b-c5f8-4d83-a247-849a3d8c5de8
@@ -3517,13 +3544,13 @@ version = "1.4.1+1"
 # ╟─f6efea9b-9656-4337-82a1-5b894e078338
 # ╠═7121fcd7-c9ec-4d59-ad26-e8b3887ba65e
 # ╠═c7c3f1ab-def9-4de9-8fc7-112be4c3631d
-# ╠═cda35232-b0ef-490f-9be2-b5a2c84d4ad6
 # ╠═1738ca7b-5d33-484c-a37f-eb2f70086a64
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
 # ╟─fc040eb6-872b-475d-a6cd-7d3ad1fae229
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
+# ╠═5f152117-e651-4810-87e7-2cc2b61e5c0d
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
 # ╠═4ae6fb80-298b-467b-bdbd-f03d6694d3b2
 # ╠═2ac6aad0-c829-4da5-a984-eb67f3fe5f8f
