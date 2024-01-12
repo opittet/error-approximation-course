@@ -15,6 +15,7 @@ begin
 	using Printf
 	using LaTeXStrings
 	using Measurements
+	using FFTW
 end
 
 # ╔═╡ 4b7ade30-8c59-11ee-188d-c3d4588f7106
@@ -220,18 +221,33 @@ $\langle e_G | e_{G'} \rangle  = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omeg
 
 # ╔═╡ e06ad336-9ff8-48bb-9eaf-4a606d69d51c
 md"""
-
-
 Considering
 
 ```math
 \begin{align}
 \langle e_G | T_k e_{G'} \rangle &= \int_\Omega e^{- iG \cdot x} \cdot \frac{1}{2} \left(-i \nabla_x + k \right)^2 e^{iG' \cdot x} \,dx \\
-&= \frac{1}{2} \int_\Omega e^{- iG \cdot x} \left(-i \nabla_x + k \right) \left(-i \nabla_x e^{iG' \cdot x} + k e^{iG' \cdot x} \right)  \,dx 
-= \delta_{GG'} \frac{1}{2} |G+k|^2
+&= \frac{1}{2} \int_\Omega e^{- iG \cdot x} \left(-i \nabla_x + k \right) \left(-i \nabla_x e^{iG' \cdot x} + k e^{iG' \cdot x} \right)  \,dx  \\
+&= \frac{1}{2} |G+k|^2 \langle e_G | e_{G'} \rangle  = \frac{1}{2} \delta_{GG'}  |G+k|^2
 \end{align} 
 ```
-**...   have to finish ...**
+"""
+
+# ╔═╡ f1f3d1d9-cb71-4d04-8904-b3d5a2e978c5
+md"""
+Finally, considering
+```math
+H = -\frac12 \Delta + V.
+```
+We have
+```math
+\begin{align}
+\langle e_{G + \Delta G} | H e_{G} \rangle &= -\frac12 |G|^2 \left\langle e_{G + \Delta G} |   e_{G} \right\rangle + \left\langle e_{G + \Delta G} | V  e_{G} \right\rangle = \\
+&= 0 + \int_\Omega  \sum_{|G'| < \sqrt{2\mathcal{E}_V}} \hat{V}(G') e^{i \cdot G' \cdot x }  e^{- i \Delta G \cdot x }  \,dx  = 0
+\end{align}
+```
+using the fact that $|\Delta G| > \sqrt{2\mathcal{E}_V}$ and that $e_G \in \mathbb{B}_k^{\mathcal{E}}$.
+
+
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -366,18 +382,23 @@ md"""
 
 # ╔═╡ f3d36456-d289-45f5-b033-de88cb49cf01
 begin
-	Ecut_2a=collect(5:30)
-	push!(Ecut_2a,80)
+	Ecuts = 5:5:30
+	Ecut_ref = 80
+	n_bands_2a = 2
+	
 	λ_conv=[]
+	λ_ref=[]
+	
 	X_conv=[]
 	ρ_Bauer_Fike=[]
-	n_bands_2a = 2
+	# eigenvalues = zeros(length(Ecuts), n_bands)
+	# eigenvalues_ref = zeros(1, n_bands)
 
 	for Ecut_iter in Ecut_2a
 		
 		basis_2a = PlaneWaveBasis(model; Ecut=Ecut_iter, kgrid=(1, 1, 1));
 		ham_2a = Hamiltonian(basis_2a)
-		eigres_2a = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_2a, n_bands_2a)
+		eigres_2a = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_2a, n_bands)
 		
 		for (ik, kpt) in enumerate(basis_2a.kpoints)
 
@@ -481,9 +502,10 @@ Using this technique you can compute the application of the Hamiltonian using a 
 
 # ╔═╡ 66457c40-a346-41b4-a1c1-0c40096c7653
 begin
+	local n_bands = 2
 	basis_large = PlaneWaveBasis(model; Ecut=80, kgrid=(1, 1, 1))
 	ham_large = Hamiltonian(basis_large)
-	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands_2a)
+	eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, n_bands)
 end
 
 # ╔═╡ 68cc4a96-42c5-44ef-b736-1036f39f903c
@@ -903,6 +925,38 @@ The strategy to determine $\mu$ is thus as follows:
 [^HLC2020]:  M. F. Herbst, A. Levitt and E. Cancès. Faraday Discuss., **224**, 227 (2020). DOI [10.1039/D0FD00048E](https://doi.org/10.1039/D0FD00048E)
 """
 
+# ╔═╡ 85cff091-a6ae-4d0f-b9b6-4b1c64863128
+PlaneWaveBasis(model; Ecut=5, kgrid=(1, 1, 1))
+
+# ╔═╡ a915c813-299e-464f-9160-497e7447691f
+let
+	Ecut = 5
+	basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+	ham = Hamiltonian(basis)
+	Vreal = DFTK.total_local_potential(ham)
+
+	kpoint = basis.kpoints[1]  
+    Vfourier = DFTK.fft(ham.basis, Vreal) 
+
+	l1_V = sum(abs.(Vfourier))
+
+	eigres = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham, n_bands=2)
+    λkn = eigres.λ[1][1:2]  
+	
+end
+
+# ╔═╡ af6c4904-5905-430b-a742-f5b5de472808
+let
+	Ecut = 5
+	
+	band_data = compute_bands_auto(model; tol=1e-2, Ecut=10, n_bands=2)
+	ham = Hamiltonian(basis[1])
+	Vreal = DFTK.total_local_potential(ham)
+
+	kpoint = basis.kpoints[1]  
+    Vfourier = DFTK.fft(basis[1], kpoint, Vreal) #map(complex, 
+end
+
 # ╔═╡ 48ffb85e-884d-46a4-8184-40126b603aac
 md"""
 ### Task 6: Band structure with guaranteed bounds
@@ -1099,6 +1153,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
@@ -1110,6 +1165,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 [compat]
 Brillouin = "~0.5.14"
 DFTK = "~0.6.14"
+FFTW = "~1.7.2"
 LaTeXStrings = "~1.3.1"
 Measurements = "~2.11.0"
 Plots = "~1.39.0"
@@ -1123,7 +1179,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "668bd3d4dabbb71614b44174b6317f5c857ac155"
+project_hash = "3b0aecc30a9bddee85b59d5dc02888b62ce68b26"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1530,9 +1586,9 @@ version = "4.4.4+1"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
-git-tree-sha1 = "b4fbdd20c889804969571cc589900803edda16b7"
+git-tree-sha1 = "ec22cbbcd01cba8f41eecd7d44aac1f23ee985e3"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.7.1"
+version = "1.7.2"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -3021,13 +3077,14 @@ version = "1.4.1+1"
 # ╠═a9548adc-cc71-4f26-96d2-7aefc39a554f
 # ╟─f09f563c-e458-480f-92be-355ab4582fb5
 # ╟─363b4496-5728-4eea-a3cc-4a090952155c
-# ╟─11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
+# ╠═11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
 # ╟─354b8072-dcf0-4182-9897-c3e9534bef5a
 # ╟─0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
 # ╟─40f62be2-8394-4886-84e8-d595b6ff7cab
 # ╟─055bf84a-abf2-4604-9c71-0ef3dca7fa78
 # ╟─e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╟─f1f3d1d9-cb71-4d04-8904-b3d5a2e978c5
 # ╟─05d40b5e-fd83-4e73-8c78-dfd986a42fc0
 # ╠═c4393902-7c57-4126-80af-8765bea42ebd
 # ╠═78cc8d4a-cb63-48d0-a2f9-b8ec8c2950e5
@@ -3045,7 +3102,7 @@ version = "1.4.1+1"
 # ╠═ac0cffd2-effb-489c-a118-60864798d55e
 # ╟─142ac96e-bd9d-45a7-ad31-e187f28e884a
 # ╠═601c837c-1615-4826-938c-b39bb35f46d1
-# ╟─e0a07aca-f81a-436b-b11e-8446120e0235
+# ╠═e0a07aca-f81a-436b-b11e-8446120e0235
 # ╠═f3d36456-d289-45f5-b033-de88cb49cf01
 # ╠═73588c96-6ed0-41c0-845c-aa32e2891203
 # ╠═114f70ef-1355-4e0b-b60a-4e78aafe59dc
@@ -3085,6 +3142,9 @@ version = "1.4.1+1"
 # ╟─a225cfcb-3e2b-4800-a3f4-e2c9b527a748
 # ╟─cb99a834-4822-497d-be10-e1740099b076
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
+# ╠═85cff091-a6ae-4d0f-b9b6-4b1c64863128
+# ╠═a915c813-299e-464f-9160-497e7447691f
+# ╠═af6c4904-5905-430b-a742-f5b5de472808
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
 # ╟─33896109-d190-4992-806a-c447ca36071b
 # ╠═93552ccd-f7b5-4830-a9ad-417d3fca9af9
