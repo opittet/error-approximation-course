@@ -1161,6 +1161,167 @@ we can then transfer the state vectors `X`, `P` and `R` to this basis.
 This means while the iterative eigensolver is converging we also improve the discretisation basis by successively increasing $\mathcal{E}$. Each LOBPCG iteration may thus run using a different discretisation basis.
 """
 
+# ╔═╡ 2597f71f-f8e0-483a-86be-e23aa3701943
+print(Model)
+
+# ╔═╡ f4d66736-a768-43cb-bb55-8284e2b55cd3
+function naive_adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
+                            maxiter=100, tol=1e-6, verbose=false,Δ=0.5) where {T}
+	kgrid = (1, 1, 1)  # Γ point only
+	basis = PlaneWaveBasis(model; Ecut, kgrid)
+	ham   = Hamiltonian(basis)
+	hamk  = ham[1]                   # Select Γ point
+	prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
+	X     = DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
+	
+	converged = false
+	λ = NaN
+	residual_norms = NaN
+	residual_history = []
+	
+	P = zero(X)
+	R = zero(X)
+	counter=0
+	for i in 1:maxiter
+		if i > 1
+			Z = hcat(X, P, R)
+		else
+			Z = X
+		end
+		Z = Matrix(qr(Z).Q)  # QR-based orthogonalisation
+
+		# Rayleigh-Ritz
+		HZ = hamk * Z
+		λ, Y = eigen(Hermitian(Z' * HZ))
+		λ = λ[1:n_bands]
+		Y = Y[:, 1:n_bands]
+		new_X = Z * Y
+		
+		# Compute residuals and convergence check
+		R = HZ * Y - new_X * Diagonal(λ)
+		residual_norms = norm.(eachcol(R))
+		push!(residual_history, residual_norms)
+		verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] residual_norms[end]
+		if maximum(residual_norms) < tol
+			converged = true
+			X .= new_X
+			break
+		end
+
+		# Precondition and update
+		DFTK.precondprep!(prec, X)
+		ldiv!(prec, R)
+		P .= X - new_X
+		X .= new_X
+
+		# Additional step:
+		# Move to larger basis ?
+		counter= counter+1
+		modified_Ecut=Ecut+counter*Δ
+		basis_new = PlaneWaveBasis(model;Ecut= modified_Ecut, kgrid)
+
+		
+		vectors_to_enlarge=[X,P,R]
+		for vector in vectors_to_enlarge
+			#println(size(X))
+			#println(length(G_vectors(basis,1)))
+			
+			
+			vector= DFTK.transfer_blochwave_kpt(vector, basis, basis.kpoints[1],
+                               basis_new, basis_new.kpoints[1])
+		end
+		basis=basis_new
+	end
+
+	(; λ, X, basis, ham, converged, residual_norms, residual_history)
+end
+
+# ╔═╡ 0d88f5f7-9c34-47b1-88e1-22653c83085c
+begin
+	naive_adaptive_lobpcg(model,20.0,1) where Float64
+end
+
+# ╔═╡ 80fc031f-ecaf-41a4-975c-dac3fbd4bd28
+
+
+# ╔═╡ 3dec0f02-abb8-4a3a-b09b-f863eb5c9c95
+# ╠═╡ disabled = true
+#=╠═╡
+#we could aslso make a recursive algorithm  
+
+function adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
+	                            maxiter=100, Δ=5, tol=1e-6, verbose=false,counter=0) where {T}
+			if counter = 0 
+
+			kgrid = (1, 1, 1)  # Γ point only
+			basis = PlaneWaveBasis(model; Ecut, kgrid)
+			ham   = Hamiltonian(basis)
+			hamk  = ham[1]                   # Select Γ point
+			prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
+			X=DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
+			else 
+			kgrid = (1, 1, 1)  # Γ point only
+			basis = PlaneWaveBasis(model; Ecut+counter*Δ, kgrid)
+			ham   = Hamiltonian(basis)
+			hamk  = ham[1]                   # Select Γ point
+			prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
+			X=DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
+			end
+			
+			
+			converged = false
+			λ = NaN
+			residual_norms = NaN
+			residual_history = []
+			
+			P = zero(X)
+			R = zero(X)
+			for i in 1:maxiter
+				if i > 1
+					Z = hcat(X, P, R)
+				else
+					Z = X
+				end
+				Z = Matrix(qr(Z).Q)  # QR-based orthogonalisation
+		
+				# Rayleigh-Ritz
+				HZ = hamk * Z
+				λ, Y = eigen(Hermitian(Z' * HZ))
+				λ = λ[1:n_bands]
+				Y = Y[:, 1:n_bands]
+				new_X = Z * Y
+				
+				# Compute residuals and convergence check
+				R = HZ * Y - new_X * Diagonal(λ)
+				residual_norms = norm.(eachcol(R))
+				push!(residual_history, residual_norms)
+				verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] residual_norms[end]
+				if maximum(residual_norms) < tol
+					converged = true
+					X .= new_X
+					break
+				end
+		
+				# Precondition and update
+				DFTK.precondprep!(prec, X)
+				ldiv!(prec, R)
+				P .= X - new_X
+				X .= new_X
+			end
+				if i%counter*10=0
+					counter = counter+1
+					adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
+	                            maxiter=maxiter, 					Δ=Δ,tol=tol,verbose=false,counter=counter) where {T}
+					
+				end
+				
+				
+
+	
+		(; λ, X, basis, ham, converged, residual_norms, residual_history)
+end
+  ╠═╡ =#
+
 # ╔═╡ 38db50ac-5937-4e9b-948c-fd93ced44cb2
 md"""
 ### Task 7: Developing a discretisation-adaptive LOBPCG
@@ -1196,6 +1357,92 @@ Whenever (5) becomes too large, you should switch to a finer discretisation basi
 - To develop your approach, first only compute a single eigenvalue (`n_bands = 1`) and then start considering more than one. Note, that you will need to adapt $(5)$ and take apropriate maxima / minima over all computed eigenpairs to decide when to switch to the next bigger basis.
 - Be creative and experiment. In this Task there is no "best" solution.
 """
+
+# ╔═╡ 928e7765-d921-4620-a680-02ba74e7a47a
+
+residual_large= 
+
+
+
+# ╔═╡ f1b8af2a-4ac8-4da4-98b4-eb88a8ac67f0
+function adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
+                            maxiter=100, tol=1e-6, verbose=false,Δ=0.5,initial_F=Ecut+15) where {T}
+	kgrid = (1, 1, 1)  # Γ point only
+	basis = PlaneWaveBasis(model; Ecut, kgrid)
+	ham   = Hamiltonian(basis)
+	hamk  = ham[1]                   # Select Γ point
+	prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
+	X     = DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
+
+	basis_large = PlaneWaveBasis(model; Ecut+initial_F, kgrid)
+	ham_large = Hamiltonian(basis_large)
+	hamk = ham_large[1]
+	
+	converged = false
+	λ = NaN
+	residual_norms = NaN
+	residual_history = []
+	
+	P = zero(X)
+	R = zero(X)
+	counter=0
+	for i in 1:maxiter
+		if i > 1
+			Z = hcat(X, P, R)
+			Z_large = hcat(X_large, P_large, R_large)
+		else
+			Z = X
+		end
+		Z = Matrix(qr(Z).Q)  # QR-based orthogonalisation
+
+		# Rayleigh-Ritz
+		HZ = hamk * Z
+		λ, Y = eigen(Hermitian(Z' * HZ))
+		λ = λ[1:n_bands]
+		Y = Y[:, 1:n_bands]
+		new_X = Z * Y
+		
+		# Compute residuals and convergence check
+		R = HZ * Y - new_X * Diagonal(λ)
+
+		R_large =
+		
+		residual_norms = norm.(eachcol(R))
+		push!(residual_history, residual_norms)
+		verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] residual_norms[end]
+		if maximum(residual_norms) < tol
+			converged = true
+			X .= new_X
+			break
+		end
+
+		# Precondition and update
+		DFTK.precondprep!(prec, X)
+		ldiv!(prec, R)
+		P .= X - new_X
+		X .= new_X
+
+		
+		counter= counter+1
+		R_large = HZ * Y - new_X * Diagonal(λ)
+
+		basis_large = PlaneWaveBasis(model; Ecut+counter^(1.5)*Δ, kgrid)
+
+		
+		vectors_to_enlarge=[X,P,R]
+		for vector in vectors_to_enlarge
+			
+			vector= DFTK.transfer_blochwave_kpt(vector, basis, basis.kpoints[1],
+                               basis_new, basis_new.kpoints[1])
+		end
+		basis=copy(basis_new)
+	end
+
+	(; λ, X, basis, ham, converged, residual_norms, residual_history)
+end
+
+# ╔═╡ 382b4d8f-591a-48aa-9e7d-feeb45bd192e
+
 
 # ╔═╡ 56c10e5c-90e0-4aa7-a343-38aadff37693
 md"""
@@ -3560,7 +3807,15 @@ version = "1.4.1+1"
 # ╟─968a26f2-12fe-446f-aa41-977fdffc23a0
 # ╠═7ebc18b0-618f-4d99-881f-7c30eb3bc7f5
 # ╟─bf00ec9d-5c69-43c3-87c1-28ac9f5b4c9f
+# ╠═2597f71f-f8e0-483a-86be-e23aa3701943
+# ╠═f4d66736-a768-43cb-bb55-8284e2b55cd3
+# ╠═0d88f5f7-9c34-47b1-88e1-22653c83085c
+# ╠═80fc031f-ecaf-41a4-975c-dac3fbd4bd28
+# ╠═3dec0f02-abb8-4a3a-b09b-f863eb5c9c95
 # ╟─38db50ac-5937-4e9b-948c-fd93ced44cb2
+# ╠═928e7765-d921-4620-a680-02ba74e7a47a
+# ╠═f1b8af2a-4ac8-4da4-98b4-eb88a8ac67f0
+# ╠═382b4d8f-591a-48aa-9e7d-feeb45bd192e
 # ╟─56c10e5c-90e0-4aa7-a343-38aadff37693
 # ╟─7fb27a85-27eb-4111-800e-a8c306ea0f18
 # ╠═e0f916f6-ce7f-48b1-8256-2e6a6247e171
