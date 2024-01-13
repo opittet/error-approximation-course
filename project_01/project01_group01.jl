@@ -667,6 +667,12 @@ md"""
 **(b)** Motivated by the speedup of Gram-Schmidt methods we want to employ `ortho_gs` and `ortho_gs_matrix` within our `lobpcg`. This can be achieved by setting the `ortho` keyword argument appropriately (e.g. `lobpcg(...; ortho=ortho_gs)`). Focus on computing the $4$ smallest eigenpairs of the testproblem `Htest()` to `tol=1e-8` --- using again its factorised form as a preconditioner.
 """
 
+# ╔═╡ f218f018-ec56-4662-9d37-3e9bc7f0c521
+# ╠═╡ disabled = true
+#=╠═╡
+Htest(T=Float64) = fd_hamiltonian(v_chain, 4000, 4; T);
+  ╠═╡ =#
+
 # ╔═╡ 2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 md"""
 What do you notice with the Gram-Schmidt-based orthogonalisation? Do we win something using this faster technique? Plot the convergence history of the largest eigenpair when using `ortho_qr` and `ortho_gs`. Try to find an explanaition for the observed behaviour. *Hint:* Part (c) might be helpful.
@@ -999,7 +1005,7 @@ begin
 	
 	plot(mrange, error_gs, label="ortho_gs", xlabel="m", xaxis=:log10,yaxis=:log10, ylabel="Orthonormality Error", legend=:topleft)
 	plot!(mrange, error_qr, label="ortho_qr", xticks=10.0 .^ (-16:2:0))
-	plot!(mrange, error_mgs, label="ortho_mgs", linestyle=:dash) #typo
+	plot!(mrange, error_qr, label="ortho_mgs", linestyle=:dash)
 	plot!(mrange, error_ch, label="error_ch", linestyle=:dash)
 	plot!(mrange, error_s_ch, label="error_s_ch", linestyle=:dash)
 	plot!(mrange, error_dftk, label="error_dftk")
@@ -1471,11 +1477,34 @@ Some questions you should address:
 
 # ╔═╡ 06b6be7a-1d65-49fd-8217-f95ea11baa67
 md"""
+** Anna ** 
+
 - 3, 4, 7, 8
 - We collectively discussed our preferences and decided to distribute the workload accordingly.
 - The goal was always to separate the number of tasks equally since individual strengths and interests play a role in specific tasks.
 - Applying mathematical concepts to problem-solving and coding tasks.
 - From Olivier, who is from Material Science program I learned some physics-related insights into our project.
+"""
+
+# ╔═╡ 795f66f8-8018-4ac4-aae8-c17535fef799
+md"""
+**Olivier**
+
+- _Which tasks and subtasks ((a), (b), etc.) of the project did you mostly work on ?_
+I was in charge of tasks 1-2 and 5-6.
+
+- _How did you decide within the group to distribute the workload as such ?_
+We thought that 2 exercises per person at both both begining and at the end of the project would be a good way of splitting the workload, ensuring that we have both been acquainted with all parts of the project.
+
+- _In your opinion did each group member contribute equally to the project ?_
+On top of doing her parts, Anna has done more work because she helped me (re)write my parts to have cleaner code and checked that everything made sense Whereas I just re-read what she had done without changing much (maybe a bit on the plots).
+
+- _Where could your specific expertise and background from your prior studies contribute most to the project and the exercises we did earlier in the semester?_
+To be honest I am not sure anything we have seen in the mandatory material science background gave me an edge over someone that studied math/ computational science like Anna did, maybe on the solid-states physics question in task 1?   
+
+- _Can you pinpoint aspects about your team members' study subject, which are relevant to the course (either the exercises or this project), which you learned from them in your discussions ?_
+It was interesting to work with Anna because she has a lot more experience so I can take what she codes as an example to write cleaner code. I also think her mathematical background made her more rigorous than what I am usually used to working with people from engineering.  
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -3486,6 +3515,7 @@ version = "1.4.1+1"
 # ╠═78d980de-68d6-46c8-a262-f235084963dc
 # ╠═def6770d-3b93-4023-afaf-ecffbd11ff51
 # ╟─d1b1ee12-479c-4b46-b008-30be3f3edfec
+# ╠═f218f018-ec56-4662-9d37-3e9bc7f0c521
 # ╟─2bbd3188-1ee5-4ea6-90a3-2fa373a6ef78
 # ╟─2ed26679-3bfd-41b8-a447-89447d8a3186
 # ╠═44131ba5-19e7-4182-8435-7e6f78df6639
@@ -3593,5 +3623,6 @@ version = "1.4.1+1"
 # ╟─07605283-d22b-4f0d-81f5-6aacf7de6f83
 # ╟─39a08d03-9d18-4346-a93c-86adb85811a1
 # ╠═06b6be7a-1d65-49fd-8217-f95ea11baa67
+# ╠═795f66f8-8018-4ac4-aae8-c17535fef799
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
