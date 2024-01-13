@@ -13,6 +13,11 @@ begin
 	using PlutoTeachingTools
 	using PlutoUI
 	using Printf
+	using LaTeXStrings
+	using Statistics
+	using Measurements
+	using DoubleFloats
+	
 end
 
 # ╔═╡ 4b7ade30-8c59-11ee-188d-c3d4588f7106
@@ -110,27 +115,35 @@ md"""
 A function is called bounded if there exists a constant $C$ such that:
 
 ```math
-\sup_{0 \neq x \in H^2} | V(x)| \leq C.
+| V(x)| \leq C \qquad \forall x \in \mathbb{R}^3.
 ```
 
-Considering the norm of $V(x)$ we have:
+Applying triangular inequality and using the fact that $|e^{iG \cdot x}| = 1$ as a modulus of a complex number in a polar form we have:
 ```math
 \begin{align}
 | V(x)| &\leq  \frac{1}{\sqrt{|\Omega|}}  \sum_{|G| < \sqrt{2\mathcal{E}_V}} | \hat{V}(G)| |e^{iG \cdot x}| = \\
-	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} | \hat{V}(G)| = C,
+	&= \sum_{|G| < \sqrt{2\mathcal{E}_V}} \frac{1}{\sqrt{|\Omega|}} | \hat{V}(G)| = C \qquad \forall x \in \mathbb{R}^3,
 \end{align}
 ```
 
-where $C$ is a constant since $\hat{V}(G)$ is finite and only a small number of Fourier coefficients is non-zero: ...because $G$ is from the lattice and inside the circle. The constant $| \Omega |$ is the volume of the unit cell which can be calculated as follows: 
-
-```math
-```
+where $| \Omega |$ is a constant since it is the volume of the parallelepiped spanned by three vectors that form a unit cell. Only a small number of Fourier coefficients is non-zero because there is a finite number of vectors $G$ which is from the reciprocal lattice $\mathbb{L}^*$ and also inside the circle with the radius $\sqrt{2\mathcal{E}_V}$. Since $\hat{V}(G)$ is given to be finite we can conclude that $C$ is indeed a constant.
 
 Therefore, the Cohen-Bergstresser potential is bounded.
 
-On the other hand, the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$, from which follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a finite sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
+On the other hand, from the periodicity of the complex exponential $e^{iG \cdot x}$ on the lattice $\mathbb{L}$ follows the $\mathbb{L}$-periodicity of $e_G(x)$. Since $V(x)$ is a finite sum of $\mathbb{L}$-periodic functions, it follows that $V(x)$ is itself $\mathbb{L}$-periodic.
 
-Therefore, since $V(x) \in L^{3/2}_{per}(\Omega)$ by applying theorem 10.1 the operator $H$ is self adjoint.
+Moreover, function $V(x) \in L^{2}(\Omega)$ which means that $\int_{\Omega}{|V(x)|^2 \,dx}$ is finite. Using Hölder's inequality, we have:
+
+```math
+\begin{align}
+\int_{\Omega}{|V(x)|^{3/2} \,dx} 
+	&\leq \left( \int_{\Omega}{ \left(|V(x)|^{3/2} \right)^{4/3} \,dx} \right)^{3/4} \left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4} = \\
+	&= \left( \int_{\Omega}{|V(x)|^{2} \,dx} \right)^{3/4} \left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4}< \infty,
+\end{align}
+```
+where $\left( \int_{\Omega}{ 1^{4}  \,dx} \right)^{1/4}$ is finite as a measure of the unit cell $\Omega$ and $\left(\int(|V(x)|^2) \,dx\right)^{3/4}$ is also finite by the assumption that $V(x)$ is in $L^2$.
+
+Therefore, $V(x) \in L^{3/2}_{per}(\Omega)$ and by applying theorem $10.1$ from the lectures the operator $H$ is self adjoint.
 """
 
 # ╔═╡ ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
@@ -175,12 +188,68 @@ md"""
 We have
 
 ```math
-\begin{align}
-\langle e_G | e_{G'} \rangle &= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |
-\end{align}
+\langle e_G | e_{G'} \rangle 
+= \int_{\Omega} e_G^*(x) e_{G'}(x) \,dx = \frac{1}{|\Omega|} \int_{\Omega} e^{i(G' - G) \cdot x} \,dx
 ```
 
-why Fuirer coefficients are orthogonal
+In case when $G = G'$ we have:
+```math
+\int_{\Omega} e^{i(G' - G) \cdot x} \,dx = \int_{\Omega} 1 \,dx = |\Omega|
+```
+
+In case of $G \neq G'$ denoting $(G - G') = G''$ which is also an element of the reciprocal lattice $\mathbb{L}^*$:
+```math
+\begin{align}
+\int_{\Omega} e^{iG'' \cdot x} \,dx = \int_{\Omega} \left(\cos{G'' \cdot x} + i \sin{G'' \cdot x} \right) \,dx = \int_{\Omega} \cos{G'' \cdot x} \,dx.
+\end{align}
+```
+Imaginary part is equal to zero since sine is an odd function. On the other hand, since we can reprecent the vectors $x$ and $G''$ as follows:
+
+$x = \alpha_1 a_1 + \alpha_2 a_2 + \alpha_3 a_3$
+
+and
+
+$G'' = \beta_1 b_1 + \beta_2 b_2 + \beta_3 b_3,$
+
+we have 
+
+$\cos{G'' \cdot x} = \cos{ \left( 2\pi \left( \alpha_1 \beta_1 + \alpha_2 \beta_2 + \alpha_3 \beta_3 \right) \right)} = 0$
+
+since $a_i \cdot b_j = 2π δ_{ij}$. Finally, we can see that
+
+$\langle e_G | e_{G'} \rangle  = \frac{1}{|\Omega|} \delta_{G, G'} \cdot | \Omega |.$
+
+"""
+
+# ╔═╡ 6d2da427-ff22-4cf3-87d5-0b949a191951
+md"""
+Considering
+
+```math
+\begin{align}
+\langle e_G | T_k e_{G'} \rangle &= \int_\Omega e^{- iG \cdot x} \cdot \frac{1}{2} \left(-i \nabla_x + k \right)^2 e^{iG' \cdot x} \,dx \\
+&= \frac{1}{2} \int_\Omega e^{- iG \cdot x} \left(-i \nabla_x + k \right) \left(-i \nabla_x e^{iG' \cdot x} + k e^{iG' \cdot x} \right)  \,dx  \\
+&= \frac{1}{2} |G+k|^2 \langle e_G | e_{G'} \rangle  = \frac{1}{2} \delta_{GG'}  |G+k|^2
+\end{align} 
+```
+"""
+
+# ╔═╡ 4a7e55d7-f4d8-4ca2-b5b2-463a01434145
+md"""
+Finally, considering
+```math
+H = -\frac12 \Delta + V.
+```
+We have
+```math
+\begin{align}
+\langle e_{G + \Delta G} | H e_{G} \rangle &= -\frac12 |G|^2 \left\langle e_{G + \Delta G} |   e_{G} \right\rangle + \left\langle e_{G + \Delta G} | V  e_{G} \right\rangle = \\
+&= 0 + \int_\Omega  \sum_{|G'| < \sqrt{2\mathcal{E}_V}} \hat{V}(G') e^{i \cdot G' \cdot x }  e^{- i \Delta G \cdot x }  \,dx  = 0
+\end{align}
+```
+using the fact that $|\Delta G| > \sqrt{2\mathcal{E}_V}$ and that $e_G \in \mathbb{B}_k^{\mathcal{E}}$.
+
+
 """
 
 # ╔═╡ 05d40b5e-fd83-4e73-8c78-dfd986a42fc0
@@ -314,62 +383,53 @@ md"""
 """
 
 # ╔═╡ 46e38c66-9c5b-4305-94c2-bacfa87b48b7
-md"""
-**answer (a)**
-"""
+begin
 
-# ╔═╡ 0339eee7-1269-4f68-a57c-8aebffdfb4bc
-begin 
-
+	Ecuts = 5:30
+	Ecut_ref = 80
+	n_bands_2a = 2
+	ik = 1
 	
-	
-	E_cut_list=5:5:30
-	λk_list=[]
-	println(E_cut_list)
-	#push!(E_cut_list,80)
-	
-	for (i,E_cut) in enumerate(E_cut_list)
-		println(E_cut)
-		basis_two = PlaneWaveBasis(model; Ecut=E_cut, kgrid=(1, 1, 1))
-		ham_two=Hamiltonian(basis_two)
-		
-		for (ik, kpt) in enumerate(basis_two.kpoints)
-			
-			eigres_two = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_two, 2)
-			hamk = ham_two[ik]
-			λk   = eigres_two.λ[ik]
-			Xk   = eigres_two.X[ik]
+	eigenvalues_2a = zeros(length(Ecuts), n_bands_2a)
+	eigenvec1 = []
+	eigenvec2 = []
 
-		residual_k = hamk * Xk - Xk * Diagonal(λk)
-		println(ik, "  ", norm(residual_k))
-		println(ik, "  ", λk)
-		push!(λk_list,λk)
-		
-		plot(i,λk)
-		end
-	end	
-		println(λk_list)
-		#bar(E_cut_list, 
-		#λk_list,   xlabel="Operation", ylabel="Time [ns]", 
-		#yaxis=:log, labels="time", 
-		#title="Matrix Vector operations median time benchmark")
+	for (i, Ecut) in enumerate(Ecuts)
+		basis_2a = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+		ham_2a = Hamiltonian(basis_2a)
+		eigres_2a = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_2a, n_bands_2a)
 
-end 
+		eigenvalues_2a[i, :] = eigres_2a.λ[ik][1:n_bands_2a]
+		Xk = eigres_2a.X[ik]
+		push!(eigenvec1, Xk[1])
+		push!(eigenvec2, Xk[2])
+
+	end
+
+	basis_r = PlaneWaveBasis(model; Ecut=Ecut_ref, kgrid=(1, 1, 1))
+	ham_r = Hamiltonian(basis_r)
+	eigres_r = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_r, n_bands_2a)
+	λ_ref = eigres_r.λ[ik]
+	X_ref = eigres_r.X[ik]
+	
+end
+
 
 # ╔═╡ c8867f39-55c8-4efb-9a0d-cb9cfb9f751b
 begin
-	d1, d2, d3, d4 = [1,3,4,3,2], [2], [3], [5,3]
+	p_x= plot(layout=(n_bands_2a, 1), xlabel=L"$\mathcal{E}$ values", yscale=:log10, minorgrid=true)
+	X1=norm.(eigenvec1)
+	X2=norm.(eigenvec2)
+
+	plot!(p_x, Ecuts, X1, shape=:cross, subplot=1, label=L"\parallel X_1 \parallel")
+    hline!([norm.(X_ref[1])], line=:dash, color=:red, subplot=1, label=L"\parallel X_{1, \mathcal{E}=80}\parallel")
 	
-	dlist = [d1, d2, d3, d4]
-	ni = length(λk_list)
-	dc = distinguishable_colors(maximum(ni), [RGB(0,0,0),RGB(1,1,1)], dropseed=true)
-	plot(xlabel="Series", ylabel="Values", widen=false)
-	local iter = 1
-	for (i,λk) in zip(length(λk_list), λk_list)
-	    bar!(iter:iter+i-1, λk, bar_width=1, c=dc[1:i])
-	    iter += i + 1
-	end
-	xticks!(cumsum(ni .+ 1) .- (ni .+ 1)/2, ["d1","d2","d3","d4"])
+	plot!(p_x, Ecuts, X2, shape=:cross, subplot=2, label=L"\parallel X_1 \parallel")
+    hline!([norm.(X_ref[2])], line=:dash, color=:red, subplot=2, label=L"\parallel X_{2, \mathcal{E}=80}\parallel")
+	
+	title!(p_x, subplot=1, "Convergence of the first two eigenvectors")
+
+
 end
 
 # ╔═╡ 58856ccd-3a1c-4a5f-9bd2-159be331f07c
@@ -417,6 +477,71 @@ r_{kn} = P_k^\mathcal{F} r_{kn} = H_k^{\mathcal{F}\mathcal{F}} \widetilde{X}_{kn
 Having diagonalised the Hamiltonian using cutoff $\mathcal{E}$ we can thus obtain the *full residual* by a computation of the Hamiltonian-vector product using an elevated cutoff $\mathcal{F}$.
 """
 
+# ╔═╡ b3fdeae8-2864-432a-b5b6-c7d072882d22
+md"""
+**Solution (b)**
+
+We need to find such cutoff $\mathcal{F} > \mathcal{E}$ that 
+```math
+r_{kn} = P_k^\mathcal{F} r_{kn} \iff Q_k^\mathcal{F} r_{kn} = 0 \iff H_k^{\mathcal{F}^\perp\mathcal{E}} \widetilde{X}_{kn} = 0,
+```
+where 
+```math
+\left(H_k^{\mathcal{F}^\perp\mathcal{E}} \right)_{GG'} = \langle e_G,\, H_k\, e_{G'} \rangle
+```
+If $e_G \in (\mathbb{B}_k^\mathcal{F})^\perp$ and $e_{G'} \in \mathbb{B}_k^\mathcal{E}$ which means that
+
+```math
+\frac12 |G + k|^2 < \mathcal{F} \quad \text{ and } \quad \frac12 |G' + k|^2 <  \mathcal{E},
+```
+from which it follows that 
+
+```math
+e_G \in (\mathbb{B}_k^\mathcal{F})^\perp \iff \frac12 |G + k|^2 \geq \mathcal{F} \qquad (*).
+```
+
+Considering $e_G \in \mathbb{B}_k^\mathcal{F}$ and $e_{G'} \in \mathbb{B}_k^\mathcal{E}$ and applying the reverse triangular inequality we have
+
+```math
+\begin{align}
+|G - G'| &= |G + k - G' - k| \geq \left| |G + k| - |G' + k| \right| \geq \\
+		 &\geq \sqrt{2\mathcal{F}} - \sqrt{2\mathcal{E}}
+\end{align}
+```
+
+From $(1)$ we can see that for any $e_G \in \mathbb{B}_k^{\mathcal{F}}$
+
+```math
+|\Delta G| > \sqrt{2\mathcal{E}_V} \quad \Longrightarrow \quad
+\langle e_{G + \Delta G} | H_k e_{G} \rangle = 0. 
+```
+To have $\langle e_{G + \Delta G} | H_k e_{G} \rangle \neq 0$ and since $\mathbb{B}_k^{\mathcal{E}} \subset \mathbb{B}_k^{\mathcal{F}}$ for $e_G \in \mathbb{B}_k^\mathcal{F}$ and $e_{G'} \in \mathbb{B}_k^\mathcal{E}$ we need
+
+```math
+|\Delta G| = |G - G'| \leq \sqrt{2\mathcal{E}_V}
+```
+From both inequalities we have
+```math
+ \sqrt{\mathcal{F}} - \sqrt{\mathcal{E}} = \sqrt{\mathcal{E}_V}.
+```
+Therefore, if we take
+```math
+ \mathcal{F} =  \left(\sqrt{\mathcal{E}_V} + \sqrt{\mathcal{E}}\right)^2.
+```
+it will follow that
+
+```math
+\begin{align}
+\left(H_k^{\mathcal{F}^\perp\mathcal{E}} \right)_{GG'} &= \langle e_G,\, H_k\, e_{G'} \rangle 
+= \langle e_G,\, V\, e_{G'} \rangle = \\
+&= \delta_{GG'} \frac12 |G+k|^2 + \int_\Omega  \sum_{|G''| < \sqrt{2\mathcal{E}_V}} \hat{V}(G'') e^{i \cdot G'' \cdot x }  e^{i (G - G') \cdot x }  \,dx = 0
+\end{align}
+```
+
+since $G' \neq G$ from $(*)$.
+
+"""
+
 # ╔═╡ abdfcc43-245d-425a-809e-d668f03e9b45
 md"""
 **(c)** In DFTK nobody stops you from using multiple bases of different size. Moreover, having obtained a set of bloch waves `X_small` using `basis_small` you can obtain its representation on the bigger `basis_large` using the function
@@ -426,9 +551,123 @@ X_large = transfer_blochwave(X_small, basis_small, basis_large)
 Using this technique you can compute the application of the Hamiltonian using a bigger basis (just as `Hamltonian(basis_large) * X_large`). Use this setup to vary $\mathcal{F}$ and use this to estimate $\mathcal{E}_V$ numerically. Check your estimate for various values of $\mathcal{E}$ to ensure it is consistent. Rationalise your results by taking a look at the [Cohen Bergstresser implementation in DFTK](https://github.com/JuliaMolSim/DFTK.jl/blob/0b61e06db832ce94f6b66c0ffb1d215dfa4822d4/src/elements.jl#L142).
 """
 
+# ╔═╡ f04ca53a-556c-44fd-8193-6b72e55e507e
+md"""
+**Solution (c):**
+"""
+
+# ╔═╡ 37516a8e-fa97-4a11-a520-6060e53d5856
+begin
+
+	E_list = 5:10
+	F_found_list = []
+	for E in E_list
+
+		local basis_small = PlaneWaveBasis(model; Ecut=E, kgrid=(1, 1, 1))
+		local ham = Hamiltonian(basis_small)
+		local eigres = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham, 2)
+		
+		F_list = E:5*E
+		local ik = 1
+
+		res_norms = []
+	
+		for (i, F) in enumerate(F_list)
+			basis_large = PlaneWaveBasis(model; Ecut=F, kgrid=(1, 1, 1))
+			ham_large = Hamiltonian(basis_large)
+			eigres_large = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large, 2)
+			
+			Xk_large = transfer_blochwave(eigres.X , basis_small, basis_large)
+			
+			residual = ham_large[ik] * Xk_large[ik] - Xk_large[ik] * Diagonal(eigres.λ[ik])
+			push!(res_norms, norm(residual))
+					
+			if i > 1 && abs(res_norms[i] - res_norms[i-1]) < 1e-8
+				push!(F_found_list, F)
+				break
+			end
+	
+		end
+	
+	end
+end
+		
+
+# ╔═╡ 458054f7-c2a4-4bd7-bb9f-346106145055
+Ev_estimated = mean((sqrt.(F_found_list) - sqrt.(E_list)).^2)
+
+# ╔═╡ fbcb6a01-0a35-43da-a040-46e9b400696f
+md"""
+Since the reciprocal lattice constant $b = \frac{2 \pi}{a}$ and from the Cohen Bergstresser implementation in DFTK the potential is calculated for the sum over $G$ such that 
+
+$|G|^2 < 11 \left(\frac{2 \pi}{a}\right)^2 \approx 4.124$ 
+by definition given above
+
+$|G|^2 < 2 \mathcal{E}_V \quad \implies \quad \mathcal{E}_V > 2.062$ 
+"""
+
+# ╔═╡ 2171a044-bcfd-425c-a49c-e9e454f84404
+0.5 * 11 * (2 * π / Si.lattice_constant) ^ 2
+
+# ╔═╡ 49e93f70-e53c-4c97-87e1-ec2744c65de4
+md"""
+On the other hand, $G'$ such that 
+
+$|G'|^2 > 11 \left(\frac{2 \pi}{a}\right)^2$
+
+are not included while computing $V$ meaning that 
+
+$|G'|^2  > 2 \mathcal{E}_V$
+giving an upper bound for $\mathcal{E}_V$.
+"""
+
+# ╔═╡ 130f8180-18d0-43c1-b962-64776f832d6b
+begin
+	l_bound = 11 * (2π / Si.lattice_constant) ^ 2
+	G_norms = (norm.(G_vectors_cart(basis_one, basis_one.kpoints[1]))) .^ 2
+	0.5 * sort([g for g in round.(G_norms, sigdigits=5) if g > l_bound])[1]
+end
+
+# ╔═╡ 1ba08fd5-f635-4fb1-a9ec-7392ba240e1f
+md"""
+Therefore,
+
+
+$2.06 < \mathcal{E}_V < 2.25$
+
+which is in line with the value estimated above.
+"""
+
 # ╔═╡ d26fec73-4416-4a20-bdf3-3a4c8ea533d1
 md"""
 **(d)** Based on the Bauer-Fike bound estimate the algorithm and arithmetic error for the first two eigenpairs at the $\Gamma$ point and for using cutoffs between $\mathcal{E} = 5$ and $\mathcal{E} = 30$. Add these estimates to your plot in $(a)$. What do you observe regarding the tightness of the bound ?
+"""
+
+# ╔═╡ 6af4d521-83e1-4f29-8c11-26c7d0aea583
+begin
+	local n_bands = 2
+	ρ_bauer_fike = zeros(length(Ecuts), n_bands)
+
+	for (i, Ecut) in enumerate(Ecuts)
+		basis_2a = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+		ham_2a = Hamiltonian(basis_2a)
+		eigres_2a = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_2a, n_bands_2a)
+
+		eigenvalues_2a[i, :] = eigres_2a.λ[ik][1:n_bands_2a]
+		Xk = eigres_2a.X[ik]
+
+
+		residual_k = ham_2a[ik] * Xk - Xk * Diagonal(eigres_2a.λ[ik])
+		ρ_bauer_fike[i, :] = norm.(eachcol(residual_k))
+
+	end
+
+	
+end
+
+# ╔═╡ 14f1f74c-14e4-4c08-97ea-804697565a0e
+md"""
+We can notice that Bauer Fike bounds for both eigenvalues are not very tight but for the first $\mathcal{E}$ we can see that discretization error dominates knowing that Bauer Fike dives a bound for arithmetic and algorithmic errors. 
 """
 
 # ╔═╡ 9a953b4e-2eab-4cb6-8b12-afe754640e22
@@ -506,6 +745,28 @@ function basis_change_Ecut(basis_small, Ecut_large)
                    basis_small.kweights_global)
 end
 
+# ╔═╡ 33fdac9b-ed7c-46f9-a5db-ae7eb8eb7b1a
+begin
+	local Ecut = 7
+	Fcut = (sqrt(Ev_estimated) + sqrt(Ecut)) ^ 2
+	local band_data = compute_bands_auto(model; n_bands=6, tol=1e-3, Ecut=Ecut)
+	local basis_large = basis_change_Ecut(band_data.basis, Fcut)
+	
+	local X_large = transfer_blochwave(band_data.X , band_data.basis, basis_large)
+	local ham = Hamiltonian(basis_large)
+
+	ρ_bauer_fike3 = []
+	
+	for (ik, kpt) in enumerate(band_data.basis.kpoints)
+		residual_k = ham[ik] * X_large[ik] - X_large[ik] * Diagonal(band_data.λ[ik])
+		push!(ρ_bauer_fike3, norm.(eachcol(residual_k)))
+	end
+
+	band_data3_bf=merge(band_data,(;λerror=ρ_bauer_fike3))
+	DFTK.plot_band_data(kpath, band_data3_bf)
+	
+end
+
 # ╔═╡ 646242a2-8df6-4caf-81dc-933345490e6c
 md"""
 -------
@@ -538,6 +799,158 @@ md"""
 **(c)** Perform a band structure computation at cutoff $\mathcal{E} = 7$ annotated with the error estimated using the estimate developed in *(b)*. For approximate eigenvalues where you cannot obtain a Kato-Temple estimate (e.g. degeneracies), fall back to a Bauer-Fike estimate. Play with the cutoff. What do you observe ? Do the error bars correspond to the expectations of a variational convergence ? Apart from the probably unjustified assumption in *(b)*, what is the biggest drawback of the Kato-Temple estimate ?
 
 -----
+"""
+
+# ╔═╡ c54b23f9-a06a-4180-8535-d0b366a07e16
+md"""
+**Solution (a):**
+
+From the notes, we know that eigenvalues  of $H_k$ are well separated. And that the spectrum of $H$ is a union of spectrums of $H_k$. As discussed in the lecture an energy band gives us a well-defined minimum and maximum which can be employed for using the Kato-Temple theorem.
+"""
+
+# ╔═╡ 26772ef8-bc98-42f0-9c7f-8ae04efa1e42
+md"""
+**Solution (b):**
+
+"""
+
+# ╔═╡ 9bed11fc-0ee5-4260-aa77-16eb92e914a7
+function get_KT_bound(computed_evalues, res_norms)
+	n = size(res_norms)[1]
+	
+	δ_list = zeros(n)
+	δ_list[1] = abs(computed_evalues[1] - computed_evalues[2]) -
+	res_norms[2]
+	δ_list[end] = abs(computed_evalues[end] - computed_evalues[end-1]) -
+	res_norms[end-1]
+	for i in 2:Int64(n - 1)
+		δ_left = abs(computed_evalues[i] - computed_evalues[i-1]) -
+		res_norms[i-1]
+		δ_right = abs(computed_evalues[i] - computed_evalues[i+1]) -
+		res_norms[i+1]
+		δ_list[i] = min(δ_left, δ_right)
+	end
+	
+	δ = [max(0, i) for i in δ_list]
+	error_Kato_Temple = res_norms .^2 ./ δ
+	error_Kato_Temple
+
+end
+
+# ╔═╡ 835889f9-117b-4601-bf5f-90b0894ed34b
+begin
+	local ik = 1
+	ρ_kato_temple = zeros(length(Ecuts), n_bands_2a)
+
+	for (i, Ecut) in enumerate(5:30)
+
+		# Kato-Temple
+		ρ_kato_temple[i, :]  = get_KT_bound(eigenvalues_2a[i, :], ρ_bauer_fike[i, :])
+
+	end
+	
+end
+
+
+# ╔═╡ 0339eee7-1269-4f68-a57c-8aebffdfb4bc
+begin
+	p= plot(yaxis=:log, xlabel=L"$\mathcal{E}$ values")
+	λ1=abs.(eigenvalues_2a[:, 1] .- λ_ref[1])
+	λ2=abs.(eigenvalues_2a[:, 2] .- λ_ref[2])
+
+
+	plot!(p, Ecuts ,λ1, shape=:cross, label=L"|\lambda_1-\lambda_{1,\mathcal{E}=80}|")
+	plot!(p, Ecuts, λ2, shape=:cross, label=L"|\lambda_2-\lambda_{2,\mathcal{E}=80}|")
+
+	plot!(p, Ecuts, ρ_bauer_fike[:, 1], shape=:cross, label=L"\parallel r_1 \parallel")
+	plot!(p, Ecuts, ρ_bauer_fike[:, 2], shape=:cross, label=L"\parallel r_2 \parallel")
+
+	plot!(p, Ecuts, ρ_kato_temple[:, 1], shape=:cross, label="Kato Temple 1")
+	plot!(p, Ecuts, ρ_kato_temple[:, 2], shape=:cross, label="Kato Temple 2")
+	
+	title!(p, "Convergence of the first two eigenvalues")
+end
+
+# ╔═╡ b2b1e2de-b599-4606-b531-a03f2c2e59ee
+begin
+	
+	local p= plot(yaxis=:log, xlabel=L"$\mathcal{E}$ values")
+
+	plot!(p, Ecuts, ρ_bauer_fike[:, 1], shape=:cross, label=L"\parallel r_1 \parallel")
+	plot!(p, Ecuts, ρ_bauer_fike[:, 2], shape=:cross, label=L"\parallel r_2 \parallel")
+
+	plot!(p, Ecuts, ρ_kato_temple[:, 1], shape=:cross, label="Kato Temple 1")
+	plot!(p, Ecuts, ρ_kato_temple[:, 2], shape=:cross, label="Kato Temple 2")
+	
+	title!(p, "Bauer Fike and Kato Temple bounds")
+end
+
+# ╔═╡ 1b20c7de-f23e-4492-8f6a-76baafe28c9c
+ρ_kato_temple[:, 1]
+
+# ╔═╡ 90d673d5-697b-4a31-aef1-b8321b58178d
+begin
+	local p = plot(yaxis=:log, xlabel=L"$\mathcal{E}$ values")
+
+
+	plot!(p, Ecuts, ρ_kato_temple[:, 1], shape=:cross, label="Kato Temple bound")
+	# plot!(p, Ecuts, ρ_kato_temple[2], shape=:cross, label="Kato Temple evalue2")
+
+	plot!(p, Ecuts, ρ_bauer_fike[:, 1], shape=:cross, label="Bauer Fike bound")
+	# # plot!(p, Ecuts, ρ_bauer_fike[:, 2], shape=:cross, label="Bauer Fike evalue2")
+
+	plot!(p, Ecuts, λ1, shape=:cross, label=L"|\lambda_1-\lambda_{1,\mathcal{E}=80}|")
+	# # plot!(p, Ecuts, λ2, shape=:cross, label=L"|\lambda_2-\lambda_{2,\mathcal{E}=80}|")
+	
+	title!(p, "Kato-Temple and Bauer Fike for the first eigenvalue")
+
+end
+
+# ╔═╡ 047996c7-0982-45fd-b243-0116bd19136f
+md"""
+In this case the Kato-Temple bound is tighter than its Bauer-Fike bound which makes Kato-Temple  more useful in our task. Moreover, having a bound for algorithmic and arithmetic error we can conclude depending on the value $\mathcal{E}$ where discretization error dominates in our approximate solution.
+"""
+
+# ╔═╡ cec04139-6d15-435c-8ffc-e9bc8d21383e
+md"""
+**Solution (c):**
+
+"""
+
+# ╔═╡ eb240595-b840-4ec7-97d2-c9a4583ee164
+begin
+	local Ecut = 7
+	local Fcut = (sqrt(Ev_estimated) + sqrt(Ecut)) ^ 2
+	local band_data = compute_bands_auto(model; n_bands=6, tol=1e-2, Ecut=Ecut)
+	local basis_large = basis_change_Ecut(band_data.basis, Fcut)
+	
+	local X_large = transfer_blochwave(band_data.X , band_data.basis, basis_large)
+	local ham = Hamiltonian(basis_large)
+	
+	ρ_bauer_fike4 = []
+	ρ_kato_temple4 = []
+	ρ_best = []
+	
+	for (ik, kpt) in enumerate(band_data.basis.kpoints)
+		residual_k = ham[ik] * X_large[ik] - X_large[ik] * Diagonal(band_data.λ[ik])
+		r_norms = norm.(eachcol(residual_k))
+		kt_bound = get_KT_bound(band_data.λ[ik], r_norms)
+		
+		push!(ρ_bauer_fike4, r_norms)
+		push!(ρ_kato_temple4, kt_bound)
+
+		push!(ρ_best, min.(r_norms, kt_bound))
+	end
+
+	
+	band_data4_bf=merge(band_data,(;λerror=ρ_best))
+	DFTK.plot_band_data(kpath, band_data4_bf)
+	
+end
+
+# ╔═╡ 937f11f1-b8f3-43ef-bb8f-b047f34c150c
+md"""
+Analyzing the plots from **(c)** and task 3 we observe that the error bars derived from the Kato-Temple estimate are tighter compared to those obtained only from the Bauer-Fike estimate. At the same time, the error bars tend to decrease with increasing cutoff, which would align with the expectations of smaller discretization errors leading to more accurate results. The main limitation is that we can apply the Kato-Temple theorem only when the targeted eigenvalue is isolated which is not always the case.
 """
 
 # ╔═╡ 14df1c0f-1c4f-4da9-be49-3941b9c12fd3
@@ -609,6 +1022,46 @@ md"""
 where the use of $V$ instead of $H$ indicates that the kinetic term does not contribute to the respective block and $0$ indicates an all-zero block.
 """
 
+# ╔═╡ 01f7ef52-3220-4053-8f66-455dde4c17f1
+md"""
+**Solution (a):**
+
+
+Using the results from task **2 (b)**, namely how $\mathcal{F}$ is defined, we can conclude that indeed
+
+```math
+H_k^{\mathcal{E}\mathcal{F}^\perp} = H_k^{\mathcal{E}\mathcal{F}^\perp} = 0
+```
+
+Furthermore,
+
+```math
+\left(T_k^{\mathcal{R}\mathcal{E}} \right)_{GG'} = \langle e_G | T_k e_{G'} \rangle = \delta_{GG'} \frac12 |G+k|^2 = 0
+```
+since 
+```math
+\mathcal{E}  < \frac12 |G+k|^2 < \mathcal{F} \quad \text{ and } \quad \frac12 |G'+k|^2 < \mathcal{E}.
+```
+This means that the kinetic terms
+```math
+T_k^{\mathcal{R}\mathcal{E}} = T_k^{\mathcal{R}\mathcal{E}} = 0
+```
+Analogically, 
+
+```math
+\left(T_k^{\mathcal{\mathcal{F}^\perp}\mathcal{R}} \right)_{GG'} = \langle e_G | T_k e_{G'} \rangle = \delta_{GG'} \frac12 |G+k|^2 = 0
+```
+where
+```math
+ \mathcal{F} < \frac12 |G+k|^2 \quad \text{ and } \quad \mathcal{E}  < \frac12 |G'+k|^2 < \mathcal{F}.
+```
+Therefore,
+
+```math
+T_k^{\mathcal{\mathcal{F}^\perp}\mathcal{R}} = T_k^{\mathcal{R}\mathcal{\mathcal{F}^\perp}} = 0
+```
+"""
+
 # ╔═╡ 047d630b-e85e-45e9-9574-758955cb160e
 md"""
 We focus on the splitting of $H_k$ into four blocks. An important realisation for our purpose is now that if $H_k - \mu_{kn}$ has exactly $n-1$ negative eigenvalues, then we necessarily have $\mu_{kn} < λ_{kn}$. In the following we will thus develop conditions on a parameter $\mu$, such that $H_k - \mu$ has a provable number of negative eigenvalues.
@@ -678,6 +1131,130 @@ Prove the following statements:
   ```
 """
 
+# ╔═╡ af9d6dc5-63fa-4746-aa5c-976803856d72
+md"""
+**Solution (c: 1):**
+
+First of all
+
+```math
+\begin{align}
+H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} 
+&= Q_k^{\mathcal{E}} H_k Q_k^{\mathcal{E}} = Q_k^{\mathcal{E}} T_k Q_k^{\mathcal{E}} + Q_k^{\mathcal{E}} V Q_k^{\mathcal{E}}
+\end{align}
+```
+where the elements of the kinetic term are defined as the following
+
+```math
+(T_k^{\mathcal{E}^\perp\mathcal{E}^\perp})_{GG'} = \left\langle e_G \,\middle|\, T_k e_{G'} \right\rangle = \frac{1}{2} \delta_{GG'} |G + k|^2
+```
+
+It means that $T_k^{\mathcal{E}^\perp\mathcal{E}^\perp}$ is diagonal and we have:
+```math
+\left\langle x \,\middle|\, T_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle = \frac{1}{2}\delta_{GG'} |G + k|^2 \left\langle x \,\middle|\, x \right\rangle \geq \mathcal{E} \left\langle x \,\middle|\, x \right\rangle.
+```
+
+On the other hand,
+```math
+ \left| \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle \right|
+  \leq \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\|
+```
+so that
+```math
+ -\|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\| \leq \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle 
+  \leq \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\|
+```
+Therefore,
+```math
+  \left\langle x \,\middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x \right\rangle 
+  \geq - \|x\| \| V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} x\| \geq - \|x\| \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} \|x\| = - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} \left\langle x \,\middle|\, x \right\rangle
+```
+
+In the end, putting it all together and using Cauchy–Schwarz inequality, we have
+
+```math
+\left\langle x \,\middle|\, (H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} - \mu) x \right\rangle
+  \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right) \left\langle x \,\middle|\, x \right\rangle \geq \left( \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu \right)
+```
+since vector $x$ are normalized.
+"""
+
+# ╔═╡ 8ff36198-afea-4294-8c80-3710737d6259
+md"""
+**Solution (c: 2):**
+
+Using a full eigendecomposition $H_k^{\mathcal{E} \mathcal{E}} = \widetilde{X}_k \widetilde{Λ}_k \widetilde{X}_k^H$ we can express $\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1}$ as following
+
+```math
+\left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} = \widetilde{X}_k \left(\widetilde{Λ}_k - \mu   \right)^{-1} \widetilde{X}_k^H,
+```
+and applying the same logic as above the inner product can be bounded above by the operator norm:
+```math
+\left\langle x \, \middle|\, V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+\leq \left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op}
+```
+
+Since we work with Cohen-Bergstresser Hamiltonians and $\widetilde{X}_k$ are unitary, applying the sub-multiplicative property of the operator norm we get:
+```math
+\begin{align}
+\left\|V_k^{\mathcal{E}^\perp\mathcal{E}} \widetilde{X}_k \left(\widetilde{Λ}_k - \mu\right)^{-1} \widetilde{X}_k^H V_k^{\mathcal{E}\mathcal{E}^\perp} \right\|_\text{op} &=
+
+
+\left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op} \leq \\
+
+&\leq \left\|V_k^{\mathcal{R}\mathcal{E}} \right\|_\text{op} \left\|\left(\widetilde{Λ}_k - \mu\right)^{-1} \right\|_\text{op}  \left\|V_k^{\mathcal{R}\mathcal{E}}  \right\|_\text{op} 
+\end{align}
+```
+Since $V_k^{\mathcal{R}\mathcal{E}}$ is part of the Hamiltonian and the operator norm of the $H_k^{\mathcal{E}\mathcal{E}}$ is bounded by its spectral radius:
+
+$\left\|V_k^{\mathcal{R}\mathcal{E}}  \right\|_\text{op} \leq \left\|H_k^{\mathcal{E}\mathcal{E}}  \right\|_\text{op}$
+
+Finally, considering the definition of the interval $I_n$, we can conclude that $\mu < \widetilde{λ}_{kn}$. Therefore,
+
+$\left\|\left(V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k\right) \left(\widetilde{Λ}_k - \mu\right)^{-1} \left( V_k^{\mathcal{R}\mathcal{E}} \widetilde{X}_k \right)^H \right\|_\text{op}\\
+\leq \frac{\|V_k\|_\text{op}^2}{\widetilde{λ}_{kn} - \mu}$
+
+"""
+
+# ╔═╡ 55fc26a4-9179-44c2-9d08-9da84cff83cf
+md"""
+**Solution (c: 3):**
+
+We will start with the Young's inequality for the operator norm:
+
+```math
+  \|V_k\|_\text{op} \leq  \sum_{|G| < \sqrt{2\mathcal{E}_V}} |\hat{V}(G)| = l_1^V.
+```
+
+Then for the first inequality:
+```math
+  \left\langle x \,\middle|\, (H_k^{\mathcal{E}^\perp\mathcal{E}^\perp} - \mu) x \right\rangle \geq  \mathcal{E} - \|V_k^{\mathcal{E}^\perp\mathcal{E}^\perp} \|_\text{op} - \mu  \geq  \mathcal{E} - l_1^V - \mu
+```
+For the second inequality:
+```math
+\begin{align}
+\left\langle x \, \middle|\,
+V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu   \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle
+&\leq  \frac{\|V_k\|_\text{op}^2}{\widetilde{λ}_{kn} - \mu} \leq \frac{(l_1^V)^2}{\widetilde{λ}_{kn} - \mu}
+\end{align}
+```
+Finally,
+
+```math
+\begin{align}
+\langle x,  S_\mu x \rangle &= \left\langle x,  \left( \left(H_k^{\mathcal{E}^\perp \mathcal{E}^\perp} - \mu\right)
+- V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} \right) x \right\rangle = \\
+&= \left\langle x,  \left(H_k^{\mathcal{E}^\perp \mathcal{E}^\perp} - \mu\right) x \right\rangle
+- \left\langle x,  V_k^{\mathcal{E}^\perp\mathcal{E}} \left( H_k^{\mathcal{E} \mathcal{E}} - \mu \right)^{-1} V_k^{\mathcal{E}\mathcal{E}^\perp} x \right\rangle \\
+&\geq  \mathcal{E} - l_1^V - \mu - \frac{(l_1^V)^2}{\widetilde{λ}_{kn} - \mu}
+\end{align}.
+```
+
+"""
+
+# ╔═╡ b85f5d23-2c1e-4558-8f65-3ca207afea96
+
+
 # ╔═╡ 74df4d8b-0345-449e-ad3a-ded44a94a40d
 md"""
 The strategy to determine $\mu$ is thus as follows:
@@ -705,6 +1282,23 @@ Based on the results so far compute a band structure with guaranteed error bars 
 
 ------
 """
+
+# ╔═╡ f8b23c9f-a437-49c7-9967-e669c39b1eea
+begin
+	local Ecut = 5
+	local basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
+	local ham = Hamiltonian(basis)
+	local Vreal = ComplexF64.(DFTK.total_local_potential(ham))
+
+	kpoint = basis.kpoints[1]  
+    Vfourier = fft(ham.basis, kpoint, Vreal;) #kpoint,
+
+	l1_V = sum(abs.(Vfourier))
+
+	# eigres = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham, n_bands=6)
+ 	# λkn = eigres.λ[1][1:2]  
+	
+end
 
 # ╔═╡ 33896109-d190-4992-806a-c447ca36071b
 md"""
@@ -841,6 +1435,35 @@ Whenever (5) becomes too large, you should switch to a finer discretisation basi
 - Be creative and experiment. In this Task there is no "best" solution.
 """
 
+# ╔═╡ f7262003-cec6-46d7-841b-83a46026d8f2
+md"""
+**Solution (a):**
+
+Using the definition of $\mathcal{F}$ from task 2 (b), triangular inequality, and assuming $\widetilde{X}_{kn}$ to be normalized we have
+```math
+\begin{align}
+|λ_{kn} - \widetilde{λ}_{kn}| &= |λ_{kn} - \widetilde{λ}_{kn}| \left\| \widetilde{X}_{kn} \right\| \leq \\
+& \leq\|r_{kn}\| +  \|H_k \widetilde{X}_{kn} - λ_{kn}\widetilde{X}_{kn}\| \approx \\
+&\approx \|r_{kn}\| = \|P_k^{\mathcal{F}} r_{kn}\|,
+\end{align}
+```
+where 
+```math
+r_{kn} = H_k \widetilde{X}_{kn} - \widetilde{λ}_{kn} \widetilde{X}_{kn}.
+```
+
+
+"""
+
+# ╔═╡ ad805b4e-fd96-41ad-bfb3-229841fe2147
+md"""
+**Solution (b):**
+
+"""
+
+# ╔═╡ fdf38ffb-54b5-4c3d-bd8b-5db9c5f25d21
+
+
 # ╔═╡ 56c10e5c-90e0-4aa7-a343-38aadff37693
 md"""
 ## GTH pseudopotentials
@@ -891,11 +1514,25 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
+DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoTeachingTools = "661c6b06-c737-4d37-b85c-46df65de6f69"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+Brillouin = "~0.5.13"
+DFTK = "~0.6.11"
+DoubleFloats = "~1.3.0"
+LaTeXStrings = "~1.3.1"
+Measurements = "~2.11.0"
+Plots = "~1.39.0"
+PlutoTeachingTools = "~0.2.13"
+PlutoUI = "~0.7.52"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -904,7 +1541,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "2739587ee3d01bc729d1fd07fd5b35d421c94dae"
+project_hash = "77bec4c1805a650c483ef6fd3ecd51c3f0593070"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1027,6 +1664,12 @@ deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jl
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.Calculus]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
+uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+version = "0.5.1"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
@@ -1223,6 +1866,12 @@ git-tree-sha1 = "2fb1e02f2b635d0845df5d7c167fec4dd739b00d"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.9.3"
 
+[[deps.DoubleFloats]]
+deps = ["GenericLinearAlgebra", "LinearAlgebra", "Polynomials", "Printf", "Quadmath", "Random", "Requires", "SpecialFunctions"]
+git-tree-sha1 = "22b4d37641634df03c89322d74a6439ff0d96f39"
+uuid = "497a8b3b-efae-58df-a0af-a86822472b78"
+version = "1.3.0"
+
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
@@ -1385,6 +2034,12 @@ git-tree-sha1 = "025d171a2847f616becc0f84c8dc62fe18f0f6dd"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
 version = "0.72.10+0"
 
+[[deps.GenericLinearAlgebra]]
+deps = ["LinearAlgebra", "Printf", "Random", "libblastrampoline_jll"]
+git-tree-sha1 = "02be7066f936af6b04669f7c370a31af9036c440"
+uuid = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
+version = "0.3.11"
+
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "9b02998aba7bf074d14de89f9d37ca24a1a0b046"
@@ -1541,9 +2196,9 @@ uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
 version = "2.10.1+0"
 
 [[deps.LaTeXStrings]]
-git-tree-sha1 = "f2355693d6778a178ade15952b7ac47a4ff97996"
+git-tree-sha1 = "50901ebc375ed41dbf8058da26f9de442febbbec"
 uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
-version = "1.3.0"
+version = "1.3.1"
 
 [[deps.Latexify]]
 deps = ["Formatting", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Printf", "Requires"]
@@ -1773,6 +2428,26 @@ version = "1.1.7"
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 version = "2.28.2+0"
+
+[[deps.Measurements]]
+deps = ["Calculus", "LinearAlgebra", "Printf", "Requires"]
+git-tree-sha1 = "bdcde8ec04ca84aef5b124a17684bf3b302de00e"
+uuid = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
+version = "2.11.0"
+
+    [deps.Measurements.extensions]
+    MeasurementsBaseTypeExt = "BaseType"
+    MeasurementsJunoExt = "Juno"
+    MeasurementsRecipesBaseExt = "RecipesBase"
+    MeasurementsSpecialFunctionsExt = "SpecialFunctions"
+    MeasurementsUnitfulExt = "Unitful"
+
+    [deps.Measurements.weakdeps]
+    BaseType = "7fbed51b-1ef5-4d67-9085-a4a9b26f478c"
+    Juno = "e5e0dc1b-0480-54bc-9374-aad01c23163d"
+    RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
+    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -2051,6 +2726,12 @@ deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll
 git-tree-sha1 = "7c29f0e8c575428bd84dc3c72ece5178caa67336"
 uuid = "c0090381-4147-56d7-9ebc-da0b1113ec56"
 version = "6.5.2+2"
+
+[[deps.Quadmath]]
+deps = ["Compat", "Printf", "Random", "Requires"]
+git-tree-sha1 = "15c8465e3cb37b6bf3abcc0a4c9440799f2ba3fb"
+uuid = "be4d8f0f-7fa4-5f49-b795-2f01399ab2dd"
+version = "0.5.9"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -2655,10 +3336,12 @@ version = "1.4.1+1"
 # ╟─363b4496-5728-4eea-a3cc-4a090952155c
 # ╟─11ca4a8e-2f55-40ea-b9cc-37ba7806bb5c
 # ╟─354b8072-dcf0-4182-9897-c3e9534bef5a
-# ╠═0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
+# ╟─0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
-# ╠═40f62be2-8394-4886-84e8-d595b6ff7cab
-# ╠═e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╟─40f62be2-8394-4886-84e8-d595b6ff7cab
+# ╟─e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╟─6d2da427-ff22-4cf3-87d5-0b949a191951
+# ╟─4a7e55d7-f4d8-4ca2-b5b2-463a01434145
 # ╟─05d40b5e-fd83-4e73-8c78-dfd986a42fc0
 # ╠═c4393902-7c57-4126-80af-8765bea42ebd
 # ╠═78cc8d4a-cb63-48d0-a2f9-b8ec8c2950e5
@@ -2676,14 +3359,26 @@ version = "1.4.1+1"
 # ╠═ac0cffd2-effb-489c-a118-60864798d55e
 # ╟─142ac96e-bd9d-45a7-ad31-e187f28e884a
 # ╠═601c837c-1615-4826-938c-b39bb35f46d1
-# ╠═e0a07aca-f81a-436b-b11e-8446120e0235
+# ╟─e0a07aca-f81a-436b-b11e-8446120e0235
 # ╠═46e38c66-9c5b-4305-94c2-bacfa87b48b7
 # ╠═0339eee7-1269-4f68-a57c-8aebffdfb4bc
 # ╠═c8867f39-55c8-4efb-9a0d-cb9cfb9f751b
-# ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
+# ╠═58856ccd-3a1c-4a5f-9bd2-159be331f07c
 # ╟─e04087db-9973-4fad-a964-20d109fff335
+# ╟─b3fdeae8-2864-432a-b5b6-c7d072882d22
 # ╟─abdfcc43-245d-425a-809e-d668f03e9b45
+# ╟─f04ca53a-556c-44fd-8193-6b72e55e507e
+# ╠═37516a8e-fa97-4a11-a520-6060e53d5856
+# ╠═458054f7-c2a4-4bd7-bb9f-346106145055
+# ╟─fbcb6a01-0a35-43da-a040-46e9b400696f
+# ╠═2171a044-bcfd-425c-a49c-e9e454f84404
+# ╟─49e93f70-e53c-4c97-87e1-ec2744c65de4
+# ╠═130f8180-18d0-43c1-b962-64776f832d6b
+# ╟─1ba08fd5-f635-4fb1-a9ec-7392ba240e1f
 # ╟─d26fec73-4416-4a20-bdf3-3a4c8ea533d1
+# ╠═6af4d521-83e1-4f29-8c11-26c7d0aea583
+# ╠═b2b1e2de-b599-4606-b531-a03f2c2e59ee
+# ╟─14f1f74c-14e4-4c08-97ea-804697565a0e
 # ╟─9a953b4e-2eab-4cb6-8b12-afe754640e22
 # ╟─0616cc6b-c5f8-4d83-a247-849a3d8c5de8
 # ╠═d363fa0a-d48b-4904-9337-098bcef015bb
@@ -2700,21 +3395,41 @@ version = "1.4.1+1"
 # ╠═2dee9a6b-c5dd-4511-a9e3-1d5bc33db946
 # ╟─da8c23eb-d473-4c2f-86f9-879016659f3e
 # ╠═3006a991-d017-40b3-b52b-31438c05d088
+# ╠═33fdac9b-ed7c-46f9-a5db-ae7eb8eb7b1a
 # ╟─646242a2-8df6-4caf-81dc-933345490e6c
 # ╟─d7f3cadf-6161-41ce-8a7a-20fba5182cfb
 # ╟─f6efea9b-9656-4337-82a1-5b894e078338
+# ╟─c54b23f9-a06a-4180-8535-d0b366a07e16
+# ╟─26772ef8-bc98-42f0-9c7f-8ae04efa1e42
+# ╠═9bed11fc-0ee5-4260-aa77-16eb92e914a7
+# ╠═835889f9-117b-4601-bf5f-90b0894ed34b
+# ╠═1b20c7de-f23e-4492-8f6a-76baafe28c9c
+# ╠═90d673d5-697b-4a31-aef1-b8321b58178d
+# ╟─047996c7-0982-45fd-b243-0116bd19136f
+# ╟─cec04139-6d15-435c-8ffc-e9bc8d21383e
+# ╠═eb240595-b840-4ec7-97d2-c9a4583ee164
+# ╟─937f11f1-b8f3-43ef-bb8f-b047f34c150c
 # ╟─14df1c0f-1c4f-4da9-be49-3941b9c12fd3
 # ╟─3fc07beb-33c1-43b3-9d66-27693d78e46a
+# ╟─01f7ef52-3220-4053-8f66-455dde4c17f1
 # ╟─047d630b-e85e-45e9-9574-758955cb160e
 # ╟─fc040eb6-872b-475d-a6cd-7d3ad1fae229
+# ╟─af9d6dc5-63fa-4746-aa5c-976803856d72
+# ╟─8ff36198-afea-4294-8c80-3710737d6259
+# ╟─55fc26a4-9179-44c2-9d08-9da84cff83cf
+# ╠═b85f5d23-2c1e-4558-8f65-3ca207afea96
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
+# ╠═f8b23c9f-a437-49c7-9967-e669c39b1eea
 # ╟─33896109-d190-4992-806a-c447ca36071b
 # ╠═93552ccd-f7b5-4830-a9ad-417d3fca9af9
 # ╟─968a26f2-12fe-446f-aa41-977fdffc23a0
 # ╠═7ebc18b0-618f-4d99-881f-7c30eb3bc7f5
 # ╟─bf00ec9d-5c69-43c3-87c1-28ac9f5b4c9f
 # ╟─38db50ac-5937-4e9b-948c-fd93ced44cb2
+# ╟─f7262003-cec6-46d7-841b-83a46026d8f2
+# ╟─ad805b4e-fd96-41ad-bfb3-229841fe2147
+# ╠═fdf38ffb-54b5-4c3d-bd8b-5db9c5f25d21
 # ╟─56c10e5c-90e0-4aa7-a343-38aadff37693
 # ╟─7fb27a85-27eb-4111-800e-a8c306ea0f18
 # ╠═e0f916f6-ce7f-48b1-8256-2e6a6247e171
