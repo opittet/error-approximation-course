@@ -1244,84 +1244,6 @@ end
 # ╔═╡ 80fc031f-ecaf-41a4-975c-dac3fbd4bd28
 
 
-# ╔═╡ 3dec0f02-abb8-4a3a-b09b-f863eb5c9c95
-# ╠═╡ disabled = true
-#=╠═╡
-#we could aslso make a recursive algorithm  
-
-function adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
-	                            maxiter=100, Δ=5, tol=1e-6, verbose=false,counter=0) where {T}
-			if counter = 0 
-
-			kgrid = (1, 1, 1)  # Γ point only
-			basis = PlaneWaveBasis(model; Ecut, kgrid)
-			ham   = Hamiltonian(basis)
-			hamk  = ham[1]                   # Select Γ point
-			prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
-			X=DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
-			else 
-			kgrid = (1, 1, 1)  # Γ point only
-			basis = PlaneWaveBasis(model; Ecut+counter*Δ, kgrid)
-			ham   = Hamiltonian(basis)
-			hamk  = ham[1]                   # Select Γ point
-			prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
-			X=DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
-			end
-			
-			
-			converged = false
-			λ = NaN
-			residual_norms = NaN
-			residual_history = []
-			
-			P = zero(X)
-			R = zero(X)
-			for i in 1:maxiter
-				if i > 1
-					Z = hcat(X, P, R)
-				else
-					Z = X
-				end
-				Z = Matrix(qr(Z).Q)  # QR-based orthogonalisation
-		
-				# Rayleigh-Ritz
-				HZ = hamk * Z
-				λ, Y = eigen(Hermitian(Z' * HZ))
-				λ = λ[1:n_bands]
-				Y = Y[:, 1:n_bands]
-				new_X = Z * Y
-				
-				# Compute residuals and convergence check
-				R = HZ * Y - new_X * Diagonal(λ)
-				residual_norms = norm.(eachcol(R))
-				push!(residual_history, residual_norms)
-				verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] residual_norms[end]
-				if maximum(residual_norms) < tol
-					converged = true
-					X .= new_X
-					break
-				end
-		
-				# Precondition and update
-				DFTK.precondprep!(prec, X)
-				ldiv!(prec, R)
-				P .= X - new_X
-				X .= new_X
-			end
-				if i%counter*10=0
-					counter = counter+1
-					adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
-	                            maxiter=maxiter, 					Δ=Δ,tol=tol,verbose=false,counter=counter) where {T}
-					
-				end
-				
-				
-
-	
-		(; λ, X, basis, ham, converged, residual_norms, residual_history)
-end
-  ╠═╡ =#
-
 # ╔═╡ 38db50ac-5937-4e9b-948c-fd93ced44cb2
 md"""
 ### Task 7: Developing a discretisation-adaptive LOBPCG
@@ -3730,7 +3652,7 @@ version = "1.4.1+1"
 # ╟─0c00fca4-41b4-4c1d-b4b1-d6668c42fe65
 # ╟─ef2796f3-b6d4-4403-aaa6-ed3d9d541a3a
 # ╟─40f62be2-8394-4886-84e8-d595b6ff7cab
-# ╠═e06ad336-9ff8-48bb-9eaf-4a606d69d51c
+# ╟─e06ad336-9ff8-48bb-9eaf-4a606d69d51c
 # ╠═05d40b5e-fd83-4e73-8c78-dfd986a42fc0
 # ╠═c4393902-7c57-4126-80af-8765bea42ebd
 # ╠═78cc8d4a-cb63-48d0-a2f9-b8ec8c2950e5
@@ -3816,7 +3738,7 @@ version = "1.4.1+1"
 # ╠═928e7765-d921-4620-a680-02ba74e7a47a
 # ╠═f1b8af2a-4ac8-4da4-98b4-eb88a8ac67f0
 # ╠═382b4d8f-591a-48aa-9e7d-feeb45bd192e
-# ╟─56c10e5c-90e0-4aa7-a343-38aadff37693
+# ╠═56c10e5c-90e0-4aa7-a343-38aadff37693
 # ╟─7fb27a85-27eb-4111-800e-a8c306ea0f18
 # ╠═e0f916f6-ce7f-48b1-8256-2e6a6247e171
 # ╟─62fd73e1-bd11-465f-8032-e87db00bfda7

@@ -17,6 +17,7 @@ begin
 	using Statistics
 	using Measurements
 	using DoubleFloats
+	using FFTW
 	
 end
 
@@ -854,9 +855,9 @@ end
 
 # ╔═╡ 0339eee7-1269-4f68-a57c-8aebffdfb4bc
 begin
-	p= plot(yaxis=:log, xlabel=L"$\mathcal{E}$ values")
-	λ1=abs.(eigenvalues_2a[:, 1] .- λ_ref[1])
-	λ2=abs.(eigenvalues_2a[:, 2] .- λ_ref[2])
+	p = plot(yaxis=:log, xlabel=L"$\mathcal{E}$ values")
+	λ1 = abs.(eigenvalues_2a[:, 1] .- λ_ref[1])
+	λ2 = abs.(eigenvalues_2a[:, 2] .- λ_ref[2])
 
 
 	plot!(p, Ecuts ,λ1, shape=:cross, label=L"|\lambda_1-\lambda_{1,\mathcal{E}=80}|")
@@ -1252,9 +1253,6 @@ Finally,
 
 """
 
-# ╔═╡ b85f5d23-2c1e-4558-8f65-3ca207afea96
-
-
 # ╔═╡ 74df4d8b-0345-449e-ad3a-ded44a94a40d
 md"""
 The strategy to determine $\mu$ is thus as follows:
@@ -1272,18 +1270,7 @@ The strategy to determine $\mu$ is thus as follows:
 [^HLC2020]:  M. F. Herbst, A. Levitt and E. Cancès. Faraday Discuss., **224**, 227 (2020). DOI [10.1039/D0FD00048E](https://doi.org/10.1039/D0FD00048E)
 """
 
-# ╔═╡ 48ffb85e-884d-46a4-8184-40126b603aac
-md"""
-### Task 6: Band structure with guaranteed bounds
-
-Based on the results so far compute a band structure with guaranteed error bars for $\mathcal{E} = 7$ a $k$-point density of $15$ and the $6$ first bands (i.e. the $6$ lowest eigenpairs). For each eigenvalue:
-- Estimate the **algorithm** and **arithmetic error** by re-computing the in-basis residual $P_k^\mathcal{E}r_{kn}$ using `Double64`. For this you need to build a basis and a Hamiltonian that employes `Double64` as the working precision. To change DFTK's internal working precision follow the [Arbitrary floating-point types](https://docs.dftk.org/stable/examples/arbitrary_floattype/) documentation page. From a `basis_double64` using `Double64` precision a corresponding Hamiltonian is obtained by `Hamiltonian(basis_double64)` as shown before. *Hint:* Before computing products `Hamiltonian(basis_double64) * X`, ensure that `X` has been converted to `Double64` as well.
-- Estimate the **discretisation error** using both the Bauer-Fike estimates of Tasks 2 & 3 as well as the Kato-Temple estimates of Task 5. In the band structure annotate the tightest bound that is available to you.
-
-------
-"""
-
-# ╔═╡ f8b23c9f-a437-49c7-9967-e669c39b1eea
+# ╔═╡ b622998e-2ba0-420d-b49d-c3391874a3b0
 begin
 	local Ecut = 5
 	local basis = PlaneWaveBasis(model; Ecut=Ecut, kgrid=(1, 1, 1))
@@ -1298,6 +1285,71 @@ begin
 	# eigres = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham, n_bands=6)
  	# λkn = eigres.λ[1][1:2]  
 	
+end
+
+# ╔═╡ 48ffb85e-884d-46a4-8184-40126b603aac
+md"""
+### Task 6: Band structure with guaranteed bounds
+
+Based on the results so far compute a band structure with guaranteed error bars for $\mathcal{E} = 7$ a $k$-point density of $15$ and the $6$ first bands (i.e. the $6$ lowest eigenpairs). For each eigenvalue:
+- Estimate the **algorithm** and **arithmetic error** by re-computing the in-basis residual $P_k^\mathcal{E}r_{kn}$ using `Double64`. For this you need to build a basis and a Hamiltonian that employes `Double64` as the working precision. To change DFTK's internal working precision follow the [Arbitrary floating-point types](https://docs.dftk.org/stable/examples/arbitrary_floattype/) documentation page. From a `basis_double64` using `Double64` precision a corresponding Hamiltonian is obtained by `Hamiltonian(basis_double64)` as shown before. *Hint:* Before computing products `Hamiltonian(basis_double64) * X`, ensure that `X` has been converted to `Double64` as well.
+- Estimate the **discretisation error** using both the Bauer-Fike estimates of Tasks 2 & 3 as well as the Kato-Temple estimates of Task 5. In the band structure annotate the tightest bound that is available to you.
+
+------
+"""
+
+# ╔═╡ f8b23c9f-a437-49c7-9967-e669c39b1eea
+
+
+# ╔═╡ 4805862a-7b5f-4885-b65c-9f04053b5856
+begin	
+
+	λ_conv_double64=[]
+	X_conv_double64=[]
+	res_norm_double64=[]
+	ham_list_double64=[]
+	ρ_bauer_fike_double64 = Vector{Vector{Float64}}()
+	println(ρ_bauer_fike_double64)
+
+		
+	ham_double64 = Hamiltonian(basisD64)
+	eigres_double64 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_double64, 6)
+	
+	#large_base3=basis_change_Ecut(band_data_double64.basis,20)
+	#ham_large3=Hamiltonian(large_base3)
+	#eigres_large_3 = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_large3, 6)
+
+
+	for (ik, kpt) in enumerate(bands_double64.basis.kpoints)
+		
+
+		
+
+		hamk = ham_double64[ik]
+		#hamk_large= ham_large3[ik]
+		
+		λk   = eigres_double64.λ[ik]
+		Xk   = eigres_double64.X[ik]
+		
+		#λk_large   = eigres_large_3.λ[ik]
+		#Xk_large   = eigres_large_3.X[ik]
+		
+		residual_k = hamk * Xk - Xk * Diagonal(λk)
+		column_norms = [norm(residual_k[:,i]) for i in 1:6]
+
+		print(size(residual_k))
+		println(norm.(residual_k))
+		println(typeof(norm.(residual_k)))
+		println(size(norm.(residual_k)))
+
+		push!(ham_list_double64,hamk)
+		push!(ρ_bauer_fike_double64,column_norms)
+		push!(λ_conv_double64,λk)
+		push!(X_conv_double64,Xk)
+		push!(res_norm_double64,norm(residual_k))
+	end		
+	println(ρ_bauer_fike_double64)
+
 end
 
 # ╔═╡ 33896109-d190-4992-806a-c447ca36071b
@@ -1452,6 +1504,8 @@ where
 r_{kn} = H_k \widetilde{X}_{kn} - \widetilde{λ}_{kn} \widetilde{X}_{kn}.
 ```
 
+If the ratio $(5)$ is large it indicates that the approximate eigenvector $\widetilde{X}_{kn}$ has significant components outside the subspace spanned by 
+$P_k^{\mathcal{E}}$ meaning that the chosen cutoff $\mathcal{E}$ may be insufficient to capture the eigenvector.
 
 """
 
@@ -1462,7 +1516,136 @@ md"""
 """
 
 # ╔═╡ fdf38ffb-54b5-4c3d-bd8b-5db9c5f25d21
+function adaptive_lobpcg(model::Model{T}, Ecut, n_bands;
+                            maxiter=100, tol=1e-6, verbose=false, threshold=10) where {T}
+	kgrid = (1, 1, 1)  # Γ point only
+	basis = PlaneWaveBasis(model; Ecut, kgrid)
+	ham   = Hamiltonian(basis)
+	hamk  = ham[1]                   # Select Γ point
+	prec  = PreconditionerTPA(hamk)  # Initialise preconditioner
+	X     = DFTK.random_orbitals(hamk.basis, hamk.kpoint, n_bands)
+	
+	converged = false
+	λ = NaN
+	residual_norms = NaN
+	residual_history = []
+	Ecut_new = Ecut
 
+	
+	basis_prev = basis
+	
+	P = zero(X)
+	R = zero(X)
+	for i in 1:maxiter
+		if i > 1
+			Z = hcat(X, P, R)
+		else
+			Z = X
+		end
+		Z = Matrix(qr(Z).Q)  # QR-based orthogonalisation
+
+		# Rayleigh-Ritz
+		HZ = hamk * Z
+		λ, Y = eigen(Hermitian(Z' * HZ))
+		λ = λ[1:n_bands]
+		Y = Y[:, 1:n_bands]
+		new_X = Z * Y
+		
+		# Compute residuals and convergence check
+		R = HZ * Y - new_X * Diagonal(λ)
+		residual_norms = norm.(eachcol(R))
+		push!(residual_history, residual_norms)
+		verbose && @printf "%3i %8.4g %8.4g\n" i λ[end] residual_norms[end]
+		if maximum(residual_norms) < tol
+			converged = true
+			X .= new_X
+			break
+		end
+
+		# Precondition and update
+		DFTK.precondprep!(prec, X)
+		ldiv!(prec, R)
+		P .= X - new_X
+		X .= new_X
+
+		# Additional step:
+		basis_small  = basis_change_Ecut(basis_prev, Ecut_new - 3)
+		X_E = transfer_blochwave_kpt(X,
+						   basis_prev, basis_prev.kpoints[1],
+						   basis_small, basis_small.kpoints[1])
+		P_X = transfer_blochwave_kpt(X_E,
+						   basis_small, basis_small.kpoints[1],
+						   basis_prev, basis_prev.kpoints[1])
+				
+		
+		# Computing the ratio
+		ratio = norm(X - P_X) / norm(residual_norms)
+
+		# Moving to a larger basis
+		if ratio > threshold
+			
+			Ecut_new = Ecut_new + 2
+			println("i = ", i, ", Ecut = ", Ecut_new)
+			basis_new = PlaneWaveBasis(model; Ecut=Ecut_new, kgrid)
+			
+			X 	= transfer_blochwave_kpt(X, basis_prev, basis_prev.kpoints[1],
+                      basis_new, basis_new.kpoints[1])
+			P 	= transfer_blochwave_kpt(P, basis_prev, basis_prev.kpoints[1],
+                      basis_new, basis_new.kpoints[1])
+			R 	= transfer_blochwave_kpt(R, basis_prev, basis_prev.kpoints[1],
+                      basis_new, basis_new.kpoints[1])
+			
+			hamk  = Hamiltonian(basis_new)[1]
+			prec  = PreconditionerTPA(hamk)
+			basis_prev = basis_new
+			
+		end
+		
+	end
+
+	(; λ, X, basis, ham, converged, residual_norms, residual_history)
+end
+
+# ╔═╡ 69a25569-d954-48c0-9627-6e9662252156
+begin
+	local Ecut     = 5
+	local n_bands  = 6
+	
+	res_adaptive = adaptive_lobpcg(model, Ecut, n_bands, threshold=0.2)
+	res_adaptive.λ
+end
+
+# ╔═╡ 07228871-a24b-4f28-9ab8-b2b5c0cdcf93
+begin
+	local Ecut     = 80
+	local n_bands  = 6
+
+	res_nonadaptive = nonadaptive_lobpcg(model, Ecut, n_bands)
+	res_nonadaptive.λ
+end
+
+# ╔═╡ deac03c4-9ac1-4acf-ae0c-68f60e8c351e
+begin
+	local Ecut     = 3
+	local n_bands  = 6
+
+	res_nonadaptive5 = nonadaptive_lobpcg(model, Ecut, n_bands)
+	res_nonadaptive5.λ
+end
+
+# ╔═╡ 1fc8cf90-6b8f-4073-ba45-368d92661372
+begin
+	local p = plot(yaxis=:log, xlabel="Iterations")
+	plot!(1:size(res_nonadaptive.residual_history)[1], norm.(res_nonadaptive.residual_history), label="Reference residuals history")
+	
+	plot!(1:size(res_adaptive.residual_history)[1], norm.(res_adaptive.residual_history), label="Adaptive residuals history")
+	title!(p, "Rate of convergence")
+end
+
+# ╔═╡ 921a26be-c539-480c-84e7-b1be9a51bb9c
+md"""
+Experimenting with various thresholds for the ratio given in equation $(5)$ and values of $\Delta$ we can see that the rate of convergence using the adaptive method, with an appropriately set threshold and $\Delta$, can effectively match the reference convergence profile. Moreover, the developed approach has better computational efficiency by using smaller cutoffs during the early steps in the algorithm. 
+"""
 
 # ╔═╡ 56c10e5c-90e0-4aa7-a343-38aadff37693
 md"""
@@ -1509,12 +1692,143 @@ Focusing on the first $5$ eigenvalues of the $\Gamma$ point of the GTH Hamiltoni
 **(b)** For a few offsets $\Delta$ between $5$ and $30$ set $\mathcal{F} = \mathcal{E} + \Delta$ and consider the $2$nd and $3$rd eigenvalue. Plot both the obtained error estimate as well as the error of the eigenvalue as you vary $\mathcal{E}$ between $5$ and $50$. Again take $\mathcal{E} = 100$ as a reference. What offset $\Delta$ would you recommend based on this investigation ?
 """
 
+# ╔═╡ 7f59dd2e-22b9-4ff8-8c75-256d0022a1e4
+md"""
+**Solution (a):**
+"""
+
+# ╔═╡ 52bd34a6-8ec9-40ca-ac93-56cd4cc8dea2
+begin
+	n_bands_8a = 5
+	local ik = 1
+	
+	Fcuts = 10:5:100
+	ρ_BF = zeros(length(Fcuts), n_bands_8a)
+
+	basis_100 	= make_gth_basis(100)
+	ham_100 	= Hamiltonian(basis_100)
+	eigres_100  = diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_100, n_bands_8a)
+	λ_100 		= eigres_100.λ[ik]
+
+	basis_5 	= make_gth_basis(5)
+	ham_5 		= Hamiltonian(basis_5)
+	eigres_5 	= diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_5, n_bands_8a)
+	λ_5 		= eigres_5.λ[ik]
+
+	r_ref = abs.(λ_5 - λ_100)
+
+	for (i, Fcut) in enumerate(Fcuts)
+		basis 	= make_gth_basis(Fcut)
+		ham 	= Hamiltonian(basis)		
+		X_F 	= transfer_blochwave(eigres_5.X, basis_5, basis)
+
+		residual_k = ham[ik] * X_F[ik] - X_F[ik] * Diagonal(eigres_5.λ[ik])
+		ρ_BF[i, :] = norm.(eachcol(residual_k))
+
+	end
+
+end
+
+
+# ╔═╡ d98534ac-0877-4621-be84-20e89077c0d7
+begin
+	
+	local p = plot(yaxis=:log, layout=(2, 3), 
+					empty_at = 6, xlabel=L"$\mathcal{F}$ values")
+
+	for i in 1:n_bands_8a
+		
+		hline!([r_ref[i]], subplot=i, line=:dash, 
+				label=string(latexstring("|λ^5_$(i) - λ^{100}_$(i)|")))
+		plot!(p, Fcuts, ρ_BF[:, i], subplot=i, shape=:cross,
+				label=string(latexstring("||r_$(i)||")))
+		
+	end
+	plot!(legend=:bottomright)
+end
+
+# ╔═╡ aadb9a5f-645f-4a48-972a-b4c13e48d8cf
+md"""
+Increasing $\mathcal{F}$ we can see that all bounds are converging and always are bigger than the reference value.
+"""
+
+# ╔═╡ 03f2137e-c60b-453b-ae20-ccfe28df19b4
+md"""
+**Solution (b):**
+"""
+
+# ╔═╡ 2383f438-e1b5-40e2-bd7a-14fb13825afd
+begin
+	Delta_range = 5:5:30
+	E_range= 5:5:50
+	local n_bands = 3
+	e_BF 	= zeros(length(E_range), length(Delta_range), 2)
+	e_ref 	= zeros(length(E_range), 2)
+
+	for (i, E) in enumerate(E_range)
+		basis_E 	= make_gth_basis(E)
+		ham_E 		= Hamiltonian(basis_E)
+		eigres_E 	= diagonalize_all_kblocks(DFTK.lobpcg_hyper, ham_E, n_bands)
+
+		e_ref[i, :] = abs.(eigres_E.λ[ik][2:3] - λ_100[2:3])
+		
+		for (j, Δ) in enumerate(Delta_range)
+        	F = E + Δ
+			basis 	= make_gth_basis(F)
+			ham 	= Hamiltonian(basis)
+			X_F 	= transfer_blochwave(eigres_E.X, basis_E, basis)
+
+			res_k = ham[ik] * X_F[ik] - X_F[ik] * Diagonal(eigres_E.λ[ik])
+			e_BF[i, j, :] = norm.(eachcol(res_k))[2:3]
+		end
+	end
+end
+
+# ╔═╡ af8b8cb9-435a-4121-a03a-0be49d3960ca
+begin
+	gradient = [:blue, :red]
+	local p = plot(yaxis=:log, layout=(2, 1), xlabel=L"$\mathcal{F}$ values")
+
+	for i in 1:2
+		
+		for (j, E) in enumerate(E_range)
+
+			if E % 10 == 0
+				label_h = string(latexstring("|λ^{$(E)}_$(i) - λ^{100}_$(i)|"))
+				label_r = string(latexstring("||r_{E = $(j)}||"))
+			else
+				label_h = ""
+				label_r = ""
+			end
+
+			hline!([e_ref[j]], subplot=i, line=:dash, 
+					line_z=e_BF[j, : , i], 
+					color=cgrad(:viridis),
+					label=label_h
+			)
+
+			plot!(p, Delta_range, e_BF[j, : , i], 
+					subplot=i, linewidth = 2,
+					line_z=e_BF[j, : , i], 
+					color=cgrad(:viridis),
+					label=label_r
+			)
+		end	
+	end
+	
+	plot!(legend=:bottomright)
+	plot!(title="The second evalue", subplot=1)
+	plot!(title="The third evalue", subplot=2)
+	
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 Brillouin = "23470ee3-d0df-4052-8b1a-8cbd6363e7f0"
 DFTK = "acf6eb54-70d9-11e9-0013-234b7a5f5337"
 DoubleFloats = "497a8b3b-efae-58df-a0af-a86822472b78"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Measurements = "eff96d63-e80a-5855-80a2-b1b0885c5ab7"
@@ -1528,6 +1842,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Brillouin = "~0.5.13"
 DFTK = "~0.6.11"
 DoubleFloats = "~1.3.0"
+FFTW = "~1.7.2"
 LaTeXStrings = "~1.3.1"
 Measurements = "~2.11.0"
 Plots = "~1.39.0"
@@ -1541,7 +1856,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.3"
 manifest_format = "2.0"
-project_hash = "77bec4c1805a650c483ef6fd3ecd51c3f0593070"
+project_hash = "836f6b0e052841bb3baaade2f97eadf46f060409"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1920,9 +2235,9 @@ version = "4.4.2+2"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
-git-tree-sha1 = "b4fbdd20c889804969571cc589900803edda16b7"
+git-tree-sha1 = "ec22cbbcd01cba8f41eecd7d44aac1f23ee985e3"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.7.1"
+version = "1.7.2"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -3363,7 +3678,7 @@ version = "1.4.1+1"
 # ╠═46e38c66-9c5b-4305-94c2-bacfa87b48b7
 # ╠═0339eee7-1269-4f68-a57c-8aebffdfb4bc
 # ╠═c8867f39-55c8-4efb-9a0d-cb9cfb9f751b
-# ╠═58856ccd-3a1c-4a5f-9bd2-159be331f07c
+# ╟─58856ccd-3a1c-4a5f-9bd2-159be331f07c
 # ╟─e04087db-9973-4fad-a964-20d109fff335
 # ╟─b3fdeae8-2864-432a-b5b6-c7d072882d22
 # ╟─abdfcc43-245d-425a-809e-d668f03e9b45
@@ -3417,10 +3732,11 @@ version = "1.4.1+1"
 # ╟─af9d6dc5-63fa-4746-aa5c-976803856d72
 # ╟─8ff36198-afea-4294-8c80-3710737d6259
 # ╟─55fc26a4-9179-44c2-9d08-9da84cff83cf
-# ╠═b85f5d23-2c1e-4558-8f65-3ca207afea96
 # ╟─74df4d8b-0345-449e-ad3a-ded44a94a40d
+# ╠═b622998e-2ba0-420d-b49d-c3391874a3b0
 # ╟─48ffb85e-884d-46a4-8184-40126b603aac
 # ╠═f8b23c9f-a437-49c7-9967-e669c39b1eea
+# ╠═4805862a-7b5f-4885-b65c-9f04053b5856
 # ╟─33896109-d190-4992-806a-c447ca36071b
 # ╠═93552ccd-f7b5-4830-a9ad-417d3fca9af9
 # ╟─968a26f2-12fe-446f-aa41-977fdffc23a0
@@ -3430,9 +3746,21 @@ version = "1.4.1+1"
 # ╟─f7262003-cec6-46d7-841b-83a46026d8f2
 # ╟─ad805b4e-fd96-41ad-bfb3-229841fe2147
 # ╠═fdf38ffb-54b5-4c3d-bd8b-5db9c5f25d21
+# ╠═69a25569-d954-48c0-9627-6e9662252156
+# ╠═07228871-a24b-4f28-9ab8-b2b5c0cdcf93
+# ╠═deac03c4-9ac1-4acf-ae0c-68f60e8c351e
+# ╠═1fc8cf90-6b8f-4073-ba45-368d92661372
+# ╟─921a26be-c539-480c-84e7-b1be9a51bb9c
 # ╟─56c10e5c-90e0-4aa7-a343-38aadff37693
 # ╟─7fb27a85-27eb-4111-800e-a8c306ea0f18
 # ╠═e0f916f6-ce7f-48b1-8256-2e6a6247e171
 # ╟─62fd73e1-bd11-465f-8032-e87db00bfda7
+# ╟─7f59dd2e-22b9-4ff8-8c75-256d0022a1e4
+# ╠═52bd34a6-8ec9-40ca-ac93-56cd4cc8dea2
+# ╠═d98534ac-0877-4621-be84-20e89077c0d7
+# ╟─aadb9a5f-645f-4a48-972a-b4c13e48d8cf
+# ╟─03f2137e-c60b-453b-ae20-ccfe28df19b4
+# ╠═2383f438-e1b5-40e2-bd7a-14fb13825afd
+# ╠═af8b8cb9-435a-4121-a03a-0be49d3960ca
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
